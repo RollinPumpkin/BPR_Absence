@@ -77,7 +77,7 @@ class _LoginPageState extends State<LoginPage>
 
                   // Logo
                   Image.asset('assets/images/logo.png', height: 80),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 64),
 
                   // Email / Phone / ID
                   TextFormField(
@@ -173,14 +173,14 @@ class _LoginPageState extends State<LoginPage>
                         if (_formKey.currentState!.validate()) {
                           Navigator.pushReplacementNamed(
                             context,
-                            '/admin-dashboard',
+                            '/admin/dashboard',
                           );
                         }
                       },
                       child: const Text("SIGN IN"),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 24),
 
                   // Request Account Hyperlink
                   RichText(
