@@ -6,8 +6,13 @@ import 'package:frontend/modules/admin/profile/profile_page.dart';
 import 'modules/splash_page.dart';
 import 'modules/auth/login_page.dart';
 import 'modules/admin/dashboard/dashboard_page.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await initializeDateFormatting('id_ID', null);
+
   runApp(const MyApp());
 }
 

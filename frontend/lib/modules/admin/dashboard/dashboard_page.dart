@@ -5,15 +5,84 @@ import 'package:frontend/modules/admin/assigment/assigment_page.dart';
 import 'package:frontend/modules/admin/letter/letter_page.dart';
 import 'package:frontend/modules/admin/profile/profile_page.dart';
 
+import 'widgets/header.dart';
+import 'widgets/menu_button.dart';
+import 'widgets/section_title.dart';
+import 'widgets/letter_card.dart';
+import 'widgets/assignment_card.dart';
+
 class AdminDashboardPage extends StatelessWidget {
   const AdminDashboardPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: const Center(child: Text("Admin Home Page")),
+      backgroundColor: Colors.white,
+
+      /// Body
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            /// Header
+            const DashboardHeader(),
+            const SizedBox(height: 20),
+
+            /// Menu
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: const [
+                  MenuButton(
+                    icon: Icons.people,
+                    label: "Employee Data",
+                    color: Colors.red,
+                  ),
+                  MenuButton(
+                    icon: Icons.book,
+                    label: "Report",
+                    color: Colors.green,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            /// Letter Section
+            const SectionTitle(
+              title: "Letter",
+              action: "View",
+            ),
+            const LetterCard(
+              name: "Septa Puma",
+              status: "Absence",
+              statusColor: Colors.orange,
+            ),
+            const LetterCard(
+              name: "Septa Puma",
+              status: "Absence",
+              statusColor: Colors.red,
+            ),
+            const SizedBox(height: 12),
+
+            /// Assignment Section
+            const SectionTitle(
+              title: "Assignment",
+              action: "View",
+            ),
+            const AssignmentCard(
+              title: "Weekly Report",
+              description: "Complete weekly task",
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+
+      /// Bottom Navigation
       bottomNavigationBar: CustomBottomNav(
-        currentIndex: 0, 
+        currentIndex: 0,
         icons: const [
           Icons.home,
           Icons.calendar_today,
