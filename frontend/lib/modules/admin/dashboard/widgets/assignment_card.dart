@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 class AssignmentCard extends StatelessWidget {
   final String title;
   final String description;
-  final VoidCallback? onView; 
+  final VoidCallback? onView;
 
   const AssignmentCard({
     super.key,
@@ -19,11 +19,11 @@ class AssignmentCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20), // lebih halus
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(1),
-            blurRadius: 6,
+            color: Colors.black12,
+            blurRadius: 8,
             offset: const Offset(0, 4),
           ),
         ],
@@ -31,35 +31,46 @@ class AssignmentCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Title + View Action
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
               GestureDetector(
-                onTap: onView ?? () {}, 
+                onTap: onView ?? () {},
                 child: const Text(
                   "View",
                   style: TextStyle(
                     color: Colors.blue,
                     fontWeight: FontWeight.w600,
+                    fontSize: 14,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 4),
+
+          const SizedBox(height: 8),
+
+          // Description
           Text(
             description,
             style: const TextStyle(
-              color: Colors.black54,
+              color: Colors.black87,
               fontSize: 14,
+              height: 1.4,
             ),
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),

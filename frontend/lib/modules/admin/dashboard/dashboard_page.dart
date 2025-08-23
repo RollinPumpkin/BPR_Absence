@@ -4,6 +4,7 @@ import 'package:frontend/modules/admin/attandance/attandace_page.dart';
 import 'package:frontend/modules/admin/assigment/assigment_page.dart';
 import 'package:frontend/modules/admin/letter/letter_page.dart';
 import 'package:frontend/modules/admin/profile/profile_page.dart';
+
 import 'widgets/header.dart';
 import 'widgets/menu_button.dart';
 import 'widgets/section_title.dart';
@@ -17,39 +18,69 @@ class AdminDashboardPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+
+      /// Body
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            /// Header
             const DashboardHeader(),
-
             const SizedBox(height: 20),
 
-            // Menu
+            /// Menu
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: const [
-                  MenuButton(icon: Icons.people, label: "Employee Data", color: Colors.red),
-                  MenuButton(icon: Icons.book, label: "Report", color: Colors.green),
+                  MenuButton(
+                    icon: Icons.people,
+                    label: "Employee Data",
+                    color: Colors.red,
+                  ),
+                  MenuButton(
+                    icon: Icons.book,
+                    label: "Report",
+                    color: Colors.green,
+                  ),
                 ],
               ),
             ),
-
             const SizedBox(height: 20),
 
-            // Letter Section
-            const SectionTitle(title: "Letter", action: "View"),
-            const LetterCard(name: "Septa Puma", status: "Absence", statusColor: Colors.orange),
-            const LetterCard(name: "Septa Puma", status: "Absence", statusColor: Colors.red),
+            /// Letter Section
+            const SectionTitle(
+              title: "Letter",
+              action: "View",
+            ),
+            const LetterCard(
+              name: "Septa Puma",
+              status: "Absence",
+              statusColor: Colors.orange,
+            ),
+            const LetterCard(
+              name: "Septa Puma",
+              status: "Absence",
+              statusColor: Colors.red,
+            ),
+            const SizedBox(height: 12),
 
-            // Assignment Section
-            const SectionTitle(title: "Assignment", action: "View"),
-            const AssignmentCard(title: "Weekly Report", description: "Complete weekly task"),
+            /// Assignment Section
+            const SectionTitle(
+              title: "Assignment",
+              action: "View",
+            ),
+            const AssignmentCard(
+              title: "Weekly Report",
+              description: "Complete weekly task",
+            ),
+            const SizedBox(height: 16),
           ],
         ),
       ),
+
+      /// Bottom Navigation
       bottomNavigationBar: CustomBottomNav(
         currentIndex: 0,
         icons: const [

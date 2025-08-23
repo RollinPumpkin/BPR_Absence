@@ -4,12 +4,12 @@ class LetterCard extends StatelessWidget {
   final String name;
   final String status;
   final Color statusColor;
-  final VoidCallback? onViewTap; // buat handle klik "View"
+  final VoidCallback? onViewTap; 
 
   const LetterCard({
     super.key,
     required this.name,
-    required this.status,
+    required this.status, 
     required this.statusColor,
     this.onViewTap,
   });

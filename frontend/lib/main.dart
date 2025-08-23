@@ -8,7 +8,6 @@ import 'modules/auth/login_page.dart';
 import 'modules/admin/dashboard/dashboard_page.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
-
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 

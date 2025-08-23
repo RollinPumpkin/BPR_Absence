@@ -22,7 +22,10 @@ class MenuButton extends StatelessWidget {
         onTap: onTap,
         child: Container(
           margin: const EdgeInsets.symmetric(horizontal: 8),
-          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+          padding: const EdgeInsets.symmetric(
+            vertical: 14,
+            horizontal: 12,
+          ),
           decoration: BoxDecoration(
             color: Colors.white,
             border: Border.all(color: color, width: 1.5),
@@ -38,7 +41,11 @@ class MenuButton extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: color, size: 22),
+              Icon(
+                icon,
+                color: color,
+                size: 22,
+              ),
               const SizedBox(width: 8),
               Text(
                 label,
