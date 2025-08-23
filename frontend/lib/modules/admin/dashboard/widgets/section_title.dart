@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 class SectionTitle extends StatelessWidget {
   final String title;
   final String action;
-  final VoidCallback? onTap; 
+  final VoidCallback? onTap;
 
   const SectionTitle({
     super.key,
@@ -15,10 +15,14 @@ class SectionTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: 8,
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
+          /// Title
           Text(
             title,
             style: const TextStyle(
@@ -26,6 +30,8 @@ class SectionTitle extends StatelessWidget {
               fontWeight: FontWeight.bold,
             ),
           ),
+
+          /// Action (clickable)
           GestureDetector(
             onTap: onTap ?? () {},
             child: Text(
@@ -33,6 +39,7 @@ class SectionTitle extends StatelessWidget {
               style: const TextStyle(
                 color: Colors.blue,
                 fontWeight: FontWeight.w600,
+                fontSize: 14,
               ),
             ),
           ),

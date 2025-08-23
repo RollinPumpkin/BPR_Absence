@@ -17,7 +17,10 @@ class StatCard extends StatelessWidget {
     return Expanded(
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 6),
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+        padding: const EdgeInsets.symmetric(
+          vertical: 16,
+          horizontal: 12,
+        ),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
@@ -31,7 +34,9 @@ class StatCard extends StatelessWidget {
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
+            /// Title
             Text(
               title,
               style: const TextStyle(
@@ -40,7 +45,10 @@ class StatCard extends StatelessWidget {
                 fontWeight: FontWeight.w500,
               ),
             ),
+
             const SizedBox(height: 6),
+
+            /// Value
             Text(
               value,
               style: TextStyle(
