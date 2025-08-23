@@ -3,17 +3,17 @@ import 'package:frontend/core/widgets/custom_bottom_nav.dart';
 import 'package:frontend/modules/admin/dashboard/dashboard_page.dart';
 import 'package:frontend/modules/admin/attandance/attandace_page.dart';
 import 'package:frontend/modules/admin/assigment/assigment_page.dart';
-import 'package:frontend/modules/admin/letter/letter_page.dart';
+import 'package:frontend/modules/admin/profile/profile_page.dart';
 
-class ProfilePage extends StatelessWidget {
-  const ProfilePage({super.key});
+class LetterPage extends StatelessWidget {
+  const LetterPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: const Center(child: Text("Profile Page")),
+      body: const Center(child: Text("Letter Page")),
       bottomNavigationBar: CustomBottomNav(
-        currentIndex: 4,
+        currentIndex: 3,
         icons: const [
           Icons.home,
           Icons.calendar_today,
