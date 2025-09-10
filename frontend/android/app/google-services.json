@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "885462764670",
+    "project_id": "bpr-absens",
+    "storage_bucket": "bpr-absens.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:885462764670:android:85ca9610f8ee31a4cb5c2f",
+        "android_client_info": {
+          "package_name": "BPR.Absens"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDVVNuLnEnHhJcBBOspa4usflMgpOv_FDU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
