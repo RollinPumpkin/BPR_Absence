@@ -3,6 +3,11 @@ import 'package:frontend/modules/admin/assigment/assigment_page.dart';
 import 'package:frontend/modules/admin/attandance/attandace_page.dart';
 import 'package:frontend/modules/admin/letter/letter_page.dart';
 import 'package:frontend/modules/admin/profile/profile_page.dart';
+import 'package:frontend/modules/user/dashboard/dashboard_page.dart';
+import 'package:frontend/modules/user/attendance/attendance_page.dart';
+import 'package:frontend/modules/user/assignment/assignment_page.dart';
+import 'package:frontend/modules/user/letter/letter_page.dart';
+import 'package:frontend/modules/user/profile/profile_page.dart';
 import 'modules/splash_page.dart';
 import 'modules/auth/login_page.dart';
 import 'modules/admin/dashboard/dashboard_page.dart';
@@ -38,11 +43,11 @@ class MyApp extends StatelessWidget {
         '/admin/profile': (_) => const ProfilePage(),
 
         // User
-        // '/user/dashboard': (_) => const UserDashboardPage(),
-        // '/user/attendance': (_) => const UserAttendancePage(),
-        // '/user/assigment': (_) => const UserAssigmentPage(),
-        // '/user/letter': (_) => const UserLetterPage(),
-        // '/user/profile': (_) => const UserProfilePage(),
+        '/user/dashboard': (_) => const UserDashboardPage(),
+        '/user/attendance': (_) => const UserAttendancePage(),
+        '/user/assignment': (_) => const UserAssignmentPage(),
+        '/user/letter': (_) => const UserLetterPage(),
+        '/user/profile': (_) => const UserProfilePage(),
       },
     );
   }

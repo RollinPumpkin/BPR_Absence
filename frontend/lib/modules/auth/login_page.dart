@@ -1,6 +1,8 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:frontend/core/constants/colors.dart';
+import 'package:dio/dio.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -14,6 +16,7 @@ class _LoginPageState extends State<LoginPage>
   final _formKey = GlobalKey<FormState>();
   bool _rememberMe = false;
   bool _obscurePassword = true;
+  bool _isLoading = false;
 
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -21,6 +24,8 @@ class _LoginPageState extends State<LoginPage>
   late AnimationController _animController;
   late Animation<double> _fadeAnim;
   late Animation<Offset> _slideAnim;
+
+  final Dio _dio = Dio();
 
   @override
   void initState() {
@@ -56,6 +61,104 @@ class _LoginPageState extends State<LoginPage>
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _login() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // For demo purposes, let's simulate different user types based on email
+      final email = _emailController.text.toLowerCase();
+      final password = _passwordController.text;
+
+      // Simulate API call delay
+      await Future.delayed(const Duration(seconds: 1));
+
+      // Demo logic: route based on email
+      if (email.contains('admin')) {
+        // Save user data
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('user_role', 'admin');
+        await prefs.setString('user_email', email);
+        await prefs.setBool('is_logged_in', true);
+
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, '/admin/dashboard');
+        }
+      } else {
+        // Save user data
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('user_role', 'employee');
+        await prefs.setString('user_email', email);
+        await prefs.setBool('is_logged_in', true);
+
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, '/user/dashboard');
+        }
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Login successful!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+
+      /* 
+      // TODO: Replace with actual API call when backend is connected
+      final response = await _dio.post(
+        'http://localhost:3000/api/auth/login',
+        data: {
+          'email': email,
+          'password': password,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.data['data'];
+        final user = data['user'];
+        final token = data['token'];
+
+        // Save user data and token
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('token', token);
+        await prefs.setString('user_role', user['role']);
+        await prefs.setString('user_email', user['email']);
+        await prefs.setBool('is_logged_in', true);
+
+        // Route based on user role
+        if (user['role'] == 'admin') {
+          Navigator.pushReplacementNamed(context, '/admin/dashboard');
+        } else {
+          Navigator.pushReplacementNamed(context, '/user/dashboard');
+        }
+      }
+      */
+
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Login failed: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -169,15 +272,17 @@ class _LoginPageState extends State<LoginPage>
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         textStyle: const TextStyle(fontSize: 16),
                       ),
-                      onPressed: () {
-                        if (_formKey.currentState!.validate()) {
-                          Navigator.pushReplacementNamed(
-                            context,
-                            '/admin/dashboard',
-                          );
-                        }
-                      },
-                      child: const Text("SIGN IN"),
+                      onPressed: _isLoading ? null : _login,
+                      child: _isLoading
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            )
+                          : const Text("SIGN IN"),
                     ),
                   ),
                   const SizedBox(height: 24),
