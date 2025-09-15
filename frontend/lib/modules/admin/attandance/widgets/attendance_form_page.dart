@@ -42,7 +42,7 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
             const Text("Employee Name"),
             const SizedBox(height: 5),
             DropdownButtonFormField<String>(
-              value: selectedEmployee,
+              initialValue: selectedEmployee,
               items: ["Employee 1", "Employee 2"]
                   .map((e) => DropdownMenuItem(value: e, child: Text(e)))
                   .toList(),
@@ -55,7 +55,7 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
             const Text("Choose Absent Type"),
             const SizedBox(height: 5),
             DropdownButtonFormField<String>(
-              value: absentType,
+              initialValue: absentType,
               items: [
                 "Clock In",
                 "Clock Out",
@@ -108,7 +108,7 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
             const Text("Location"),
             const SizedBox(height: 5),
             DropdownButtonFormField<String>(
-              value: location,
+              initialValue: location,
               items: ["Office", "Home", "Other"]
                   .map((e) => DropdownMenuItem(value: e, child: Text(e)))
                   .toList(),
