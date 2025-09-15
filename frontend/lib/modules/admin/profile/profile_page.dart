@@ -4,6 +4,9 @@ import 'package:frontend/modules/admin/dashboard/dashboard_page.dart';
 import 'package:frontend/modules/admin/attandance/attandace_page.dart';
 import 'package:frontend/modules/admin/assigment/assigment_page.dart';
 import 'package:frontend/modules/admin/letter/letter_page.dart';
+import 'package:frontend/modules/admin/profile/widgets/profile_header.dart';
+import 'package:frontend/modules/admin/profile/widgets/contact_info_card.dart';
+import 'package:frontend/modules/admin/profile/widgets/summary_section.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -11,7 +14,19 @@ class ProfilePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: const Center(child: Text("Profile Page")),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: const [
+            ProfileHeader(),
+            SizedBox(height: 16),
+            ContactInfoCard(),
+            SizedBox(height: 16),
+            SummarySection(),
+          ],
+        ),
+      ),
       bottomNavigationBar: CustomBottomNav(
         currentIndex: 4,
         icons: const [
