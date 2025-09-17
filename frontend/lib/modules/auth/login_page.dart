@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:frontend/core/constants/colors.dart';
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:frontend/modules/auth/forgot-pass_page.dart';
+import 'package:frontend/modules/auth/register_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -36,20 +38,12 @@ class _LoginPageState extends State<LoginPage>
       duration: const Duration(milliseconds: 800),
     );
 
-    _fadeAnim = CurvedAnimation(
-      parent: _animController,
-      curve: Curves.easeIn,
-    );
+    _fadeAnim = CurvedAnimation(parent: _animController, curve: Curves.easeIn);
 
     _slideAnim = Tween<Offset>(
       begin: const Offset(0, 0.2),
       end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _animController,
-        curve: Curves.easeOut,
-      ),
-    );
+    ).animate(CurvedAnimation(parent: _animController, curve: Curves.easeOut));
 
     // mulai animasi
     _animController.forward();
@@ -142,7 +136,6 @@ class _LoginPageState extends State<LoginPage>
         }
       }
       */
-
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -249,12 +242,7 @@ class _LoginPageState extends State<LoginPage>
                           ),
                           recognizer: TapGestureRecognizer()
                             ..onTap = () {
-                              // TODO: forgot password
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text("Forgot Password clicked"),
-                                ),
-                              );
+                              Navigator.pushNamed(context, '/forgot-password');
                             },
                         ),
                       ),
@@ -279,7 +267,9 @@ class _LoginPageState extends State<LoginPage>
                               width: 20,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
                               ),
                             )
                           : const Text("SIGN IN"),
@@ -291,10 +281,7 @@ class _LoginPageState extends State<LoginPage>
                   RichText(
                     textAlign: TextAlign.center,
                     text: TextSpan(
-                      style: const TextStyle(
-                        color: Colors.black,
-                        fontSize: 14,
-                      ),
+                      style: const TextStyle(color: Colors.black, fontSize: 14),
                       children: [
                         const TextSpan(text: "Don’t have an account? "),
                         TextSpan(
@@ -308,8 +295,9 @@ class _LoginPageState extends State<LoginPage>
                               // TODO: request akun
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content:
-                                      Text("Request from Data Team clicked"),
+                                  content: Text(
+                                    "Request from Data Team clicked",
+                                  ),
                                 ),
                               );
                             },
