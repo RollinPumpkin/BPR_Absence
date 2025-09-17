@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/core/widgets/custom_bottom_nav.dart';
+import 'package:frontend/modules/admin/employee/employee_page.dart';
 import 'package:frontend/modules/admin/attandance/attandace_page.dart';
 import 'package:frontend/modules/admin/assigment/assigment_page.dart';
 import 'package:frontend/modules/admin/letter/letter_page.dart';
@@ -33,13 +34,20 @@ class AdminDashboardPage extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: const [
+                children: [
                   MenuButton(
                     icon: Icons.people,
                     label: "Employee Data",
                     color: Colors.red,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const EmployeePage()),
+                      );
+                    },
                   ),
-                  MenuButton(
+                  const MenuButton(
                     icon: Icons.book,
                     label: "Report",
                     color: Colors.green,
@@ -50,10 +58,7 @@ class AdminDashboardPage extends StatelessWidget {
             const SizedBox(height: 20),
 
             /// Letter Section
-            const SectionTitle(
-              title: "Letter",
-              action: "View",
-            ),
+            const SectionTitle(title: "Letter", action: "View"),
             const LetterCard(
               name: "Septa Puma",
               status: "Absence",
@@ -67,10 +72,7 @@ class AdminDashboardPage extends StatelessWidget {
             const SizedBox(height: 12),
 
             /// Assignment Section
-            const SectionTitle(
-              title: "Assignment",
-              action: "View",
-            ),
+            const SectionTitle(title: "Assignment", action: "View"),
             const AssignmentCard(
               title: "Weekly Report",
               description: "Complete weekly task",
