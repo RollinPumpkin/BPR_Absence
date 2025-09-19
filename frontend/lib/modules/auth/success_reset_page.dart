@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/core/constants/colors.dart';
 
 class SuccessResetPage extends StatelessWidget {
   const SuccessResetPage({super.key});
@@ -46,7 +47,7 @@ class SuccessResetPage extends StatelessWidget {
                 height: 50,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF28A745), // hijau
+                    backgroundColor: AppColors.primaryGreen,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(6),
                     ),
@@ -56,7 +57,7 @@ class SuccessResetPage extends StatelessWidget {
                   },
                   child: const Text(
                     "Login Now",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.white),
                   ),
                 ),
               ),

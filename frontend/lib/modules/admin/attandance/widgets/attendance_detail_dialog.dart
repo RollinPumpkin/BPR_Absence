@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/core/constants/colors.dart';
 import 'attendance_form_page.dart';
 
 class AttendanceDetailDialog extends StatelessWidget {
@@ -62,7 +63,7 @@ class AttendanceDetailDialog extends StatelessWidget {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.green,
+                      color: AppColors.primaryGreen,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Text(
@@ -135,7 +136,7 @@ class AttendanceDetailDialog extends StatelessWidget {
               children: [
                 Container(
                   decoration: const BoxDecoration(
-                      shape: BoxShape.circle, color: Colors.orange),
+                      shape: BoxShape.circle, color: AppColors.primaryYellow),
                   child: IconButton(
                     icon: const Icon(Icons.edit, color: Colors.white),
                     onPressed: () {
@@ -150,7 +151,7 @@ class AttendanceDetailDialog extends StatelessWidget {
                 const SizedBox(width: 12),
                 Container(
                   decoration: const BoxDecoration(
-                      shape: BoxShape.circle, color: Colors.red),
+                      shape: BoxShape.circle, color: AppColors.primaryRed),
                   child: IconButton(
                     icon: const Icon(Icons.delete, color: Colors.white),
                     onPressed: () {
