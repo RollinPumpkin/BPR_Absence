@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/core/constants/colors.dart';
 import 'success_reset_page.dart';
 
 class ResetPasswordPage extends StatefulWidget {
@@ -107,7 +108,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                 height: 50,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFB00000), // merah tua
+                    backgroundColor: AppColors.primaryRed, 
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(6),
                     ),
@@ -122,7 +123,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                   },
                   child: const Text(
                     "Reset password",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.white),
                   ),
                 ),
               ),

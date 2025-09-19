@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/core/constants/colors.dart';
 import 'attendance_detail_dialog.dart';
 
 class AttendanceCard extends StatelessWidget {
@@ -99,7 +100,7 @@ class AttendanceCard extends StatelessWidget {
                     builder: (context) => const AttendanceDetailDialog(),
                   );
                 },
-                icon: const Icon(Icons.edit, color: Colors.orange),
+                icon: const Icon(Icons.edit, color: AppColors.primaryYellow),
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
               ),
@@ -127,14 +128,14 @@ class AttendanceCard extends StatelessWidget {
                             );
                           },
                           style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red),
+                              backgroundColor: AppColors.primaryRed),
                           child: const Text("Delete"),
                         )
                       ],
                     ),
                   );
                 },
-                icon: const Icon(Icons.delete, color: Colors.red),
+                icon: const Icon(Icons.delete, color: AppColors.primaryRed),
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
               ),

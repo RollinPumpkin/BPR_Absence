@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:frontend/core/constants/colors.dart';
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:frontend/modules/auth/forgot-pass_page.dart';
-import 'package:frontend/modules/auth/register_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -237,7 +235,7 @@ class _LoginPageState extends State<LoginPage>
                         text: TextSpan(
                           text: "Forgot Password?",
                           style: const TextStyle(
-                            color: Colors.blue,
+                            color: AppColors.primaryBlue,
                             decoration: TextDecoration.underline,
                           ),
                           recognizer: TapGestureRecognizer()
@@ -287,7 +285,7 @@ class _LoginPageState extends State<LoginPage>
                         TextSpan(
                           text: "Request from Data Team",
                           style: const TextStyle(
-                            color: Colors.blue,
+                            color: AppColors.primaryBlue,
                             decoration: TextDecoration.underline,
                           ),
                           recognizer: TapGestureRecognizer()

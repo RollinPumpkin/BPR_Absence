@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/core/constants/colors.dart';
 
 class EmailPage extends StatelessWidget {
   const EmailPage({super.key});
@@ -42,21 +43,19 @@ class EmailPage extends StatelessWidget {
                 height: 50,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.amber,
+                    backgroundColor: AppColors.primaryYellow,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
                   onPressed: () {
-                    // 👉 Bisa buka email app langsung kalau mau
-                    // Tapi untuk sekarang, balik ke login
                     Navigator.pushReplacementNamed(context, '/login');
                   },
                   child: const Text(
                     "Open Your Email",
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: Colors.black,
+                      color: AppColors.white,
                     ),
                   ),
                 ),
@@ -78,7 +77,7 @@ class EmailPage extends StatelessWidget {
                       TextSpan(
                         text: "Click here to resend!",
                         style: TextStyle(
-                          color: Colors.blue,
+                          color: AppColors.darkBlue,
                           fontWeight: FontWeight.w500,
                         ),
                       )
