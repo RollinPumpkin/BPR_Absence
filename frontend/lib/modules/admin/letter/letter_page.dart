@@ -3,6 +3,7 @@ import 'package:frontend/core/widgets/custom_bottom_nav.dart';
 import 'package:frontend/modules/admin/dashboard/dashboard_page.dart';
 import 'package:frontend/modules/admin/attandance/attandace_page.dart';
 import 'package:frontend/modules/admin/assigment/assigment_page.dart';
+import 'package:frontend/modules/admin/letter/widgets/letter_header.dart';
 import 'package:frontend/modules/admin/profile/profile_page.dart';
 import 'widgets/letter_card.dart';
 import 'pages/letter_acceptance_page.dart';
@@ -20,12 +21,9 @@ class LetterPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                "Letter Overview",
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16),
-
+              // Header
+              const LetterHeader(),
+              
               // Filter, Export, Add Data
               Row(
                 children: [

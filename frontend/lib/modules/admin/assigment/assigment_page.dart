@@ -6,6 +6,7 @@ import 'package:frontend/modules/admin/letter/letter_page.dart';
 import 'package:frontend/modules/admin/profile/profile_page.dart';
 
 // Widgets assignment
+import 'widgets/assigment_header.dart';
 import 'widgets/assignment_tab_switcher.dart';
 import 'widgets/daily_assignment_ui.dart';
 import 'widgets/weekly_assignment_ui.dart';
@@ -24,12 +25,12 @@ class _AssigmentPageState extends State<AssigmentPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Assignment")),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            AssigmentHeader(),
             // 🔹 Tab Switcher
             AssignmentTabSwitcher(
               selected: selectedTab,
@@ -62,7 +63,7 @@ class _AssigmentPageState extends State<AssigmentPage> {
         pages: [
           const AdminDashboardPage(),
           const AttandancePage(),
-          const AssigmentPage(), // ⚠️ jangan recursive import
+          const AssigmentPage(),
           const LetterPage(),
           const ProfilePage(),
         ],
