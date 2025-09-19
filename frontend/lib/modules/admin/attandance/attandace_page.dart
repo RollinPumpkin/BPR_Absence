@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/core/widgets/custom_bottom_nav.dart';
 import 'package:frontend/core/constants/colors.dart';
+import 'package:frontend/core/widgets/custoom_app_bar.dart';
+import 'package:frontend/modules/admin/attandance/widgets/attendance_header.dart';
 
 import 'package:frontend/modules/admin/dashboard/dashboard_page.dart';
 import 'package:frontend/modules/admin/assigment/assigment_page.dart';
 import 'package:frontend/modules/admin/letter/letter_page.dart';
 import 'package:frontend/modules/admin/profile/profile_page.dart';
+
+import 'widgets/attendance_header.dart';
 import 'widgets/date_row.dart';
 import 'widgets/attendance_stat.dart';
 import 'widgets/divider.dart';
@@ -19,19 +23,10 @@ class AttandancePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text(
-          "Attendance",
-          style: TextStyle(fontWeight: FontWeight.w600),
-        ),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        foregroundColor: Colors.black,
-        centerTitle: false,
-      ),
       body: SingleChildScrollView(
         child: Column(
           children: [
+            AttendanceHeader(),
             Container(
               margin: const EdgeInsets.all(16),
               padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
