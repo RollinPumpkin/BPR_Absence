@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/core/constants/colors.dart';
 
 class AddEmployeePage extends StatefulWidget {
   const AddEmployeePage({super.key});
@@ -61,7 +62,8 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
                   icon: const Icon(Icons.add, color: Colors.white),
                   label: const Text("Upload Foto"),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
+                    backgroundColor: AppColors.primaryBlue,
                   ),
                 ),
               ],
@@ -132,7 +134,7 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
                 ElevatedButton(
                   onPressed: () => Navigator.pop(context),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
+                    backgroundColor: AppColors.primaryRed,
                   ),
                   child: const Text("Cancel", style: TextStyle(color: Colors.white)),
                 ),
@@ -142,7 +144,7 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
                     // TODO: Save logic
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
+                    backgroundColor: AppColors.primaryGreen,
                   ),
                   child: const Text("Save", style: TextStyle(color: Colors.white)),
                 ),

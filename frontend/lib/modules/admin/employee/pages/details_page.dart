@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/core/constants/colors.dart';
 import 'package:frontend/modules/admin/employee/pages/edit_page.dart';
 
 class DetailsPage extends StatelessWidget {
@@ -67,7 +68,7 @@ class DetailsPage extends StatelessWidget {
                 label: "Date of Birth",
                 value: "22 / 05 / 2004",
                 icon: Icons.calendar_today,
-                iconColor: Colors.blue),
+                iconColor: AppColors.darkBlue),
             const _DetailItem(label: "Place of Birth", value: "DKI Jakarta 1"),
             const _DetailItem(label: "NIK", value: "22323233746474876382393"),
             const _DetailItem(label: "Gender", value: "Male"),
@@ -93,8 +94,8 @@ class DetailsPage extends StatelessWidget {
               children: [
                 ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.yellow[700],
-                    foregroundColor: Colors.black,
+                    backgroundColor: AppColors.primaryYellow,
+                    foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(
                         horizontal: 20, vertical: 12),
                     shape: RoundedRectangleBorder(
@@ -115,7 +116,7 @@ class DetailsPage extends StatelessWidget {
                 const SizedBox(width: 12),
                 ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
+                    backgroundColor: AppColors.primaryRed,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(
                         horizontal: 20, vertical: 12),
@@ -139,7 +140,7 @@ class DetailsPage extends StatelessWidget {
                           ),
                           ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red,
+                              backgroundColor: AppColors.primaryRed,
                               foregroundColor: Colors.white,
                             ),
                             onPressed: () {
@@ -157,20 +158,7 @@ class DetailsPage extends StatelessWidget {
             ),
           ],
         ),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: Colors.red.shade900,
-        unselectedItemColor: Colors.black,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: ""),
-          BottomNavigationBarItem(icon: Icon(Icons.calendar_month), label: ""),
-          BottomNavigationBarItem(icon: Icon(Icons.mail), label: ""),
-          BottomNavigationBarItem(icon: Icon(Icons.checklist), label: ""),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: ""),
-        ],
-      ),
-    );
+      ),    );
   }
 }
 
