@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/core/constants/colors.dart';
 
 class LetterCard extends StatelessWidget {
   final String name;
@@ -94,7 +95,7 @@ class LetterCard extends StatelessWidget {
                 const Text(
                   "Waiting Approval",
                   style: TextStyle(
-                    color: Colors.orange,
+                    color: AppColors.primaryYellow,
                     fontWeight: FontWeight.w600,
                     fontSize: 14,
                   ),
@@ -104,7 +105,7 @@ class LetterCard extends StatelessWidget {
                   child: const Text(
                     "View",
                     style: TextStyle(
-                      color: Colors.blue,
+                      color: AppColors.primaryBlue,
                       fontWeight: FontWeight.w600,
                       fontSize: 14,
                     ),

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/core/widgets/custom_bottom_nav.dart';
+import 'package:frontend/core/constants/colors.dart';
+
 import 'package:frontend/modules/admin/dashboard/dashboard_page.dart';
 import 'package:frontend/modules/admin/assigment/assigment_page.dart';
 import 'package:frontend/modules/admin/letter/letter_page.dart';
@@ -44,13 +46,29 @@ class AttandancePage extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      AttendanceStat(label: "Clock In", value: "208", color: Colors.green),
+                      AttendanceStat(
+                        label: "Clock In",
+                        value: "208",
+                        color: AppColors.primaryGreen,
+                      ),
                       VerticalDividerCustom(),
-                      AttendanceStat(label: "Late", value: "15", color: Colors.red),
+                      AttendanceStat(
+                        label: "Late",
+                        value: "15",
+                        color: AppColors.primaryRed,
+                      ),
                       VerticalDividerCustom(),
-                      AttendanceStat(label: "Sick", value: "15", color: Colors.orange),
+                      AttendanceStat(
+                        label: "Sick",
+                        value: "15",
+                        color: AppColors.primaryYellow,
+                      ),
                       VerticalDividerCustom(),
-                      AttendanceStat(label: "Annual Leave", value: "15", color: Colors.blue),
+                      AttendanceStat(
+                        label: "Annual Leave",
+                        value: "15",
+                        color: AppColors.gradientBlue,
+                      ),
                     ],
                   ),
                 ],
@@ -65,10 +83,7 @@ class AttandancePage extends StatelessWidget {
                 children: [
                   const Text(
                     "Data",
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 12),
 
@@ -86,7 +101,9 @@ class AttandancePage extends StatelessWidget {
                       Expanded(
                         child: ElevatedButton(
                           onPressed: () {},
-                          style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primaryRed,
+                          ),
                           child: const Text("Export"),
                         ),
                       ),
@@ -94,13 +111,18 @@ class AttandancePage extends StatelessWidget {
                       Expanded(
                         child: ElevatedButton(
                           onPressed: () {
-            // pindah ke halaman baru
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const AttendanceFormPage()),
-            );
-          },
-                          style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+                            // pindah ke halaman baru
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const AttendanceFormPage(),
+                              ),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primaryBlue,
+                          ),
                           child: const Text("Add Data"),
                         ),
                       ),
@@ -125,13 +147,13 @@ class AttandancePage extends StatelessWidget {
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 16),
             const AttendanceCard(
               name: "Septa Puma",
               division: "IT Divisi",
               status: "Clock In",
-              statusColor: Colors.green,
+              statusColor: AppColors.primaryGreen,
               clockIn: "07:45:56",
               clockOut: "Count",
               date: "18 Januari 2025",
@@ -140,7 +162,7 @@ class AttandancePage extends StatelessWidget {
               name: "Septa Puma",
               division: "IT Divisi",
               status: "Late",
-              statusColor: Colors.red,
+              statusColor: AppColors.primaryRed,
               clockIn: "09:45:56",
               clockOut: "-",
               date: "18 Januari 2025",

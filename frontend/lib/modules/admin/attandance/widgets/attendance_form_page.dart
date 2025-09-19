@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/core/constants/colors.dart';
 
 class AttendanceFormPage extends StatefulWidget {
   const AttendanceFormPage({super.key});
@@ -32,9 +33,7 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
             const SizedBox(height: 5),
             TextFormField(
               initialValue: "07 : 45 : 56",
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-              ),
+              decoration: const InputDecoration(border: OutlineInputBorder()),
             ),
             const SizedBox(height: 16),
 
@@ -43,9 +42,10 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
             const SizedBox(height: 5),
             DropdownButtonFormField<String>(
               initialValue: selectedEmployee,
-              items: ["Employee 1", "Employee 2"]
-                  .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                  .toList(),
+              items: [
+                "Employee 1",
+                "Employee 2",
+              ].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
               onChanged: (val) => setState(() => selectedEmployee = val),
               decoration: const InputDecoration(border: OutlineInputBorder()),
             ),
@@ -61,10 +61,8 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                 "Clock Out",
                 "Absent",
                 "Annual Leave",
-                "Sick Leave"
-              ]
-                  .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                  .toList(),
+                "Sick Leave",
+              ].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
               onChanged: (val) => setState(() => absentType = val),
               decoration: const InputDecoration(border: OutlineInputBorder()),
             ),
@@ -99,8 +97,13 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
             const SizedBox(height: 5),
             ElevatedButton(
               onPressed: () {},
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              child: const Text("Save Pictures"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryGreen,
+              ),
+              child: const Text(
+                "Save Pictures",
+                style: TextStyle(color: Colors.white),
+              ),
             ),
             const SizedBox(height: 16),
 
@@ -109,9 +112,11 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
             const SizedBox(height: 5),
             DropdownButtonFormField<String>(
               initialValue: location,
-              items: ["Office", "Home", "Other"]
-                  .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                  .toList(),
+              items: [
+                "Office",
+                "Home",
+                "Other",
+              ].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
               onChanged: (val) => setState(() => location = val),
               decoration: const InputDecoration(border: OutlineInputBorder()),
             ),
@@ -171,11 +176,13 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                 const SizedBox(width: 10),
                 ElevatedButton(
                   onPressed: () {},
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryGreen,
+                  ),
                   child: const Text("Save"),
                 ),
               ],
-            )
+            ),
           ],
         ),
       ),
