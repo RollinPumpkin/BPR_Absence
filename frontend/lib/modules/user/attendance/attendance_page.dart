@@ -4,10 +4,11 @@ import 'package:frontend/modules/user/dashboard/dashboard_page.dart';
 import 'package:frontend/modules/user/assignment/assignment_page.dart';
 import 'package:frontend/modules/user/letter/letter_page.dart';
 import 'package:frontend/modules/user/profile/profile_page.dart';
+import 'package:frontend/modules/user/shared/user_navigation_constants.dart';
 
-import 'widgets/clock_in_out_card.dart';
-import 'widgets/attendance_history_card.dart';
 import 'widgets/attendance_stats.dart';
+import 'widgets/attendance_chart.dart';
+import 'widgets/attendance_history_card.dart';
 
 class UserAttendancePage extends StatelessWidget {
   const UserAttendancePage({super.key});
@@ -29,16 +30,16 @@ class UserAttendancePage extends StatelessWidget {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            /// Clock In/Out Section
+            /// Attendance Statistics (moved to top)
             Padding(
               padding: EdgeInsets.all(16),
-              child: ClockInOutCard(),
+              child: AttendanceStats(),
             ),
 
-            /// Attendance Stats
+            /// Total Attendance Report Chart
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 16),
-              child: AttendanceStats(),
+              child: AttendanceChart(),
             ),
             const SizedBox(height: 20),
 
@@ -71,12 +72,30 @@ class UserAttendancePage extends StatelessWidget {
               itemCount: 5,
               separatorBuilder: (_, __) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
+                String status;
+                Color statusColor;
+                String clockIn;
+                
+                if (index == 0) {
+                  status = "Working";
+                  statusColor = Colors.green;
+                  clockIn = "08:30 AM";
+                } else if (index == 1) {
+                  status = "Late";
+                  statusColor = Colors.orange;
+                  clockIn = "08:45 AM"; // Late clock-in time
+                } else {
+                  status = "Completed";
+                  statusColor = Colors.blue;
+                  clockIn = "08:30 AM";
+                }
+                
                 return AttendanceHistoryCard(
                   date: "January ${18 - index}, 2025",
-                  clockIn: "08:30 AM",
+                  clockIn: clockIn,
                   clockOut: index == 0 ? "-" : "17:30 PM",
-                  status: index == 0 ? "Working" : "Completed",
-                  statusColor: index == 0 ? Colors.green : Colors.blue,
+                  status: status,
+                  statusColor: statusColor,
                 );
               },
             ),
@@ -86,20 +105,8 @@ class UserAttendancePage extends StatelessWidget {
       ),
       bottomNavigationBar: CustomBottomNav(
         currentIndex: 1,
-        icons: const [
-          Icons.home,
-          Icons.access_time,
-          Icons.assignment,
-          Icons.mail_outline,
-          Icons.person_outline,
-        ],
-        pages: [
-          UserDashboardPage(),
-          UserAttendancePage(),
-          UserAssignmentPage(),
-          UserLetterPage(),
-          UserProfilePage(),
-        ],
+        icons: UserNavigationConstants.icons,
+        pages: UserNavigationConstants.pages,
       ),
     );
   }

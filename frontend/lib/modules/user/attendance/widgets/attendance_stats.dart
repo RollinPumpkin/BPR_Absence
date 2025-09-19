@@ -8,9 +8,15 @@ class AttendanceStats extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -26,38 +32,31 @@ class AttendanceStats extends StatelessWidget {
           const SizedBox(height: 16),
 
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              Expanded(
-                child: _buildStatItem(
-                  "Present",
-                  "18",
-                  Colors.green,
-                  Icons.check_circle,
-                ),
+              _buildStatItem(
+                icon: Icons.check_circle,
+                iconColor: Colors.green,
+                value: "18",
+                label: "Present",
               ),
-              Expanded(
-                child: _buildStatItem(
-                  "Late",
-                  "2",
-                  Colors.orange,
-                  Icons.schedule,
-                ),
+              _buildStatItem(
+                icon: Icons.access_time,
+                iconColor: Colors.orange,
+                value: "2",
+                label: "Late",
               ),
-              Expanded(
-                child: _buildStatItem(
-                  "Absent",
-                  "1",
-                  Colors.red,
-                  Icons.cancel,
-                ),
+              _buildStatItem(
+                icon: Icons.cancel,
+                iconColor: Colors.red,
+                value: "1",
+                label: "Absent",
               ),
-              Expanded(
-                child: _buildStatItem(
-                  "Leave",
-                  "2",
-                  Colors.blue,
-                  Icons.event_available,
-                ),
+              _buildStatItem(
+                icon: Icons.event_available,
+                iconColor: Colors.blue,
+                value: "2",
+                label: "Leave",
               ),
             ],
           ),
@@ -66,28 +65,33 @@ class AttendanceStats extends StatelessWidget {
     );
   }
 
-  Widget _buildStatItem(String label, String value, Color color, IconData icon) {
+  Widget _buildStatItem({
+    required IconData icon,
+    required Color iconColor,
+    required String value,
+    required String label,
+  }) {
     return Column(
       children: [
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
+            color: iconColor.withOpacity(0.1),
             shape: BoxShape.circle,
           ),
           child: Icon(
             icon,
-            color: color,
-            size: 20,
+            color: iconColor,
+            size: 24,
           ),
         ),
         const SizedBox(height: 8),
         Text(
           value,
-          style: TextStyle(
-            fontSize: 18,
+          style: const TextStyle(
+            fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: color,
+            color: Colors.black87,
           ),
         ),
         const SizedBox(height: 4),

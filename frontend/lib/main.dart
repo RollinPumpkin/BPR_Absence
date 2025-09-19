@@ -4,9 +4,9 @@ import 'package:intl/date_symbol_data_local.dart';
 // Auth
 import 'modules/auth/login_page.dart';
 // import 'modules/auth/register_page.dart';
-import 'modules/auth/forgot-pass_page.dart';
-import 'modules/auth/email_page.dart';
-import 'modules/auth/reset_password_page.dart';
+// import 'modules/auth/forgot-pass_page.dart';
+// import 'modules/auth/email_page.dart';
+// import 'modules/auth/reset_password_page.dart';
 
 // Splash
 import 'modules/splash_page.dart';
@@ -21,6 +21,7 @@ import 'modules/admin/profile/profile_page.dart';
 // User
 import 'modules/user/dashboard/dashboard_page.dart';
 import 'modules/user/attendance/attendance_page.dart';
+import 'modules/user/attendance/user_attendance_form_page.dart';
 import 'modules/user/assignment/assignment_page.dart';
 import 'modules/user/letter/letter_page.dart';
 import 'modules/user/profile/profile_page.dart';
@@ -57,9 +58,9 @@ class MyApp extends StatelessWidget {
         '/': (_) => const SplashPage(),
         '/login': (_) => const LoginPage(),
         // '/register': (_) => const RegisterPage(),
-        '/forgot-password': (_) => const ForgotPassPage(),
-        '/forgot-password/email': (_) => const EmailPage(),
-        '/forgot-password/reset-password': (_) => const ResetPasswordPage(),
+        // '/forgot-password': (_) => const ForgotPassPage(),
+        // '/forgot-password/email': (_) => const EmailPage(),
+        // '/forgot-password/reset-password': (_) => const ResetPasswordPage(),
 
         // Admin routes
         '/admin/dashboard': (_) => const AdminDashboardPage(),
@@ -71,6 +72,7 @@ class MyApp extends StatelessWidget {
         // User routes
         '/user/dashboard': (_) => const UserDashboardPage(),
         '/user/attendance': (_) => const UserAttendancePage(),
+        '/user/attendance/form': (_) => const UserAttendanceFormPage(),
         '/user/assignment': (_) => const UserAssignmentPage(),
         '/user/letter': (_) => const UserLetterPage(),
         '/user/profile': (_) => const UserProfilePage(),

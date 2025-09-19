@@ -4,9 +4,9 @@ import 'package:frontend/modules/user/attendance/attendance_page.dart';
 import 'package:frontend/modules/user/assignment/assignment_page.dart';
 import 'package:frontend/modules/user/letter/letter_page.dart';
 import 'package:frontend/modules/user/profile/profile_page.dart';
+import 'package:frontend/modules/user/shared/user_navigation_constants.dart';
 
 import 'widgets/user_header.dart';
-import 'widgets/figma_clock_card.dart';
 import 'widgets/upcoming_tasks_widget.dart';
 import 'widgets/activity_summary_widget.dart';
 
@@ -23,13 +23,8 @@ class UserDashboardPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            /// Header
+            /// Header with integrated clock card
             const UserHeader(),
-            
-            const SizedBox(height: 20),
-
-            /// Clock In/Out Card
-            const FigmaClockCard(),
             
             const SizedBox(height: 20),
 
@@ -49,20 +44,8 @@ class UserDashboardPage extends StatelessWidget {
       /// Bottom Navigation
       bottomNavigationBar: CustomBottomNav(
         currentIndex: 0,
-        icons: const [
-          Icons.home,
-          Icons.calendar_today,
-          Icons.check_box,
-          Icons.access_time,
-          Icons.person_outline,
-        ],
-        pages: [
-          UserDashboardPage(),
-          UserAttendancePage(),
-          UserAssignmentPage(),
-          UserLetterPage(),
-          UserProfilePage(),
-        ],
+        icons: UserNavigationConstants.icons,
+        pages: UserNavigationConstants.pages,
       ),
     );
   }
