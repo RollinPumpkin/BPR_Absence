@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/core/constants/colors.dart';
 
 class EditPage extends StatelessWidget {
   const EditPage({super.key});
@@ -35,8 +36,11 @@ class EditPage extends StatelessWidget {
                       color: const Color(0xFF1A355E),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(Icons.person,
-                        size: 50, color: Colors.white),
+                    child: const Icon(
+                      Icons.person,
+                      size: 50,
+                      color: Colors.white,
+                    ),
                   ),
                   Positioned(
                     bottom: 4,
@@ -125,8 +129,10 @@ class EditPage extends StatelessWidget {
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 14,
+                ),
               ),
             ),
             const SizedBox(height: 16),
@@ -150,9 +156,10 @@ class EditPage extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                                ElevatedButton(
+                ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                    backgroundColor: AppColors.primaryRed,
                   ),
                   onPressed: () {
                     Navigator.pop(context);
@@ -161,7 +168,8 @@ class EditPage extends StatelessWidget {
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                    backgroundColor: AppColors.primaryGreen,
                   ),
                   onPressed: () {
                     // save action
@@ -187,7 +195,10 @@ class _InputLabel extends StatelessWidget {
     return Text(
       text,
       style: const TextStyle(
-          fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black),
+        fontSize: 14,
+        fontWeight: FontWeight.bold,
+        color: Colors.black,
+      ),
     );
   }
 }
@@ -201,11 +212,11 @@ class _TextField extends StatelessWidget {
     return TextField(
       decoration: InputDecoration(
         hintText: hint,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 14,
         ),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
       ),
     );
   }
@@ -221,11 +232,11 @@ class _DropdownField extends StatelessWidget {
   Widget build(BuildContext context) {
     return DropdownButtonFormField<String>(
       decoration: InputDecoration(
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 14,
         ),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
       ),
       hint: Text(hint),
       items: items

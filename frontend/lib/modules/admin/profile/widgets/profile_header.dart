@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/settings_page.dart';
+import 'package:frontend/core/constants/colors.dart';
 
 class ProfileHeader extends StatelessWidget {
   const ProfileHeader({super.key});
@@ -34,7 +35,7 @@ class ProfileHeader extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.red.shade900,
+            color: AppColors.primaryRed,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/modules/admin/employee/employee_page.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 // Auth
@@ -14,6 +15,7 @@ import 'modules/splash_page.dart';
 
 // Admin
 import 'modules/admin/dashboard/dashboard_page.dart';
+import 'modules/admin/employee/employee_page.dart';
 import 'modules/admin/attandance/attandace_page.dart';
 import 'modules/admin/assigment/assigment_page.dart';
 import 'modules/admin/letter/letter_page.dart';
@@ -58,6 +60,7 @@ class MyApp extends StatelessWidget {
 
         // Admin routes
         '/admin/dashboard': (_) => const AdminDashboardPage(),
+        '/admin/employees': (_) => const EmployeePage(),
         '/admin/attendance': (_) => const AttandancePage(),
         '/admin/assigment': (_) => const AssigmentPage(),
         '/admin/letter': (_) => const LetterPage(),

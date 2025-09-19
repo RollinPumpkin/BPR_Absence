@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../widgets/custom_app_bar.dart';
 import '../widgets/info_card.dart';
+import 'package:frontend/core/constants/colors.dart';
 
 class HelpSupportPage extends StatelessWidget {
   const HelpSupportPage({super.key});
@@ -15,25 +16,25 @@ class HelpSupportPage extends StatelessWidget {
             title: "Email",
             subtitle: "Admin.bpr@jsdifsn",
             description: "Kontak via email untuk bantuan",
-            borderColor: Colors.red,
+            borderColor: AppColors.primaryRed,
           ),
           InfoCard(
             title: "Phone",
             subtitle: "+62 aiorY4r8r9",
             description: "Hubungi nomor ini untuk dukungan",
-            borderColor: Colors.orange,
+            borderColor: AppColors.primaryYellow,
           ),
           InfoCard(
             title: "Timezone",
             subtitle: "Indonesia, GMT+7",
             description: "Zona waktu kerja",
-            borderColor: Colors.green,
+            borderColor: AppColors.primaryGreen,
           ),
           InfoCard(
             title: "Location",
             subtitle: "Malang, EastJava",
             description: "Alamat kantor",
-            borderColor: Colors.blue,
+            borderColor: AppColors.primaryBlue,
           ),
         ],
       ),

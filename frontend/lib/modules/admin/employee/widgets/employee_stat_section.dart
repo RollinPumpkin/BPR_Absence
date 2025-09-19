@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/core/constants/colors.dart';
 
 class EmployeeStatSection extends StatelessWidget {
   const EmployeeStatSection({super.key});
@@ -9,7 +10,7 @@ class EmployeeStatSection extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        color: const Color(0xFFF7F8FA), // mirip abu-abu soft di desain
+        color: AppColors.lightGray,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -137,7 +138,7 @@ class StatBox extends StatelessWidget {
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 20,
-                  color: Color(0xFF2C2C2C),
+                  color: AppColors.darkGray,
                 ),
               ),
             ],

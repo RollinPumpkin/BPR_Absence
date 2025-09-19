@@ -3,6 +3,7 @@ import 'widgets/employee_stat_section.dart';
 import 'widgets/employee_action_buttons.dart';
 import 'widgets/employee_search.dart';
 import 'widgets/employee_card.dart';
+import 'package:frontend/core/widgets/custoom_app_bar.dart';
 
 class EmployeePage extends StatelessWidget {
   const EmployeePage({super.key});
@@ -10,28 +11,18 @@ class EmployeePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Employee Database"),
-        centerTitle: true,
-      ),
+      appBar: const CustomAppBar(),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            /// Statistik Section
             const EmployeeStatSection(),
             const SizedBox(height: 16),
-
-            /// Action Buttons (Filter, Import, Export, Add New)
             const EmployeeActionButtons(),
             const SizedBox(height: 12),
-
-            /// Search
             const EmployeeSearch(),
             const SizedBox(height: 16),
-
-            /// Employee Cards
             Column(
               children: List.generate(
                 2,

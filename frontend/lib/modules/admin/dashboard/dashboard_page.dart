@@ -44,12 +44,10 @@ class AdminDashboardPage extends StatelessWidget {
                     label: "Employee Data",
                     color: AppColors.primaryRed,
                     onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const EmployeePage()),
-                      );
+                      Navigator.pushNamed(context, '/admin/employees');
                     },
                   ),
+
                   const MenuButton(
                     icon: Icons.book,
                     label: "Report",
