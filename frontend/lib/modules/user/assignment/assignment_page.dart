@@ -4,6 +4,7 @@ import 'package:frontend/modules/user/dashboard/dashboard_page.dart';
 import 'package:frontend/modules/user/attendance/attendance_page.dart';
 import 'package:frontend/modules/user/letter/letter_page.dart';
 import 'package:frontend/modules/user/profile/profile_page.dart';
+import 'package:frontend/modules/user/shared/user_navigation_constants.dart';
 
 import 'widgets/assignment_card.dart';
 import 'widgets/assignment_filter.dart';
@@ -73,20 +74,8 @@ class _UserAssignmentPageState extends State<UserAssignmentPage> {
       ),
       bottomNavigationBar: CustomBottomNav(
         currentIndex: 2,
-        icons: const [
-          Icons.home,
-          Icons.access_time,
-          Icons.assignment,
-          Icons.mail_outline,
-          Icons.person_outline,
-        ],
-        pages: [
-          UserDashboardPage(),
-          UserAttendancePage(),
-          UserAssignmentPage(),
-          UserLetterPage(),
-          UserProfilePage(),
-        ],
+        icons: UserNavigationConstants.icons,
+        pages: UserNavigationConstants.pages,
       ),
     );
   }

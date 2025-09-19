@@ -4,6 +4,7 @@ import 'package:frontend/modules/user/dashboard/dashboard_page.dart';
 import 'package:frontend/modules/user/attendance/attendance_page.dart';
 import 'package:frontend/modules/user/assignment/assignment_page.dart';
 import 'package:frontend/modules/user/profile/profile_page.dart';
+import 'package:frontend/modules/user/shared/user_navigation_constants.dart';
 
 import 'widgets/letter_type_card.dart';
 import 'widgets/my_letter_card.dart';
@@ -135,20 +136,8 @@ class _UserLetterPageState extends State<UserLetterPage>
       ),
       bottomNavigationBar: CustomBottomNav(
         currentIndex: 3,
-        icons: const [
-          Icons.home,
-          Icons.access_time,
-          Icons.assignment,
-          Icons.mail_outline,
-          Icons.person_outline,
-        ],
-        pages: [
-          UserDashboardPage(),
-          UserAttendancePage(),
-          UserAssignmentPage(),
-          UserLetterPage(),
-          UserProfilePage(),
-        ],
+        icons: UserNavigationConstants.icons,
+        pages: UserNavigationConstants.pages,
       ),
     );
   }

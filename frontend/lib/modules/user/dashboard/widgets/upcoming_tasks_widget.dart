@@ -6,82 +6,74 @@ class UpcomingTasksWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 2,
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          /// Header with red background
+          // Red Header
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: const BoxDecoration(
-              color: Color(0xFFE53E3E),
+              color: Colors.red,
               borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(16),
-                topRight: Radius.circular(16),
+                topLeft: Radius.circular(12),
+                topRight: Radius.circular(12),
               ),
             ),
             child: const Text(
-              "Upcoming Tasks",
+              'Upcoming Tasks',
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 18,
+                fontSize: 16,
                 fontWeight: FontWeight.w600,
               ),
             ),
           ),
-
-          /// Task List
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              children: [
-                _buildTaskItem("Team Meeting at 14:00"),
-                _buildDivider(),
-                _buildTaskItem("Team Meeting at 14:00"),
-                _buildDivider(),
-                _buildTaskItem("Team Meeting at 14:00"),
-                _buildDivider(),
-                _buildTaskItem("Team Meeting at 14:00"),
-              ],
-            ),
+          
+          // Task List
+          Column(
+            children: [
+              _buildTaskItem('Team Meeting at 14:00'),
+              _buildTaskItem('Team Meeting at 14:00'),
+              _buildTaskItem('Team Meeting at 14:00'),
+              _buildTaskItem('Team Meeting at 14:00'),
+            ],
           ),
         ],
       ),
     );
   }
-
-  Widget _buildTaskItem(String taskTitle) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+  
+  Widget _buildTaskItem(String taskText) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: Colors.grey.shade200,
+            width: 1,
+          ),
+        ),
+      ),
       child: Text(
-        taskTitle,
+        taskText,
         style: const TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w400,
+          fontSize: 14,
           color: Colors.black87,
         ),
       ),
-    );
-  }
-
-  Widget _buildDivider() {
-    return Container(
-      height: 1,
-      color: Colors.grey.shade200,
-      margin: const EdgeInsets.symmetric(vertical: 4),
     );
   }
 }
