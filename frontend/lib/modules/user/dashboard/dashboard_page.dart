@@ -6,10 +6,9 @@ import 'package:frontend/modules/user/letter/letter_page.dart';
 import 'package:frontend/modules/user/profile/profile_page.dart';
 
 import 'widgets/user_header.dart';
-import 'widgets/quick_action_button.dart';
-import 'widgets/section_title.dart';
-import 'widgets/recent_activity_card.dart';
-import 'widgets/attendance_summary_card.dart';
+import 'widgets/figma_clock_card.dart';
+import 'widgets/upcoming_tasks_widget.dart';
+import 'widgets/activity_summary_widget.dart';
 
 class UserDashboardPage extends StatelessWidget {
   const UserDashboardPage({super.key});
@@ -17,7 +16,7 @@ class UserDashboardPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF5F5F5),
 
       /// Body
       body: SingleChildScrollView(
@@ -26,86 +25,23 @@ class UserDashboardPage extends StatelessWidget {
           children: [
             /// Header
             const UserHeader(),
+            
             const SizedBox(height: 20),
 
-            /// Quick Actions
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: const [
-                  QuickActionButton(
-                    icon: Icons.access_time,
-                    label: "Clock In/Out",
-                    color: Colors.green,
-                  ),
-                  QuickActionButton(
-                    icon: Icons.assignment,
-                    label: "My Tasks",
-                    color: Colors.blue,
-                  ),
-                  QuickActionButton(
-                    icon: Icons.mail_outline,
-                    label: "Submit Letter",
-                    color: Colors.orange,
-                  ),
-                ],
-              ),
-            ),
+            /// Clock In/Out Card
+            const FigmaClockCard(),
+            
             const SizedBox(height: 20),
 
-            /// Today's Attendance Summary
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: AttendanceSummaryCard(),
-            ),
+            /// Upcoming Tasks
+            const UpcomingTasksWidget(),
+            
             const SizedBox(height: 20),
 
-            /// Recent Activities Section
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: SectionTitle(
-                title: "Recent Activities",
-                action: "View All",
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: RecentActivityCard(
-                title: "Checked In",
-                description: "Successfully checked in at office",
-                time: "08:30 AM",
-                icon: Icons.login,
-                iconColor: Colors.green,
-              ),
-            ),
-            const SizedBox(height: 8),
-
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: RecentActivityCard(
-                title: "Task Completed",
-                description: "Weekly Report submitted",
-                time: "Yesterday",
-                icon: Icons.check_circle,
-                iconColor: Colors.blue,
-              ),
-            ),
-            const SizedBox(height: 8),
-
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: RecentActivityCard(
-                title: "Leave Request",
-                description: "Annual leave request approved",
-                time: "2 days ago",
-                icon: Icons.event_available,
-                iconColor: Colors.orange,
-              ),
-            ),
-            const SizedBox(height: 16),
+            /// Activity Summary
+            const ActivitySummaryWidget(),
+            
+            const SizedBox(height: 20),
           ],
         ),
       ),
@@ -115,9 +51,9 @@ class UserDashboardPage extends StatelessWidget {
         currentIndex: 0,
         icons: const [
           Icons.home,
+          Icons.calendar_today,
+          Icons.check_box,
           Icons.access_time,
-          Icons.assignment,
-          Icons.mail_outline,
           Icons.person_outline,
         ],
         pages: [
