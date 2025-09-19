@@ -7,6 +7,7 @@ import 'modules/auth/login_page.dart';
 import 'modules/auth/forgot-pass_page.dart';
 import 'modules/auth/email_page.dart';
 import 'modules/auth/reset_password_page.dart';
+import 'modules/auth/expired-link_page.dart';
 
 // Splash
 import 'modules/splash_page.dart';
@@ -52,6 +53,7 @@ class MyApp extends StatelessWidget {
         // '/register': (_) => const RegisterPage(),
         '/forgot-password': (_) => const ForgotPassPage(),
         '/forgot-password/email': (_) => const EmailPage(),
+        '/forgot-password/email/Expired-link': (_) => const LinkExpiredPage(),
         '/forgot-password/reset-password': (_) => const ResetPasswordPage(),
 
         // Admin routes
