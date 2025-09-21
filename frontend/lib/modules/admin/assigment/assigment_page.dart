@@ -8,9 +8,9 @@ import 'package:frontend/modules/admin/profile/profile_page.dart';
 // Widgets assignment
 import 'widgets/assigment_header.dart';
 import 'widgets/assignment_tab_switcher.dart';
-import 'widgets/daily_assignment_ui.dart';
-import 'widgets/weekly_assignment_ui.dart';
-import 'widgets/monthly_assignment_ui.dart';
+import 'widgets/daily/daily_assignment_ui.dart';
+import 'widgets/weekly/weekly_assignment_ui.dart';
+import 'widgets/monthly/monthly_assignment_ui.dart';
 
 class AssigmentPage extends StatefulWidget {
   const AssigmentPage({super.key});
