@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/core/constants/colors.dart';
-import 'attendance_form_page.dart';
+import '../pages/attendance_edit_page.dart';
 
 class AttendanceDetailDialog extends StatelessWidget {
   const AttendanceDetailDialog({super.key});
@@ -27,7 +27,7 @@ class AttendanceDetailDialog extends StatelessWidget {
                 IconButton(
                   icon: const Icon(Icons.close),
                   onPressed: () => Navigator.pop(context),
-                )
+                ),
               ],
             ),
 
@@ -42,26 +42,31 @@ class AttendanceDetailDialog extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  const CircleAvatar(
-                    radius: 24,
-                    child: Icon(Icons.person),
-                  ),
+                  const CircleAvatar(radius: 24, child: Icon(Icons.person)),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text("Septa Puma Surya",
-                            style: TextStyle(
-                                fontWeight: FontWeight.bold, fontSize: 16)),
-                        const Text("Jabatan",
-                            style: TextStyle(color: Colors.black54)),
+                        const Text(
+                          "Septa Puma Surya",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const Text(
+                          "Jabatan",
+                          style: TextStyle(color: Colors.black54),
+                        ),
                       ],
                     ),
                   ),
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.primaryGreen,
                       borderRadius: BorderRadius.circular(8),
@@ -70,7 +75,7 @@ class AttendanceDetailDialog extends StatelessWidget {
                       "Check In",
                       style: TextStyle(color: Colors.white, fontSize: 12),
                     ),
-                  )
+                  ),
                 ],
               ),
             ),
@@ -98,8 +103,12 @@ class AttendanceDetailDialog extends StatelessWidget {
               "Location Information",
               Column(
                 children: [
-                  _infoRow("Location", "Office", "Detail Address",
-                      "Jl. Soekarno Hatta No. 8, Jatimulyo, Lowokwaru, Kota Malang"),
+                  _infoRow(
+                    "Location",
+                    "Office",
+                    "Detail Address",
+                    "Jl. Soekarno Hatta No. 8, Jatimulyo, Lowokwaru, Kota Malang",
+                  ),
                   const SizedBox(height: 8),
                   _infoRow("Lat", "-2241720016", "Long", "2241720119"),
                 ],
@@ -136,14 +145,32 @@ class AttendanceDetailDialog extends StatelessWidget {
               children: [
                 Container(
                   decoration: const BoxDecoration(
-                      shape: BoxShape.circle, color: AppColors.primaryYellow),
+                    shape: BoxShape.circle,
+                    color: AppColors.primaryYellow,
+                  ),
                   child: IconButton(
-                    icon: const Icon(Icons.edit, color: Colors.white),
+                    icon: const Icon(Icons.edit, color: Colors.black),
                     onPressed: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (context) => const AttendanceFormPage()),
+                          builder: (context) => AttendanceEditPage(
+                            employeeName: "Septa Puma Surya",
+                            position: "Jabatan",
+                            attendanceType: "Check In",
+                            date: "1 March 2025",
+                            checkIn: "09:00",
+                            checkOut: "-",
+                            status: "Present",
+                            workHours: "8 Hours",
+                            location: "Office",
+                            detailAddress:
+                                "Jl. Soekarno Hatta No. 8, Jatimulyo, Lowokwaru, Kota Malang",
+                            lat: "-2241720016",
+                            long: "2241720119",
+                            proofFile: "Wa003198373738.jpg",
+                          ),
+                        ),
                       );
                     },
                   ),
@@ -151,9 +178,11 @@ class AttendanceDetailDialog extends StatelessWidget {
                 const SizedBox(width: 12),
                 Container(
                   decoration: const BoxDecoration(
-                      shape: BoxShape.circle, color: AppColors.primaryRed),
+                    shape: BoxShape.circle,
+                    color: AppColors.primaryRed,
+                  ),
                   child: IconButton(
-                    icon: const Icon(Icons.delete, color: Colors.white),
+                    icon: const Icon(Icons.delete, color: Colors.black),
                     onPressed: () {
                       Navigator.pop(context);
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -163,7 +192,7 @@ class AttendanceDetailDialog extends StatelessWidget {
                   ),
                 ),
               ],
-            )
+            ),
           ],
         ),
       ),
@@ -182,9 +211,10 @@ class AttendanceDetailDialog extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title,
-              style:
-                  const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+          Text(
+            title,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+          ),
           const Divider(),
           child,
         ],
@@ -199,25 +229,29 @@ class AttendanceDetailDialog extends StatelessWidget {
       children: [
         Expanded(
           child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label1,
-                    style: const TextStyle(
-                        fontSize: 12, color: Colors.black54)),
-                const SizedBox(height: 2),
-                Text(value1, style: const TextStyle(fontSize: 13)),
-              ]),
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label1,
+                style: const TextStyle(fontSize: 12, color: Colors.black54),
+              ),
+              const SizedBox(height: 2),
+              Text(value1, style: const TextStyle(fontSize: 13)),
+            ],
+          ),
         ),
         Expanded(
           child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label2,
-                    style: const TextStyle(
-                        fontSize: 12, color: Colors.black54)),
-                const SizedBox(height: 2),
-                Text(value2, style: const TextStyle(fontSize: 13)),
-              ]),
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label2,
+                style: const TextStyle(fontSize: 12, color: Colors.black54),
+              ),
+              const SizedBox(height: 2),
+              Text(value2, style: const TextStyle(fontSize: 13)),
+            ],
+          ),
         ),
       ],
     );

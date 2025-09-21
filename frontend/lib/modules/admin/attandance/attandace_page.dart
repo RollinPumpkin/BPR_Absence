@@ -14,7 +14,7 @@ import 'widgets/date_row.dart';
 import 'widgets/attendance_stat.dart';
 import 'widgets/divider.dart';
 import 'widgets/attendance_card.dart';
-import 'widgets/attendance_form_page.dart';
+import 'pages/attendance_form_page.dart';
 
 class AttandancePage extends StatelessWidget {
   const AttandancePage({super.key});
@@ -89,6 +89,10 @@ class AttandancePage extends StatelessWidget {
                         child: OutlinedButton.icon(
                           onPressed: () {},
                           icon: const Icon(Icons.filter_list, size: 18),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.black,
+                            side: const BorderSide(color: Colors.black),
+                          ),
                           label: const Text("Filter"),
                         ),
                       ),
@@ -97,6 +101,7 @@ class AttandancePage extends StatelessWidget {
                         child: ElevatedButton(
                           onPressed: () {},
                           style: ElevatedButton.styleFrom(
+                            foregroundColor: Colors.white,
                             backgroundColor: AppColors.primaryRed,
                           ),
                           child: const Text("Export"),
@@ -116,6 +121,7 @@ class AttandancePage extends StatelessWidget {
                             );
                           },
                           style: ElevatedButton.styleFrom(
+                            foregroundColor: Colors.white,
                             backgroundColor: AppColors.primaryBlue,
                           ),
                           child: const Text("Add Data"),
