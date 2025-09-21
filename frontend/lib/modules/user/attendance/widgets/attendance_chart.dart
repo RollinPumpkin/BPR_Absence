@@ -26,7 +26,7 @@ class AttendanceChart extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                'Total Attendance Report',
+                'Daily Attendance Report',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -42,156 +42,181 @@ class AttendanceChart extends StatelessWidget {
           
           const SizedBox(height: 20),
           
+          /// Legend
+          _buildLegend(),
+          
+          const SizedBox(height: 16),
+          
           /// Chart Area
           Container(
-            height: 120,
+            height: 150,
             width: double.infinity,
             child: CustomPaint(
-              painter: AttendanceChartPainter(),
+              painter: MultiLineAttendanceChartPainter(),
             ),
           ),
           
           const SizedBox(height: 10),
           
-          /// Y-axis labels (simplified)
+          /// X-axis labels (Days)
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                '60',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey.shade500,
-                ),
-              ),
-              Text(
-                '70',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey.shade500,
-                ),
-              ),
-              Text(
-                '80',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey.shade500,
-                ),
-              ),
-              Text(
-                '90',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey.shade500,
-                ),
-              ),
-              Text(
-                '100',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey.shade500,
-                ),
-              ),
+              _buildDayLabel('Mon'),
+              _buildDayLabel('Tue'),
+              _buildDayLabel('Wed'),
+              _buildDayLabel('Thu'),
+              _buildDayLabel('Fri'),
+              _buildDayLabel('Sat'),
+              _buildDayLabel('Sun'),
             ],
           ),
         ],
       ),
     );
   }
+
+  Widget _buildLegend() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      children: [
+        _buildLegendItem('Present', Colors.green.shade600),
+        _buildLegendItem('Late', Colors.orange.shade600),
+        _buildLegendItem('Absent', Colors.red.shade600),
+        _buildLegendItem('Leave', Colors.blue.shade600),
+      ],
+    );
+  }
+
+  Widget _buildLegendItem(String label, Color color) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 12,
+          height: 3,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 10,
+            color: Colors.grey.shade600,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDayLabel(String day) {
+    return Text(
+      day,
+      style: TextStyle(
+        fontSize: 12,
+        color: Colors.grey.shade500,
+        fontWeight: FontWeight.w500,
+      ),
+    );
+  }
 }
 
-class AttendanceChartPainter extends CustomPainter {
+class MultiLineAttendanceChartPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    // Define modern gradient colors
-    final gradientColors = [
-      const Color(0xFF6366F1), // Indigo
-      const Color(0xFF8B5CF6), // Purple
-      const Color(0xFFA855F7), // Purple
-    ];
+    // Define colors for each attendance type
+    final presentColor = Colors.green.shade600;
+    final lateColor = Colors.orange.shade600;
+    final absentColor = Colors.red.shade600;
+    final leaveColor = Colors.blue.shade600;
 
-    // Sample data points for the smooth curve
-    final points = [
-      Offset(0, size.height * 0.7),
-      Offset(size.width * 0.15, size.height * 0.5),
-      Offset(size.width * 0.3, size.height * 0.8),
-      Offset(size.width * 0.45, size.height * 0.3),
-      Offset(size.width * 0.6, size.height * 0.4),
-      Offset(size.width * 0.75, size.height * 0.15),
-      Offset(size.width * 0.9, size.height * 0.2),
-      Offset(size.width, size.height * 0.1),
-    ];
+    // Sample data for 7 days (Monday to Sunday)
+    // Values represent count of people in each category per day
+    final presentData = [25.0, 28.0, 26.0, 29.0, 27.0, 15.0, 8.0]; // Higher on weekdays
+    final lateData = [3.0, 2.0, 4.0, 1.0, 3.0, 1.0, 0.0]; // Occasional lateness
+    final absentData = [2.0, 0.0, 1.0, 0.0, 0.0, 2.0, 1.0]; // Minimal absences
+    final leaveData = [0.0, 1.0, 0.0, 1.0, 2.0, 12.0, 21.0]; // More leave on weekends
 
-    // Create smooth curved path using quadratic Bezier curves
-    final path = Path();
-    path.moveTo(points[0].dx, points[0].dy);
+    // Calculate max value for scaling
+    final maxValue = 30.0; // Max expected attendance count
+
+    // Calculate positions for 7 days
+    final dayWidth = size.width / 6; // 6 intervals for 7 points
     
-    for (int i = 0; i < points.length - 1; i++) {
-      final current = points[i];
-      final next = points[i + 1];
-      final controlPoint = Offset(
-        current.dx + (next.dx - current.dx) * 0.5,
-        current.dy,
-      );
-      path.quadraticBezierTo(controlPoint.dx, controlPoint.dy, next.dx, next.dy);
+    // Draw each line
+    _drawAttendanceLine(canvas, size, presentData, presentColor, dayWidth, maxValue, 'Present');
+    _drawAttendanceLine(canvas, size, lateData, lateColor, dayWidth, maxValue, 'Late');
+    _drawAttendanceLine(canvas, size, absentData, absentColor, dayWidth, maxValue, 'Absent');
+    _drawAttendanceLine(canvas, size, leaveData, leaveColor, dayWidth, maxValue, 'Leave');
+  }
+
+  void _drawAttendanceLine(Canvas canvas, Size size, List<double> data, Color color, 
+                          double dayWidth, double maxValue, String type) {
+    final points = <Offset>[];
+    
+    // Calculate points
+    for (int i = 0; i < data.length; i++) {
+      final x = i * dayWidth;
+      final y = size.height - (data[i] / maxValue * size.height);
+      points.add(Offset(x, y));
     }
 
-    // Create gradient fill area
-    final fillPath = Path.from(path);
-    fillPath.lineTo(size.width, size.height);
-    fillPath.lineTo(0, size.height);
-    fillPath.close();
+    // Create smooth path
+    final path = Path();
+    if (points.isNotEmpty) {
+      path.moveTo(points[0].dx, points[0].dy);
+      
+      for (int i = 1; i < points.length; i++) {
+        final previous = points[i - 1];
+        final current = points[i];
+        final controlPoint1 = Offset(
+          previous.dx + (current.dx - previous.dx) * 0.3,
+          previous.dy,
+        );
+        final controlPoint2 = Offset(
+          current.dx - (current.dx - previous.dx) * 0.3,
+          current.dy,
+        );
+        path.cubicTo(
+          controlPoint1.dx, controlPoint1.dy,
+          controlPoint2.dx, controlPoint2.dy,
+          current.dx, current.dy,
+        );
+      }
+    }
 
-    // Fill gradient
-    final fillPaint = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [
-          gradientColors[0].withOpacity(0.3),
-          gradientColors[1].withOpacity(0.1),
-          gradientColors[2].withOpacity(0.05),
-        ],
-      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
-
-    canvas.drawPath(fillPath, fillPaint);
-
-    // Draw the main line with gradient
+    // Draw the line
     final linePaint = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.centerLeft,
-        end: Alignment.centerRight,
-        colors: gradientColors,
-      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
-      ..strokeWidth = 3
+      ..color = color
+      ..strokeWidth = 2.5
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
 
     canvas.drawPath(path, linePaint);
 
-    // Draw modern dots on the line
+    // Draw points
     for (int i = 0; i < points.length; i++) {
       final point = points[i];
       
-      // Outer glow
+      // Outer circle (glow effect)
       final glowPaint = Paint()
-        ..color = gradientColors[i % gradientColors.length].withOpacity(0.3)
+        ..color = color.withOpacity(0.3)
         ..style = PaintingStyle.fill;
-      canvas.drawCircle(point, 8, glowPaint);
+      canvas.drawCircle(point, 6, glowPaint);
       
-      // Main dot with gradient
+      // Main dot
       final dotPaint = Paint()
-        ..shader = RadialGradient(
-          colors: [
-            gradientColors[i % gradientColors.length],
-            gradientColors[i % gradientColors.length].withOpacity(0.8),
-          ],
-        ).createShader(Rect.fromCircle(center: point, radius: 5));
-      canvas.drawCircle(point, 5, dotPaint);
+        ..color = color
+        ..style = PaintingStyle.fill;
+      canvas.drawCircle(point, 3, dotPaint);
       
-      // White center highlight
-      canvas.drawCircle(point, 2, Paint()..color = Colors.white.withOpacity(0.9));
+      // White center
+      canvas.drawCircle(point, 1.5, Paint()..color = Colors.white);
     }
   }
 
