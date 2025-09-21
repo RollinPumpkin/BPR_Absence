@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/core/widgets/custom_bottom_nav.dart';
 import 'package:frontend/core/constants/colors.dart';
+import 'package:frontend/core/widgets/custoom_app_bar.dart';
+import 'package:frontend/modules/admin/attandance/widgets/attendance_header.dart';
 
 import 'package:frontend/modules/admin/dashboard/dashboard_page.dart';
 import 'package:frontend/modules/admin/assigment/assigment_page.dart';
 import 'package:frontend/modules/admin/letter/letter_page.dart';
 import 'package:frontend/modules/admin/profile/profile_page.dart';
+
+import 'widgets/attendance_header.dart';
 import 'widgets/date_row.dart';
 import 'widgets/attendance_stat.dart';
 import 'widgets/divider.dart';
 import 'widgets/attendance_card.dart';
-import 'widgets/attendance_form_page.dart';
+import 'pages/attendance_form_page.dart';
 
 class AttandancePage extends StatelessWidget {
   const AttandancePage({super.key});
@@ -19,19 +23,10 @@ class AttandancePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text(
-          "Attendance",
-          style: TextStyle(fontWeight: FontWeight.w600),
-        ),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        foregroundColor: Colors.black,
-        centerTitle: false,
-      ),
       body: SingleChildScrollView(
         child: Column(
           children: [
+            AttendanceHeader(),
             Container(
               margin: const EdgeInsets.all(16),
               padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
@@ -94,6 +89,10 @@ class AttandancePage extends StatelessWidget {
                         child: OutlinedButton.icon(
                           onPressed: () {},
                           icon: const Icon(Icons.filter_list, size: 18),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.black,
+                            side: const BorderSide(color: Colors.black),
+                          ),
                           label: const Text("Filter"),
                         ),
                       ),
@@ -102,6 +101,7 @@ class AttandancePage extends StatelessWidget {
                         child: ElevatedButton(
                           onPressed: () {},
                           style: ElevatedButton.styleFrom(
+                            foregroundColor: Colors.white,
                             backgroundColor: AppColors.primaryRed,
                           ),
                           child: const Text("Export"),
@@ -121,6 +121,7 @@ class AttandancePage extends StatelessWidget {
                             );
                           },
                           style: ElevatedButton.styleFrom(
+                            foregroundColor: Colors.white,
                             backgroundColor: AppColors.primaryBlue,
                           ),
                           child: const Text("Add Data"),
