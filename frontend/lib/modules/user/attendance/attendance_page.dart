@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/core/widgets/custom_bottom_nav.dart';
-import 'package:frontend/modules/user/dashboard/dashboard_page.dart';
-import 'package:frontend/modules/user/assignment/assignment_page.dart';
-import 'package:frontend/modules/user/letter/letter_page.dart';
-import 'package:frontend/modules/user/profile/profile_page.dart';
 import 'package:frontend/modules/user/shared/user_navigation_constants.dart';
 
 import 'widgets/attendance_stats.dart';
 import 'widgets/attendance_chart.dart';
 import 'widgets/attendance_history_card.dart';
+import 'widgets/attendance_detail_dialog.dart';
+import 'attendance_history_page.dart';
 
 class UserAttendancePage extends StatelessWidget {
   const UserAttendancePage({super.key});
@@ -30,15 +28,15 @@ class UserAttendancePage extends StatelessWidget {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            /// Attendance Statistics (moved to top)
+            /// Attendance Statistics
             Padding(
-              padding: EdgeInsets.all(16),
+              padding: const EdgeInsets.all(16),
               child: AttendanceStats(),
             ),
 
-            /// Total Attendance Report Chart
+            /// Total Attendance Report Chart - THE GRAPHIC YOU WANT
             Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: AttendanceChart(),
             ),
             const SizedBox(height: 20),
@@ -57,7 +55,14 @@ class UserAttendancePage extends StatelessWidget {
                     ),
                   ),
                   TextButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AttendanceHistoryPage(),
+                        ),
+                      );
+                    },
                     child: const Text("View All"),
                   ),
                 ],
@@ -83,7 +88,7 @@ class UserAttendancePage extends StatelessWidget {
                 } else if (index == 1) {
                   status = "Late";
                   statusColor = Colors.orange;
-                  clockIn = "08:45 AM"; // Late clock-in time
+                  clockIn = "08:45 AM";
                 } else {
                   status = "Completed";
                   statusColor = Colors.blue;
@@ -96,6 +101,22 @@ class UserAttendancePage extends StatelessWidget {
                   clockOut: index == 0 ? "-" : "17:30 PM",
                   status: status,
                   statusColor: statusColor,
+                  onTap: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => AttendanceDetailDialog(
+                        date: "January ${18 - index}, 2025",
+                        status: status,
+                        checkIn: clockIn,
+                        checkOut: index == 0 ? "-" : "17:30 PM",
+                        workHours: index == 0 ? "-" : "8h 30m",
+                        location: "Main Office",
+                        address: "123 Business District, City Center",
+                        lat: "40.7128",
+                        long: "-74.0060",
+                      ),
+                    );
+                  },
                 );
               },
             ),
