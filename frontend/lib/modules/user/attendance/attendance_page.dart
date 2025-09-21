@@ -14,70 +14,65 @@ class UserAttendancePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text(
-          "My Attendance",
-          style: TextStyle(fontWeight: FontWeight.w600),
-        ),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        foregroundColor: Colors.black,
-        centerTitle: false,
-      ),
-      body: SingleChildScrollView(
+      backgroundColor: Colors.grey.shade50,
+      body: SafeArea(
         child: Column(
           children: [
-            /// Attendance Statistics
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: AttendanceStats(),
-            ),
-
-            /// Total Attendance Report Chart - THE GRAPHIC YOU WANT
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: AttendanceChart(),
-            ),
-            const SizedBox(height: 20),
-
-            /// History Section
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    "Recent History",
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
+            _buildHeader(),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    /// Attendance Statistics
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: AttendanceStats(),
                     ),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AttendanceHistoryPage(),
-                        ),
-                      );
-                    },
-                    child: const Text("View All"),
-                  ),
-                ],
-              ),
-            ),
 
-            /// History List
-            ListView.separated(
-              physics: const NeverScrollableScrollPhysics(),
-              shrinkWrap: true,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: 5,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (context, index) {
-                String status;
+                    /// Total Attendance Report Chart - THE GRAPHIC YOU WANT
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: AttendanceChart(),
+                    ),
+                    const SizedBox(height: 20),
+
+                    /// History Section
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            "Recent History",
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const AttendanceHistoryPage(),
+                                ),
+                              );
+                            },
+                            child: const Text("View All"),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    /// History List
+                    ListView.separated(
+                      physics: const NeverScrollableScrollPhysics(),
+                      shrinkWrap: true,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      itemCount: 5,
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        String status;
                 Color statusColor;
                 String clockIn;
                 
@@ -121,6 +116,10 @@ class UserAttendancePage extends StatelessWidget {
               },
             ),
             const SizedBox(height: 16),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -128,6 +127,39 @@ class UserAttendancePage extends StatelessWidget {
         currentIndex: 1,
         icons: UserNavigationConstants.icons,
         pages: UserNavigationConstants.pages,
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(20),
+          bottomRight: Radius.circular(20),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          const Text(
+            "My Attendance",
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+        ],
       ),
     );
   }

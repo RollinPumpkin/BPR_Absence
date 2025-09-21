@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../dashboard/dashboard_page.dart';
 import '../attendance/attendance_page.dart';
 import '../assignment/assignment_page.dart';
-import '../letter/letter_page.dart';
+import '../letters/letters_page.dart';
 import '../profile/profile_page.dart';
 
 class UserNavigationConstants {
@@ -10,7 +10,7 @@ class UserNavigationConstants {
     Icons.home,
     Icons.calendar_today,
     Icons.check_box,
-    Icons.access_time,
+    Icons.description,
     Icons.person_outline,
   ];
 
@@ -18,7 +18,7 @@ class UserNavigationConstants {
     UserDashboardPage(),
     UserAttendancePage(),
     UserAssignmentPage(),
-    UserLetterPage(),
+    UserLettersPage(),
     UserProfilePage(),
   ];
 }
