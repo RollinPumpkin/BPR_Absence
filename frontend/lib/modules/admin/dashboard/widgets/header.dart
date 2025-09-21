@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'stat_card.dart';
+import 'package:frontend/core/constants/colors.dart';
 
 class DashboardHeader extends StatelessWidget {
   const DashboardHeader({super.key});
@@ -12,7 +13,7 @@ class DashboardHeader extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          colors: [Color(0xFF3A7BD5), Color(0xFF00D2FF)],
+          colors: [AppColors.gradientBlue, AppColors.gradientLightBlue],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -60,7 +61,7 @@ class DashboardHeader extends StatelessWidget {
                 children: const [
                   CircleAvatar(
                     backgroundColor: Colors.white,
-                    child: Icon(Icons.notifications, color: Colors.blue),
+                    child: Icon(Icons.notifications, color: AppColors.accentBlue),
                   ),
                   SizedBox(width: 10),
                   CircleAvatar(
@@ -91,13 +92,13 @@ class DashboardHeader extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: const [
-              Expanded(child: StatCard(title: "Total", value: "160", color: Colors.blue)),
+              Expanded(child: StatCard(title: "Total", value: "160", color: AppColors.primaryBlue)),
               SizedBox(width: 10),
-              Expanded(child: StatCard(title: "Active", value: "150", color: Colors.green)),
+              Expanded(child: StatCard(title: "Active", value: "150", color: AppColors.primaryYellow)),
               SizedBox(width: 10),
-              Expanded(child: StatCard(title: "New", value: "15", color: Colors.lightGreen)),
+              Expanded(child: StatCard(title: "New", value: "15", color: AppColors.primaryGreen)),
               SizedBox(width: 10),
-              Expanded(child: StatCard(title: "Resign", value: "10", color: Colors.red)),
+              Expanded(child: StatCard(title: "Resign", value: "10", color: AppColors.primaryRed)),
             ],
           ),
         ],

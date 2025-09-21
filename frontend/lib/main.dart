@@ -1,24 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/modules/admin/employee/employee_page.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 // Auth
 import 'modules/auth/login_page.dart';
 // import 'modules/auth/register_page.dart';
-// import 'modules/auth/forgot-pass_page.dart';
-// import 'modules/auth/email_page.dart';
-// import 'modules/auth/reset_password_page.dart';
+import 'modules/auth/forgot-pass_page.dart';
+import 'modules/auth/email_page.dart';
+import 'modules/auth/reset_password_page.dart';
+import 'modules/auth/expired-link_page.dart';
 
 // Splash
 import 'modules/splash_page.dart';
 
 // Admin
 import 'modules/admin/dashboard/dashboard_page.dart';
+import 'modules/admin/employee/employee_page.dart';
 import 'modules/admin/attandance/attandace_page.dart';
 import 'modules/admin/assigment/assigment_page.dart';
 import 'modules/admin/letter/letter_page.dart';
 import 'modules/admin/profile/profile_page.dart';
 
-// User
 import 'modules/user/dashboard/dashboard_page.dart';
 import 'modules/user/attendance/attendance_page.dart';
 import 'modules/user/attendance/user_attendance_form_page.dart';
@@ -58,12 +60,14 @@ class MyApp extends StatelessWidget {
         '/': (_) => const SplashPage(),
         '/login': (_) => const LoginPage(),
         // '/register': (_) => const RegisterPage(),
-        // '/forgot-password': (_) => const ForgotPassPage(),
-        // '/forgot-password/email': (_) => const EmailPage(),
-        // '/forgot-password/reset-password': (_) => const ResetPasswordPage(),
+        '/forgot-password': (_) => const ForgotPassPage(),
+        '/forgot-password/email': (_) => const EmailPage(),
+        '/forgot-password/email/Expired-link': (_) => const LinkExpiredPage(),
+        '/forgot-password/reset-password': (_) => const ResetPasswordPage(),
 
         // Admin routes
         '/admin/dashboard': (_) => const AdminDashboardPage(),
+        '/admin/employees': (_) => const EmployeePage(),
         '/admin/attendance': (_) => const AttandancePage(),
         '/admin/assigment': (_) => const AssigmentPage(),
         '/admin/letter': (_) => const LetterPage(),

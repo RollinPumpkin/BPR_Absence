@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/core/constants/colors.dart';
 
 class InfoCard extends StatelessWidget {
   final String title;
@@ -11,7 +12,7 @@ class InfoCard extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.description,
-    this.borderColor = Colors.red,
+    this.borderColor = AppColors.primaryRed,
   });
 
   @override
