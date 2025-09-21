@@ -3,11 +3,15 @@ import 'package:frontend/core/widgets/custom_bottom_nav.dart';
 import 'package:frontend/modules/admin/dashboard/dashboard_page.dart';
 import 'package:frontend/modules/admin/attandance/attandace_page.dart';
 import 'package:frontend/modules/admin/assigment/assigment_page.dart';
-import 'package:frontend/modules/admin/letter/widgets/letter_header.dart';
 import 'package:frontend/modules/admin/profile/profile_page.dart';
+import 'package:frontend/core/constants/colors.dart';
+
 import 'widgets/letter_card.dart';
-import 'pages/letter_acceptance_page.dart';
+import 'widgets/letter_header.dart';
+import 'widgets/add_letter_type_popup.dart';
+import 'widgets/view_letter_type_popup.dart';
 import 'pages/add_letter_page.dart';
+import 'pages/letter_acceptance_page.dart';
 
 class LetterPage extends StatelessWidget {
   const LetterPage({super.key});
@@ -21,58 +25,106 @@ class LetterPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header
               const LetterHeader(),
-              
-              // Filter, Export, Add Data
-              Row(
-                children: [
-                  ElevatedButton.icon(
-                    onPressed: () {},
-                    icon: const Icon(Icons.filter_list, size: 16),
-                    label: const Text("Filter"),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: Colors.black,
-                      side: const BorderSide(color: Colors.grey),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 10,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  ElevatedButton(
-                    onPressed: () {},
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 10,
-                      ),
-                    ),
-                    child: const Text("Export"),
-                  ),
-                  const SizedBox(width: 8),
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const AddLetterPage(),
+
+              // Filter, Export, Add Data, Add/View Letter Type
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: () {},
+                      icon: const Icon(Icons.filter_list, size: 16),
+                      label: const Text("Filter"),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: Colors.black,
+                        side: const BorderSide(color: Colors.grey),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
                         ),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 10,
                       ),
                     ),
-                    child: const Text("Add Data"),
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    ElevatedButton(
+                      onPressed: () {},
+                      style: ElevatedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        backgroundColor: AppColors.primaryRed,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 10,
+                        ),
+                      ),
+                      child: const Text("Export"),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const AddLetterPage(),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        backgroundColor: AppColors.primaryBlue,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 10,
+                        ),
+                      ),
+                      child: const Text("Add Data"),
+                    ),
+                    const SizedBox(width: 8),
+
+                    // Add Letter Type → popup form
+                    ElevatedButton(
+                      onPressed: () {
+                        showDialog(
+                          context: context,
+                          builder: (context) {
+                            return const AddLetterTypePopup();
+                          },
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        backgroundColor: AppColors.primaryGreen,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 10,
+                        ),
+                      ),
+                      child: const Text("Add Letter Type"),
+                    ),
+                    const SizedBox(width: 8),
+
+                    // View Letter Type → popup view
+                    ElevatedButton(
+                      onPressed: () {
+                        showDialog(
+                          context: context,
+                          builder: (context) {
+                            return const ViewLetterTypePopup();
+                          },
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        backgroundColor: AppColors.primaryYellow,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 10,
+                        ),
+                      ),
+                      child: const Text("View Letter Type"),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 16),
 
@@ -92,15 +144,15 @@ class LetterPage extends StatelessWidget {
               ),
               const SizedBox(height: 16),
 
-              // Letter list (klik -> detail)
+              // Letter list
               LetterCard(
                 name: "Septa Puma",
                 date: "27 Agustus 2024",
                 type: "Doctor's Note",
                 status: "Waiting Approval",
-                statusColor: Colors.orange,
+                statusColor: AppColors.primaryYellow,
                 absence: "Absence",
-                absenceColor: Colors.orange,
+                absenceColor: AppColors.primaryYellow,
                 onTap: () {
                   Navigator.push(
                     context,
@@ -115,9 +167,9 @@ class LetterPage extends StatelessWidget {
                 date: "27 Agustus 2024",
                 type: "Doctor's Note",
                 status: "Rejected",
-                statusColor: Colors.red,
+                statusColor: AppColors.primaryRed,
                 absence: "Absence",
-                absenceColor: Colors.red,
+                absenceColor: AppColors.primaryRed,
                 onTap: () {
                   Navigator.push(
                     context,
