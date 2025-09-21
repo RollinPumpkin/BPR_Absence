@@ -21,16 +21,23 @@ import 'modules/admin/assigment/assigment_page.dart';
 import 'modules/admin/letter/letter_page.dart';
 import 'modules/admin/profile/profile_page.dart';
 
-// User
 import 'modules/user/dashboard/dashboard_page.dart';
 import 'modules/user/attendance/attendance_page.dart';
+import 'modules/user/attendance/user_attendance_form_page.dart';
 import 'modules/user/assignment/assignment_page.dart';
 import 'modules/user/letter/letter_page.dart';
 import 'modules/user/profile/profile_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await initializeDateFormatting('id_ID', null);
+  
+  // Initialize date formatting with error handling
+  try {
+    await initializeDateFormatting('id_ID', null);
+  } catch (e) {
+    print('Date formatting initialization failed: $e');
+    // Continue anyway, app can work without Indonesian locale
+  }
 
   runApp(const MyApp());
 }
@@ -69,6 +76,7 @@ class MyApp extends StatelessWidget {
         // User routes
         '/user/dashboard': (_) => const UserDashboardPage(),
         '/user/attendance': (_) => const UserAttendancePage(),
+        '/user/attendance/form': (_) => const UserAttendanceFormPage(),
         '/user/assignment': (_) => const UserAssignmentPage(),
         '/user/letter': (_) => const UserLetterPage(),
         '/user/profile': (_) => const UserProfilePage(),

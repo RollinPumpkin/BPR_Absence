@@ -6,6 +6,7 @@ class AttendanceHistoryCard extends StatelessWidget {
   final String clockOut;
   final String status;
   final Color statusColor;
+  final VoidCallback? onTap;
 
   const AttendanceHistoryCard({
     super.key,
@@ -14,74 +15,77 @@ class AttendanceHistoryCard extends StatelessWidget {
     required this.clockOut,
     required this.status,
     required this.statusColor,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                date,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  status,
-                  style: TextStyle(
-                    fontSize: 12,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade200),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              spreadRadius: 1,
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  date,
+                  style: const TextStyle(
+                    fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: statusColor,
+                    color: Colors.black87,
                   ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          
-          Row(
-            children: [
-              Expanded(
-                child: _buildTimeItem("Clock In", clockIn, Icons.login, Colors.green),
-              ),
-              Container(
-                width: 1,
-                height: 30,
-                color: Colors.grey.shade300,
-                margin: const EdgeInsets.symmetric(horizontal: 16),
-              ),
-              Expanded(
-                child: _buildTimeItem("Clock Out", clockOut, Icons.logout, Colors.red),
-              ),
-            ],
-          ),
-        ],
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: statusColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    status,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: statusColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildTimeItem("Clock In", clockIn, Icons.login, Colors.green),
+                ),
+                Container(
+                  width: 1,
+                  height: 30,
+                  color: Colors.grey.shade300,
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                ),
+                Expanded(
+                  child: _buildTimeItem("Clock Out", clockOut, Icons.logout, Colors.red),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
