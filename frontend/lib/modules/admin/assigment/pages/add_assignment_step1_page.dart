@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/core/constants/colors.dart';
 import 'add_assignment_step2_page.dart';
 import 'stepper_widgets.dart';
 
@@ -18,7 +19,6 @@ class _AddAssignmentStep1PageState extends State<AddAssignmentStep1Page> {
   DateTime? endDate;
   TimeOfDay? time;
 
-  // kategori checkbox
   final List<String> categories = [
     "Tutup buku",
     "Rapat",
@@ -33,13 +33,18 @@ class _AddAssignmentStep1PageState extends State<AddAssignmentStep1Page> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Add Assignment")),
+      appBar: AppBar(
+        title: const Text("Add Assignment"),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        foregroundColor: Colors.black,
+      ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 🔹 Stepper indicator pakai widget baru
+            // 🔹 Stepper Indicator
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: const [
@@ -50,11 +55,13 @@ class _AddAssignmentStep1PageState extends State<AddAssignmentStep1Page> {
                 StepCircle(number: "3", isActive: false),
               ],
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 28),
 
             // 🔹 Nama Kegiatan
-            const Text("Nama Kegiatan",
-                style: TextStyle(fontWeight: FontWeight.w500)),
+            const Text(
+              "Nama Kegiatan",
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+            ),
             const SizedBox(height: 6),
             TextField(
               controller: nameController,
@@ -64,14 +71,18 @@ class _AddAssignmentStep1PageState extends State<AddAssignmentStep1Page> {
               ),
             ),
 
-            const SizedBox(height: 16),
-            // 🔹 kategori checkbox
+            const SizedBox(height: 18),
+
+            // 🔹 Kategori
             Wrap(
               spacing: 8,
+              runSpacing: 8,
               children: categories.map((cat) {
                 return FilterChip(
                   label: Text(cat),
                   selected: selectedCategories.contains(cat),
+                  selectedColor: AppColors.primaryGreen.withOpacity(0.15),
+                  checkmarkColor: AppColors.primaryGreen,
                   onSelected: (val) {
                     setState(() {
                       if (val) {
@@ -85,9 +96,13 @@ class _AddAssignmentStep1PageState extends State<AddAssignmentStep1Page> {
               }).toList(),
             ),
 
-            const SizedBox(height: 16),
-            const Text("Description *",
-                style: TextStyle(fontWeight: FontWeight.w500)),
+            const SizedBox(height: 20),
+
+            // 🔹 Deskripsi
+            const Text(
+              "Description *",
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+            ),
             const SizedBox(height: 6),
             TextField(
               controller: descController,
@@ -98,7 +113,8 @@ class _AddAssignmentStep1PageState extends State<AddAssignmentStep1Page> {
               ),
             ),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
+
             // 🔹 Start Date & End Date
             Row(
               children: [
@@ -106,11 +122,11 @@ class _AddAssignmentStep1PageState extends State<AddAssignmentStep1Page> {
                   child: TextField(
                     decoration: InputDecoration(
                       border: const OutlineInputBorder(),
+                      labelText: "Start Date",
                       hintText: startDate == null
                           ? "dd/mm/yy"
                           : "${startDate!.day}/${startDate!.month}/${startDate!.year}",
-                      labelText: "Start Date",
-                      suffixIcon: const Icon(Icons.calendar_today),
+                      suffixIcon: const Icon(Icons.calendar_today, size: 20),
                     ),
                     readOnly: true,
                     onTap: () async {
@@ -131,11 +147,11 @@ class _AddAssignmentStep1PageState extends State<AddAssignmentStep1Page> {
                   child: TextField(
                     decoration: InputDecoration(
                       border: const OutlineInputBorder(),
+                      labelText: "End Date",
                       hintText: endDate == null
                           ? "dd/mm/yy"
                           : "${endDate!.day}/${endDate!.month}/${endDate!.year}",
-                      labelText: "End Date",
-                      suffixIcon: const Icon(Icons.calendar_today),
+                      suffixIcon: const Icon(Icons.calendar_today, size: 20),
                     ),
                     readOnly: true,
                     onTap: () async {
@@ -154,7 +170,8 @@ class _AddAssignmentStep1PageState extends State<AddAssignmentStep1Page> {
               ],
             ),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
+
             // 🔹 Jam
             TextField(
               decoration: InputDecoration(
@@ -163,7 +180,7 @@ class _AddAssignmentStep1PageState extends State<AddAssignmentStep1Page> {
                 hintText: time == null
                     ? "00 : 00"
                     : "${time!.hour.toString().padLeft(2, '0')} : ${time!.minute.toString().padLeft(2, '0')}",
-                suffixIcon: const Icon(Icons.access_time),
+                suffixIcon: const Icon(Icons.access_time, size: 20),
               ),
               readOnly: true,
               onTap: () async {
@@ -177,28 +194,31 @@ class _AddAssignmentStep1PageState extends State<AddAssignmentStep1Page> {
               },
             ),
             const SizedBox(height: 6),
-            const Text(
-              "pss.. ini cuman muncul ketika terekor centang hari yang sama diaktifkan ya",
-              style: TextStyle(fontSize: 11, color: Colors.black54),
-            ),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
+
             // 🔹 Link Optional
             TextField(
               controller: linkController,
               decoration: const InputDecoration(
                 border: OutlineInputBorder(),
-                hintText: "Evidence",
                 labelText: "Link (Optional)",
+                hintText: "Evidence",
               ),
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 28),
+
             // 🔹 Tombol
             Row(
               children: [
                 Expanded(
                   child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.black87,
+                      side: const BorderSide(color: Colors.black26),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
                     onPressed: () => Navigator.pop(context),
                     child: const Text("Cancel"),
                   ),
@@ -207,7 +227,9 @@ class _AddAssignmentStep1PageState extends State<AddAssignmentStep1Page> {
                 Expanded(
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
+                      backgroundColor: AppColors.primaryGreen,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
                     onPressed: () {
                       Navigator.push(
