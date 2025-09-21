@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/core/constants/colors.dart';
 
 class AssignmentTabSwitcher extends StatelessWidget {
   final String selected;
@@ -22,14 +23,14 @@ class AssignmentTabSwitcher extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             decoration: BoxDecoration(
-              color: isActive ? Colors.blue : Colors.white,
+              color: isActive ? AppColors.primaryBlue : Colors.white,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.blue),
+              border: Border.all(color: AppColors.primaryBlue),
             ),
             child: Text(
               tab,
               style: TextStyle(
-                color: isActive ? Colors.white : Colors.blue,
+                color: isActive ? Colors.white : AppColors.primaryBlue,
                 fontWeight: FontWeight.bold,
               ),
             ),

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/core/widgets/custom_bottom_nav.dart';
+import 'package:frontend/core/constants/colors.dart';
+
+import 'package:frontend/modules/admin/employee/employee_page.dart';
 import 'package:frontend/modules/admin/attandance/attandace_page.dart';
 import 'package:frontend/modules/admin/assigment/assigment_page.dart';
 import 'package:frontend/modules/admin/letter/letter_page.dart';
@@ -10,6 +13,8 @@ import 'widgets/menu_button.dart';
 import 'widgets/section_title.dart';
 import 'widgets/letter_card.dart';
 import 'widgets/assignment_card.dart';
+import 'widgets/attendance_card.dart';
+import 'widgets/attendance_chart.dart';
 
 class AdminDashboardPage extends StatelessWidget {
   const AdminDashboardPage({super.key});
@@ -33,16 +38,20 @@ class AdminDashboardPage extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: const [
+                children: [
                   MenuButton(
                     icon: Icons.people,
                     label: "Employee Data",
-                    color: Colors.red,
+                    color: AppColors.primaryRed,
+                    onTap: () {
+                      Navigator.pushNamed(context, '/admin/employees');
+                    },
                   ),
-                  MenuButton(
+
+                  const MenuButton(
                     icon: Icons.book,
                     label: "Report",
-                    color: Colors.green,
+                    color: AppColors.primaryGreen,
                   ),
                 ],
               ),
@@ -50,32 +59,41 @@ class AdminDashboardPage extends StatelessWidget {
             const SizedBox(height: 20),
 
             /// Letter Section
-            const SectionTitle(
-              title: "Letter",
-              action: "View",
+            const SectionTitle(title: "Letter", action: "View"),
+            const LetterCard(
+              name: "Septa Puma",
+              status: "Absence",
+              statusColor: AppColors.primaryYellow,
             ),
             const LetterCard(
               name: "Septa Puma",
               status: "Absence",
-              statusColor: Colors.orange,
-            ),
-            const LetterCard(
-              name: "Septa Puma",
-              status: "Absence",
-              statusColor: Colors.red,
+              statusColor: AppColors.primaryRed,
             ),
             const SizedBox(height: 12),
 
             /// Assignment Section
-            const SectionTitle(
-              title: "Assignment",
-              action: "View",
+            const SectionTitle(title: "Assignment", action: "View"),
+            AssignmentCard(
+              name: "Septa Puma",
+              status: "Assigned",
+              date: "27 Agustus 2024",
+              note: "Doctor’s Note",
+              description:
+                  "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
             ),
-            const AssignmentCard(
-              title: "Weekly Report",
-              description: "Complete weekly task",
+            const SizedBox(height: 12),
+            AssignmentCard(
+              name: "Septa Puma",
+              status: "Assigned",
+              date: "27 Agustus 2024",
+              note: "Doctor’s Note",
+              description:
+                  "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
             ),
-            const SizedBox(height: 16),
+
+            /// Attendance Section
+            const AttendanceCard(title: "Attendance", chart: AttendanceChart()),
           ],
         ),
       ),

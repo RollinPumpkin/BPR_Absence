@@ -36,20 +36,12 @@ class _LoginPageState extends State<LoginPage>
       duration: const Duration(milliseconds: 800),
     );
 
-    _fadeAnim = CurvedAnimation(
-      parent: _animController,
-      curve: Curves.easeIn,
-    );
+    _fadeAnim = CurvedAnimation(parent: _animController, curve: Curves.easeIn);
 
     _slideAnim = Tween<Offset>(
       begin: const Offset(0, 0.2),
       end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _animController,
-        curve: Curves.easeOut,
-      ),
-    );
+    ).animate(CurvedAnimation(parent: _animController, curve: Curves.easeOut));
 
     // mulai animasi
     _animController.forward();
@@ -142,7 +134,6 @@ class _LoginPageState extends State<LoginPage>
         }
       }
       */
-
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -244,17 +235,12 @@ class _LoginPageState extends State<LoginPage>
                         text: TextSpan(
                           text: "Forgot Password?",
                           style: const TextStyle(
-                            color: Colors.blue,
+                            color: AppColors.primaryBlue,
                             decoration: TextDecoration.underline,
                           ),
                           recognizer: TapGestureRecognizer()
                             ..onTap = () {
-                              // TODO: forgot password
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text("Forgot Password clicked"),
-                                ),
-                              );
+                              Navigator.pushNamed(context, '/forgot-password');
                             },
                         ),
                       ),
@@ -279,7 +265,9 @@ class _LoginPageState extends State<LoginPage>
                               width: 20,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
                               ),
                             )
                           : const Text("SIGN IN"),
@@ -291,16 +279,13 @@ class _LoginPageState extends State<LoginPage>
                   RichText(
                     textAlign: TextAlign.center,
                     text: TextSpan(
-                      style: const TextStyle(
-                        color: Colors.black,
-                        fontSize: 14,
-                      ),
+                      style: const TextStyle(color: Colors.black, fontSize: 14),
                       children: [
                         const TextSpan(text: "Don’t have an account? "),
                         TextSpan(
                           text: "Request from Data Team",
                           style: const TextStyle(
-                            color: Colors.blue,
+                            color: AppColors.primaryBlue,
                             decoration: TextDecoration.underline,
                           ),
                           recognizer: TapGestureRecognizer()
@@ -308,8 +293,9 @@ class _LoginPageState extends State<LoginPage>
                               // TODO: request akun
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content:
-                                      Text("Request from Data Team clicked"),
+                                  content: Text(
+                                    "Request from Data Team clicked",
+                                  ),
                                 ),
                               );
                             },

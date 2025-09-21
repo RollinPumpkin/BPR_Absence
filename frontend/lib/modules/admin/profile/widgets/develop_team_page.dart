@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../widgets/custom_app_bar.dart';
 import '../widgets/info_card.dart';
+import 'package:frontend/core/constants/colors.dart';
 
 class DevelopTeamPage extends StatelessWidget {
   const DevelopTeamPage({super.key});
@@ -16,28 +17,28 @@ class DevelopTeamPage extends StatelessWidget {
             subtitle: "Indonesia - May 22, 2004",
             description:
                 "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
-            borderColor: Colors.red,
+            borderColor: AppColors.primaryRed,
           ),
           InfoCard(
             title: "Septa Puma Surya",
             subtitle: "Indonesia - May 22, 2004",
             description:
                 "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
-            borderColor: Colors.yellow,
+            borderColor: AppColors.primaryYellow,
           ),
           InfoCard(
             title: "Septa Puma Surya",
             subtitle: "Indonesia - May 22, 2004",
             description:
                 "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
-            borderColor: Colors.green,
+            borderColor: AppColors.primaryGreen,
           ),
           InfoCard(
             title: "Septa Puma Surya",
             subtitle: "Indonesia - May 22, 2004",
             description:
                 "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
-            borderColor: Colors.blue,
+            borderColor: AppColors.primaryBlue,
           ),
         ],
       ),
