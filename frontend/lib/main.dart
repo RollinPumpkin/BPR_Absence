@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:frontend/modules/admin/employee/employee_page.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 // Auth
@@ -25,7 +24,7 @@ import 'modules/user/dashboard/dashboard_page.dart';
 import 'modules/user/attendance/attendance_page.dart';
 import 'modules/user/attendance/user_attendance_form_page.dart';
 import 'modules/user/assignment/assignment_page.dart';
-import 'modules/user/letter/letter_page.dart';
+import 'modules/user/letters/letters_page.dart';
 import 'modules/user/profile/profile_page.dart';
 
 Future<void> main() async {
@@ -78,7 +77,7 @@ class MyApp extends StatelessWidget {
         '/user/attendance': (_) => const UserAttendancePage(),
         '/user/attendance/form': (_) => const UserAttendanceFormPage(),
         '/user/assignment': (_) => const UserAssignmentPage(),
-        '/user/letter': (_) => const UserLetterPage(),
+        '/user/letter': (_) => const UserLettersPage(),
         '/user/profile': (_) => const UserProfilePage(),
       },
     );
