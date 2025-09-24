@@ -70,8 +70,10 @@ class _UserLettersPageState extends State<UserLettersPage> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
-                      builder: (context) => const LetterFormPage(),
+                    PageRouteBuilder(
+                      pageBuilder: (context, animation, secondaryAnimation) => const LetterFormPage(),
+                      transitionDuration: Duration.zero,
+                      reverseTransitionDuration: Duration.zero,
                     ),
                   );
                 },

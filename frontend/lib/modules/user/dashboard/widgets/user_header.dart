@@ -200,8 +200,10 @@ class UserHeader extends StatelessWidget {
                               onPressed: () {
                                 Navigator.push(
                                   context,
-                                  MaterialPageRoute(
-                                    builder: (context) => const AttendanceFormPage(),
+                                  PageRouteBuilder(
+                                    pageBuilder: (context, animation, secondaryAnimation) => const AttendanceFormPage(),
+                                    transitionDuration: Duration.zero,
+                                    reverseTransitionDuration: Duration.zero,
                                   ),
                                 );
                               },
