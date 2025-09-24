@@ -3,7 +3,6 @@ import 'package:frontend/core/widgets/custom_bottom_nav.dart';
 import 'package:frontend/modules/user/shared/user_navigation_constants.dart';
 
 import 'widgets/attendance_stats.dart';
-import 'widgets/attendance_chart.dart';
 import 'widgets/attendance_history_card.dart';
 import 'widgets/attendance_detail_dialog.dart';
 import 'attendance_history_page.dart';
@@ -29,11 +28,6 @@ class UserAttendancePage extends StatelessWidget {
                       child: AttendanceStats(),
                     ),
 
-                    /// Total Attendance Report Chart - THE GRAPHIC YOU WANT
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: AttendanceChart(),
-                    ),
                     const SizedBox(height: 20),
 
                     /// History Section
@@ -53,8 +47,10 @@ class UserAttendancePage extends StatelessWidget {
                             onPressed: () {
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(
-                                  builder: (context) => const AttendanceHistoryPage(),
+                                PageRouteBuilder(
+                                  pageBuilder: (context, animation, secondaryAnimation) => const AttendanceHistoryPage(),
+                                  transitionDuration: Duration.zero,
+                                  reverseTransitionDuration: Duration.zero,
                                 ),
                               );
                             },

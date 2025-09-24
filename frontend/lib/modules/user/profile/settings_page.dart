@@ -56,8 +56,10 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
               _buildNavigationItem('Change Password', '', () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => const CheckEmailPage(),
+                  PageRouteBuilder(
+                    pageBuilder: (context, animation, secondaryAnimation) => const CheckEmailPage(),
+                    transitionDuration: Duration.zero,
+                    reverseTransitionDuration: Duration.zero,
                   ),
                 );
               }),
@@ -95,8 +97,10 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
               _buildNavigationItem('Help & Support', '', () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => const HelpDeskPage(),
+                  PageRouteBuilder(
+                    pageBuilder: (context, animation, secondaryAnimation) => const HelpDeskPage(),
+                    transitionDuration: Duration.zero,
+                    reverseTransitionDuration: Duration.zero,
                   ),
                 );
               }),

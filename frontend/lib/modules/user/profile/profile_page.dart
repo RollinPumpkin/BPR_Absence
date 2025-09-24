@@ -283,8 +283,10 @@ class _UserProfilePageState extends State<UserProfilePage> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const UserSettingsPage(),
+                PageRouteBuilder(
+                  pageBuilder: (context, animation, secondaryAnimation) => const UserSettingsPage(),
+                  transitionDuration: Duration.zero,
+                  reverseTransitionDuration: Duration.zero,
                 ),
               );
             },

@@ -455,10 +455,12 @@ class _UserAssignmentPageState extends State<UserAssignmentPage> {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (context) => AssignmentDetailPage(
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) => AssignmentDetailPage(
               assignment: assignment,
             ),
+            transitionDuration: Duration.zero,
+            reverseTransitionDuration: Duration.zero,
           ),
         );
       },
