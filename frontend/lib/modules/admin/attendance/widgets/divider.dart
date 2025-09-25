@@ -8,8 +8,8 @@ class VerticalDividerCustom extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       height: 28,
-      width: 1.2,
-      color: AppColors.black,
+      width: 1,
+      color: AppColors.dividerGray,
       margin: const EdgeInsets.symmetric(horizontal: 8),
     );
   }

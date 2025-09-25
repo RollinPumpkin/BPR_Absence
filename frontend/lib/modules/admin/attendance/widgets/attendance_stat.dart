@@ -19,14 +19,18 @@ class AttendanceStat extends StatelessWidget {
       children: [
         Text(
           label,
-          style: const TextStyle(fontSize: 12, color: AppColors.black),
+          style: const TextStyle(
+            fontSize: 12,
+            color: AppColors.neutral500,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         const SizedBox(height: 4),
         Text(
           value,
           style: TextStyle(
             fontSize: 16,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w800,
             color: color,
           ),
         ),
