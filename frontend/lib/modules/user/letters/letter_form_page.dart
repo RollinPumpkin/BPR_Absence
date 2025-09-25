@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/core/constants/colors.dart';
 
 class LetterFormPage extends StatefulWidget {
   const LetterFormPage({super.key});
@@ -45,16 +46,16 @@ class _LetterFormPageState extends State<LetterFormPage> {
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.pureWhite,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black87),
+          icon: const Icon(Icons.arrow_back, color: AppColors.black87),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
           "Letter Form",
           style: TextStyle(
-            color: Colors.black87,
+            color: AppColors.black87,
             fontSize: 18,
             fontWeight: FontWeight.w600,
           ),
@@ -95,13 +96,13 @@ class _LetterFormPageState extends State<LetterFormPage> {
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: Colors.black87,
+            color: AppColors.black87,
           ),
         ),
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.pureWhite,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: Colors.grey.shade300),
           ),
@@ -139,13 +140,13 @@ class _LetterFormPageState extends State<LetterFormPage> {
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: Colors.black87,
+            color: AppColors.black87,
           ),
         ),
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.pureWhite,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: Colors.grey.shade300),
           ),
@@ -171,13 +172,13 @@ class _LetterFormPageState extends State<LetterFormPage> {
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: Colors.black87,
+            color: AppColors.black87,
           ),
         ),
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.pureWhite,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: Colors.grey.shade300),
           ),
@@ -215,13 +216,13 @@ class _LetterFormPageState extends State<LetterFormPage> {
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: Colors.black87,
+            color: AppColors.black87,
           ),
         ),
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.pureWhite,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: Colors.grey.shade300),
           ),
@@ -258,13 +259,13 @@ class _LetterFormPageState extends State<LetterFormPage> {
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: Colors.black87,
+            color: AppColors.black87,
           ),
         ),
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.pureWhite,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: Colors.grey.shade300),
           ),
@@ -306,13 +307,13 @@ class _LetterFormPageState extends State<LetterFormPage> {
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: Colors.black87,
+            color: AppColors.black87,
           ),
         ),
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.pureWhite,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: Colors.grey.shade300),
           ),
@@ -339,7 +340,7 @@ class _LetterFormPageState extends State<LetterFormPage> {
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: Colors.black87,
+            color: AppColors.black87,
           ),
         ),
         const SizedBox(height: 8),
@@ -347,7 +348,7 @@ class _LetterFormPageState extends State<LetterFormPage> {
           height: 200,
           width: double.infinity,
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.pureWhite,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: Colors.grey.shade300, style: BorderStyle.solid),
           ),
@@ -394,7 +395,7 @@ class _LetterFormPageState extends State<LetterFormPage> {
                 child: const Text(
                   "Browse",
                   style: TextStyle(
-                    color: Colors.blue,
+                    color: AppColors.primaryBlue,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -416,7 +417,7 @@ class _LetterFormPageState extends State<LetterFormPage> {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: Colors.black54,
+              color: AppColors.black54,
             ),
           ),
         ),
@@ -456,7 +457,7 @@ class _LetterFormPageState extends State<LetterFormPage> {
               _saveLetter();
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green.shade600,
+              backgroundColor: AppColors.primaryGreen,
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
@@ -467,7 +468,7 @@ class _LetterFormPageState extends State<LetterFormPage> {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Colors.white,
+                color: AppColors.pureWhite,
               ),
             ),
           ),
@@ -482,7 +483,7 @@ class _LetterFormPageState extends State<LetterFormPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please enter a letter name'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.errorRed,
         ),
       );
       return;
@@ -492,7 +493,7 @@ class _LetterFormPageState extends State<LetterFormPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please select an employee'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.errorRed,
         ),
       );
       return;
@@ -502,7 +503,7 @@ class _LetterFormPageState extends State<LetterFormPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please select a letter type'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.errorRed,
         ),
       );
       return;
@@ -512,7 +513,7 @@ class _LetterFormPageState extends State<LetterFormPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Letter submitted successfully!'),
-        backgroundColor: Colors.green,
+        backgroundColor: AppColors.primaryGreen,
       ),
     );
     

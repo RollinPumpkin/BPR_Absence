@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/core/constants/colors.dart';
 
 class AssignmentDetailPage extends StatefulWidget {
   final Map<String, dynamic> assignment;
@@ -41,10 +42,10 @@ class _AssignmentDetailPageState extends State<AssignmentDetailPage> {
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.pureWhite,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: const Icon(Icons.arrow_back, color: AppColors.black),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
@@ -52,7 +53,7 @@ class _AssignmentDetailPageState extends State<AssignmentDetailPage> {
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
-            color: Colors.black,
+            color: AppColors.black,
           ),
         ),
       ),
@@ -67,7 +68,7 @@ class _AssignmentDetailPageState extends State<AssignmentDetailPage> {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Colors.black87,
+                color: AppColors.black,
               ),
             ),
             const SizedBox(height: 8),
@@ -76,7 +77,7 @@ class _AssignmentDetailPageState extends State<AssignmentDetailPage> {
               decoration: InputDecoration(
                 hintText: "Masukkan nama kegiatan",
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: AppColors.pureWhite,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                   borderSide: BorderSide(color: Colors.grey.shade300),
@@ -87,7 +88,7 @@ class _AssignmentDetailPageState extends State<AssignmentDetailPage> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: Colors.blue.shade400),
+                  borderSide: BorderSide(color: AppColors.primaryBlue),
                 ),
               ),
             ),
@@ -113,17 +114,17 @@ class _AssignmentDetailPageState extends State<AssignmentDetailPage> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: isSelected ? Colors.blue.shade50 : Colors.white,
+                      color: isSelected ? AppColors.primaryBlue : AppColors.pureWhite,
                       borderRadius: BorderRadius.circular(6),
                       border: Border.all(
-                        color: isSelected ? Colors.blue.shade300 : Colors.grey.shade300,
+                        color: isSelected ? AppColors.primaryBlue : Colors.grey.shade300,
                       ),
                     ),
                     child: Text(
                       category,
                       style: TextStyle(
                         fontSize: 12,
-                        color: isSelected ? Colors.blue.shade700 : Colors.grey.shade700,
+                        color: isSelected ? AppColors.primaryBlue : Colors.grey.shade700,
                         fontWeight: isSelected ? FontWeight.w500 : FontWeight.w400,
                       ),
                     ),
@@ -140,7 +141,7 @@ class _AssignmentDetailPageState extends State<AssignmentDetailPage> {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Colors.black87,
+                color: AppColors.black,
               ),
             ),
             const SizedBox(height: 8),
@@ -150,7 +151,7 @@ class _AssignmentDetailPageState extends State<AssignmentDetailPage> {
               decoration: InputDecoration(
                 hintText: "Masukkan deskripsi kegiatan",
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: AppColors.pureWhite,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                   borderSide: BorderSide(color: Colors.grey.shade300),
@@ -161,7 +162,7 @@ class _AssignmentDetailPageState extends State<AssignmentDetailPage> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: Colors.blue.shade400),
+                  borderSide: BorderSide(color: AppColors.primaryBlue),
                 ),
               ),
             ),
@@ -180,7 +181,7 @@ class _AssignmentDetailPageState extends State<AssignmentDetailPage> {
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
-                          color: Colors.black87,
+                          color: AppColors.black,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -189,7 +190,7 @@ class _AssignmentDetailPageState extends State<AssignmentDetailPage> {
                         child: Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: AppColors.pureWhite,
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(color: Colors.grey.shade300),
                           ),
@@ -201,7 +202,7 @@ class _AssignmentDetailPageState extends State<AssignmentDetailPage> {
                                 selectedStartDate,
                                 style: TextStyle(
                                   fontSize: 14,
-                                  color: Colors.black87,
+                                  color: AppColors.black87,
                                 ),
                               ),
                             ],
@@ -221,7 +222,7 @@ class _AssignmentDetailPageState extends State<AssignmentDetailPage> {
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
-                          color: Colors.black87,
+                          color: AppColors.black87,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -230,7 +231,7 @@ class _AssignmentDetailPageState extends State<AssignmentDetailPage> {
                         child: Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: AppColors.pureWhite,
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(color: Colors.grey.shade300),
                           ),
@@ -242,7 +243,7 @@ class _AssignmentDetailPageState extends State<AssignmentDetailPage> {
                                 selectedEndDate.isEmpty ? "Select date" : selectedEndDate,
                                 style: TextStyle(
                                   fontSize: 14,
-                                  color: selectedEndDate.isEmpty ? Colors.grey.shade500 : Colors.black87,
+                                  color: selectedEndDate.isEmpty ? Colors.grey.shade500 : AppColors.black87,
                                 ),
                               ),
                             ],
@@ -263,11 +264,11 @@ class _AssignmentDetailPageState extends State<AssignmentDetailPage> {
                 Checkbox(
                   value: true,
                   onChanged: (value) {},
-                  activeColor: Colors.blue,
+                  activeColor: AppColors.primaryBlue,
                 ),
                 const Text(
                   "Hari yang sama",
-                  style: TextStyle(fontSize: 14, color: Colors.black87),
+                  style: TextStyle(fontSize: 14, color: AppColors.black87),
                 ),
               ],
             ),
@@ -280,7 +281,7 @@ class _AssignmentDetailPageState extends State<AssignmentDetailPage> {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Colors.black87,
+                color: AppColors.black87,
               ),
             ),
             const SizedBox(height: 8),
@@ -289,7 +290,7 @@ class _AssignmentDetailPageState extends State<AssignmentDetailPage> {
               decoration: InputDecoration(
                 hintText: "00:00:00",
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: AppColors.pureWhite,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                   borderSide: BorderSide(color: Colors.grey.shade300),
@@ -300,7 +301,7 @@ class _AssignmentDetailPageState extends State<AssignmentDetailPage> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: Colors.blue.shade400),
+                  borderSide: BorderSide(color: AppColors.primaryBlue),
                 ),
               ),
             ),
@@ -322,7 +323,7 @@ class _AssignmentDetailPageState extends State<AssignmentDetailPage> {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Colors.black87,
+                color: AppColors.black87,
               ),
             ),
             const SizedBox(height: 8),
@@ -331,18 +332,18 @@ class _AssignmentDetailPageState extends State<AssignmentDetailPage> {
               decoration: InputDecoration(
                 hintText: "https://example.com",
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: AppColors.pureWhite,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                   borderSide: BorderSide(color: Colors.grey.shade300),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: Colors.grey.shade300),
+                  borderSide: BorderSide(color: Colors.grey),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: Colors.blue.shade400),
+                  borderSide: BorderSide(color: AppColors.primaryBlue),
                 ),
               ),
             ),
@@ -358,7 +359,7 @@ class _AssignmentDetailPageState extends State<AssignmentDetailPage> {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: Colors.black87,
+                    color: AppColors.black87,
                   ),
                 ),
                 TextButton(
@@ -369,7 +370,7 @@ class _AssignmentDetailPageState extends State<AssignmentDetailPage> {
                     "Add",
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.blue.shade600,
+                      color: AppColors.primaryBlue,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -383,7 +384,7 @@ class _AssignmentDetailPageState extends State<AssignmentDetailPage> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.pureWhite,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: Colors.grey.shade200),
               ),
@@ -408,7 +409,7 @@ class _AssignmentDetailPageState extends State<AssignmentDetailPage> {
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
-                            color: Colors.black87,
+                            color: AppColors.black87,
                           ),
                         ),
                         Text(
@@ -424,14 +425,14 @@ class _AssignmentDetailPageState extends State<AssignmentDetailPage> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.green.shade50,
+                      color: AppColors.primaryGreen,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
                       "Active",
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.green.shade700,
+                        color: AppColors.primaryGreen,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -452,8 +453,8 @@ class _AssignmentDetailPageState extends State<AssignmentDetailPage> {
                   Navigator.pop(context);
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue.shade600,
-                  foregroundColor: Colors.white,
+                  backgroundColor: AppColors.primaryBlue,
+                  foregroundColor: AppColors.pureWhite,
                   elevation: 2,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),

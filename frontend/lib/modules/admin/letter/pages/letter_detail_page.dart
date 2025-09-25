@@ -1,4 +1,7 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
+import 'package:frontend/core/constants/colors.dart';
 
 class LetterDetailPage extends StatelessWidget {
   final String name;
@@ -41,11 +44,11 @@ class LetterDetailPage extends StatelessWidget {
             margin: const EdgeInsets.only(bottom: 16),
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.pureWhite,
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black12.withOpacity(0.05),
+                  color: AppColors.black.withOpacity(0.05),
                   blurRadius: 5,
                   offset: const Offset(0, 3),
                 )
@@ -102,7 +105,7 @@ class LetterDetailPage extends StatelessWidget {
                     children: [
                       Text(fileName,
                           style: const TextStyle(
-                              fontSize: 13, color: Colors.black54)),
+                              fontSize: 13, color: AppColors.black)),
                       Row(
                         children: const [
                           Icon(Icons.remove_red_eye, size: 20),
@@ -122,20 +125,20 @@ class LetterDetailPage extends StatelessWidget {
                   children: [
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
+                          backgroundColor: AppColors.primaryGreen,
                           shape: const CircleBorder(),
                           padding: const EdgeInsets.all(14)),
                       onPressed: () {},
-                      child: const Icon(Icons.check, color: Colors.white),
+                      child: const Icon(Icons.check, color: AppColors.pureWhite),
                     ),
                     const SizedBox(width: 12),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
+                          backgroundColor: AppColors.errorRed,
                           shape: const CircleBorder(),
                           padding: const EdgeInsets.all(14)),
                       onPressed: () {},
-                      child: const Icon(Icons.close, color: Colors.white),
+                      child: const Icon(Icons.close, color: AppColors.pureWhite),
                     ),
                   ],
                 )

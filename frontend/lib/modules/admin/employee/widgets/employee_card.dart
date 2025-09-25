@@ -37,7 +37,7 @@ class EmployeeCard extends StatelessWidget {
             // Cancel Button
             TextButton(
               style: TextButton.styleFrom(
-                foregroundColor: Colors.black87,
+                foregroundColor: AppColors.black87,
                 backgroundColor: Colors.grey.shade200,
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                 shape: RoundedRectangleBorder(
@@ -53,7 +53,7 @@ class EmployeeCard extends StatelessWidget {
             // Yes Button
             TextButton(
               style: TextButton.styleFrom(
-                foregroundColor: Colors.white,
+                foregroundColor: AppColors.pureWhite,
                 backgroundColor: AppColors.primaryRed,
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
                 shape: RoundedRectangleBorder(
@@ -100,7 +100,7 @@ class EmployeeCard extends StatelessWidget {
                   const CircleAvatar(
                     radius: 28,
                     backgroundColor: Colors.grey,
-                    child: Icon(Icons.person, size: 32, color: Colors.white),
+                    child: Icon(Icons.person, size: 32, color: AppColors.pureWhite),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -169,7 +169,7 @@ class EmployeeCard extends StatelessWidget {
                 phone,
                 style: const TextStyle(
                   fontSize: 14,
-                  color: Colors.black87,
+                  color: AppColors.black,
                 ),
               ),
 

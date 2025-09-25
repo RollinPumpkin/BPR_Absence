@@ -12,7 +12,7 @@ class EmployeeActionButtons extends StatelessWidget {
         ElevatedButton.icon(
           style: ElevatedButton.styleFrom(
             foregroundColor: AppColors.black,
-            backgroundColor: Colors.transparent
+            backgroundColor: AppColors.transparent
           ),
           onPressed: () {},
           icon: const Icon(Icons.filter_list),
@@ -21,7 +21,7 @@ class EmployeeActionButtons extends StatelessWidget {
         const SizedBox(width: 8),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
-            foregroundColor: AppColors.white,
+            foregroundColor: AppColors.pureWhite,
             backgroundColor: AppColors.primaryGreen
           ),
           onPressed: () {},
@@ -30,7 +30,7 @@ class EmployeeActionButtons extends StatelessWidget {
         const SizedBox(width: 8),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
-            foregroundColor: AppColors.white,
+            foregroundColor: AppColors.pureWhite,
             backgroundColor: AppColors.primaryRed
           ),
           onPressed: () {},
@@ -38,7 +38,7 @@ class EmployeeActionButtons extends StatelessWidget {
         ),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
-            foregroundColor: AppColors.white,
+            foregroundColor: AppColors.pureWhite,
             backgroundColor: AppColors.primaryBlue
           ),
           onPressed: () {

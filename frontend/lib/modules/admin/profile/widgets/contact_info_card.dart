@@ -10,7 +10,7 @@ class ContactInfoCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.pureWhite,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.mediumGray),
       ),
@@ -24,7 +24,7 @@ class ContactInfoCard extends StatelessWidget {
           Text(
             "Anin.pulupulu@dahbbDSAS",
             style: TextStyle(
-                fontSize: 14, color: Colors.black, fontWeight: FontWeight.w500),
+                fontSize: 14, color: AppColors.black, fontWeight: FontWeight.w500),
           ),
           SizedBox(height: 8),
           Text("Phone Number",
@@ -32,7 +32,7 @@ class ContactInfoCard extends StatelessWidget {
           Text(
             "+62 8888881111",
             style: TextStyle(
-                fontSize: 14, color: Colors.black, fontWeight: FontWeight.w500),
+                fontSize: 14, color: AppColors.black, fontWeight: FontWeight.w500),
           ),
         ],
       ),

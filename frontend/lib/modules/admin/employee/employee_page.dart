@@ -1,13 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:frontend/core/widgets/custom_bottom_nav.dart';
-
-import 'package:frontend/core/widgets/custoom_app_bar.dart';
-import 'package:frontend/modules/admin/dashboard/dashboard_page.dart';
-import 'package:frontend/modules/admin/attandance/attandace_page.dart';
-import 'package:frontend/modules/admin/assigment/assigment_page.dart';
-import 'package:frontend/modules/admin/employee/widgets/employee_header.dart';
-import 'package:frontend/modules/admin/letter/letter_page.dart';
-import 'package:frontend/modules/admin/profile/profile_page.dart';
+import 'package:frontend/core/widgets/custom_bottom_nav_router.dart';
+import 'package:frontend/modules/admin/shared/admin_nav_items.dart';
+import 'package:frontend/core/constants/colors.dart';
 
 import 'widgets/employee_header.dart';
 import 'widgets/employee_stat_section.dart';
@@ -48,25 +42,11 @@ class EmployeePage extends StatelessWidget {
           ],
         ),
       ),
-            /// Bottom Navigation
-      bottomNavigationBar: CustomBottomNav(
+
+      bottomNavigationBar: CustomBottomNavRouter(
         currentIndex: 0,
-        icons: const [
-          Icons.home,
-          Icons.calendar_today,
-          Icons.check_box,
-          Icons.mail_outline,
-          Icons.person_outline,
-        ],
-        pages: const [
-          AdminDashboardPage(),
-          AttandancePage(),
-          AssigmentPage(),
-          LetterPage(),
-          ProfilePage(),
-        ],
+        items: AdminNavItems.items,
       ),
-    
     );
   }
 }
