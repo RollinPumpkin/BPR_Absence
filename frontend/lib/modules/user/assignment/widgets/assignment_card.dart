@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/core/constants/colors.dart';
 
 class UserAssignmentCard extends StatelessWidget {
   final String title;
@@ -25,7 +26,7 @@ class UserAssignmentCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.pureWhite,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey.shade200),
         boxShadow: [
@@ -50,7 +51,7 @@ class UserAssignmentCard extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    color: AppColors.black87,
                   ),
                 ),
               ),
@@ -141,7 +142,7 @@ class UserAssignmentCard extends StatelessWidget {
                     _showSubmitDialog(context);
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: status == "Completed" ? Colors.grey : Colors.blue,
+                    backgroundColor: status == "Completed" ? Colors.grey : AppColors.primaryBlue,
                   ),
                   child: Text(
                     status == "Completed" ? "Completed" : "Submit",
@@ -204,7 +205,7 @@ class UserAssignmentCard extends StatelessWidget {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text("Assignment submitted successfully!"),
-                  backgroundColor: Colors.green,
+                  backgroundColor: AppColors.primaryGreen,
                 ),
               );
             },

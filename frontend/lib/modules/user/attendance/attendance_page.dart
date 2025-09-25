@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:frontend/core/widgets/custom_bottom_nav.dart';
-import 'package:frontend/modules/user/shared/user_navigation_constants.dart';
+import 'package:frontend/core/constants/colors.dart';
+import 'package:frontend/core/widgets/custom_bottom_nav_router.dart';
+import 'package:frontend/modules/user/shared/user_nav_items.dart';
 
 import 'widgets/attendance_stats.dart';
 import 'widgets/attendance_chart.dart';
@@ -54,7 +55,8 @@ class UserAttendancePage extends StatelessWidget {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => const AttendanceHistoryPage(),
+                                  builder: (context) =>
+                                      const AttendanceHistoryPage(),
                                 ),
                               );
                             },
@@ -73,49 +75,49 @@ class UserAttendancePage extends StatelessWidget {
                       separatorBuilder: (_, __) => const SizedBox(height: 12),
                       itemBuilder: (context, index) {
                         String status;
-                Color statusColor;
-                String clockIn;
-                
-                if (index == 0) {
-                  status = "Working";
-                  statusColor = Colors.green;
-                  clockIn = "08:30 AM";
-                } else if (index == 1) {
-                  status = "Late";
-                  statusColor = Colors.orange;
-                  clockIn = "08:45 AM";
-                } else {
-                  status = "Completed";
-                  statusColor = Colors.blue;
-                  clockIn = "08:30 AM";
-                }
-                
-                return AttendanceHistoryCard(
-                  date: "January ${18 - index}, 2025",
-                  clockIn: clockIn,
-                  clockOut: index == 0 ? "-" : "17:30 PM",
-                  status: status,
-                  statusColor: statusColor,
-                  onTap: () {
-                    showDialog(
-                      context: context,
-                      builder: (context) => AttendanceDetailDialog(
-                        date: "January ${18 - index}, 2025",
-                        status: status,
-                        checkIn: clockIn,
-                        checkOut: index == 0 ? "-" : "17:30 PM",
-                        workHours: index == 0 ? "-" : "8h 30m",
-                        location: "Main Office",
-                        address: "123 Business District, City Center",
-                        lat: "40.7128",
-                        long: "-74.0060",
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
-            const SizedBox(height: 16),
+                        Color statusColor;
+                        String clockIn;
+
+                        if (index == 0) {
+                          status = "Working";
+                          statusColor = AppColors.primaryGreen;
+                          clockIn = "08:30 AM";
+                        } else if (index == 1) {
+                          status = "Late";
+                          statusColor = AppColors.vibrantOrange;
+                          clockIn = "08:45 AM";
+                        } else {
+                          status = "Completed";
+                          statusColor = AppColors.primaryBlue;
+                          clockIn = "08:30 AM";
+                        }
+
+                        return AttendanceHistoryCard(
+                          date: "January ${18 - index}, 2025",
+                          clockIn: clockIn,
+                          clockOut: index == 0 ? "-" : "17:30 PM",
+                          status: status,
+                          statusColor: statusColor,
+                          onTap: () {
+                            showDialog(
+                              context: context,
+                              builder: (context) => AttendanceDetailDialog(
+                                date: "January ${18 - index}, 2025",
+                                status: status,
+                                checkIn: clockIn,
+                                checkOut: index == 0 ? "-" : "17:30 PM",
+                                workHours: index == 0 ? "-" : "8h 30m",
+                                location: "Main Office",
+                                address: "123 Business District, City Center",
+                                lat: "40.7128",
+                                long: "-74.0060",
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 16),
                   ],
                 ),
               ),
@@ -123,10 +125,13 @@ class UserAttendancePage extends StatelessWidget {
           ],
         ),
       ),
-      bottomNavigationBar: CustomBottomNav(
+
+      bottomNavigationBar: CustomBottomNavRouter(
         currentIndex: 1,
-        icons: UserNavigationConstants.icons,
-        pages: UserNavigationConstants.pages,
+        items: UserNavItems.items,
+        style: SimpleNavStyle.preset().copyWith(
+          indicatorColor: AppColors.primaryRed,
+        ),
       ),
     );
   }
@@ -135,14 +140,14 @@ class UserAttendancePage extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.pureWhite,
         borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(20),
           bottomRight: Radius.circular(20),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: AppColors.black.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -156,7 +161,7 @@ class UserAttendancePage extends StatelessWidget {
             style: TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: AppColors.black87,
             ),
           ),
         ],

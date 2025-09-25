@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:frontend/core/widgets/custom_bottom_nav.dart';
-import 'package:frontend/modules/user/shared/user_navigation_constants.dart';
+import 'package:frontend/core/constants/colors.dart';
+import 'package:frontend/core/widgets/custom_bottom_nav_router.dart';
+import 'package:frontend/modules/user/shared/user_nav_items.dart';
+
 import 'settings_page.dart';
 
 class UserProfilePage extends StatefulWidget {
@@ -39,11 +41,11 @@ class _UserProfilePageState extends State<UserProfilePage> {
                           children: [
                             const CircleAvatar(
                               radius: 30,
-                              backgroundColor: Colors.white24,
+                              backgroundColor: AppColors.pureWhite,
                               child: Icon(
                                 Icons.person,
                                 size: 40,
-                                color: Colors.white,
+                                color: AppColors.pureWhite,
                               ),
                             ),
                             const SizedBox(width: 16),
@@ -54,7 +56,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                                   const Text(
                                     "Anindya Nurhaliza Putri",
                                     style: TextStyle(
-                                      color: Colors.white,
+                                      color: AppColors.pureWhite,
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -63,7 +65,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                                   const Text(
                                     "Last update 1 day ago",
                                     style: TextStyle(
-                                      color: Colors.white70,
+                                      color: AppColors.pureWhite,
                                       fontSize: 12,
                                     ),
                                   ),
@@ -83,7 +85,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: AppColors.pureWhite,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: Colors.grey.shade200),
                   boxShadow: [
@@ -118,7 +120,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: Colors.black87,
+                        color: AppColors.black87,
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -134,7 +136,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: Colors.black87,
+                        color: AppColors.black87,
                       ),
                     ),
                   ],
@@ -150,7 +152,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: AppColors.pureWhite,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: Colors.grey.shade200),
                   boxShadow: [
@@ -185,7 +187,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: Colors.black87,
+                        color: AppColors.black87,
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -201,7 +203,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: Colors.black87,
+                        color: AppColors.black87,
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -217,7 +219,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: Colors.black87,
+                        color: AppColors.black87,
                       ),
                     ),
                   ],
@@ -243,10 +245,13 @@ class _UserProfilePageState extends State<UserProfilePage> {
           ],
         ),
       ),
-      bottomNavigationBar: CustomBottomNav(
+      
+      bottomNavigationBar: CustomBottomNavRouter(
         currentIndex: 4,
-        icons: UserNavigationConstants.icons,
-        pages: UserNavigationConstants.pages,
+        items: UserNavItems.items,
+        style: SimpleNavStyle.preset().copyWith(
+          indicatorColor: AppColors.primaryRed,
+        ),
       ),
     );
   }
@@ -255,14 +260,14 @@ class _UserProfilePageState extends State<UserProfilePage> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.pureWhite,
         borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(20),
           bottomRight: Radius.circular(20),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: AppColors.black.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -276,7 +281,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
             style: TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: AppColors.black87,
             ),
           ),
           IconButton(
@@ -302,7 +307,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.pureWhite,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey.shade200),
         boxShadow: [
@@ -326,7 +331,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
-                  color: Colors.black87,
+                  color: AppColors.black87,
                 ),
               ),
               Container(
@@ -361,7 +366,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: AppColors.black87,
             ),
           ),
           const SizedBox(height: 16),
@@ -378,7 +383,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
               child: Text(
                 "Request Leave",
                 style: TextStyle(
-                  color: Colors.white,
+                  color: AppColors.pureWhite,
                   fontWeight: FontWeight.w600,
                   fontSize: 16,
                 ),
@@ -408,7 +413,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+                        color: AppColors.black87,
                       ),
                     ),
                   ],
@@ -433,7 +438,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+                        color: AppColors.black87,
                       ),
                     ),
                   ],
@@ -457,7 +462,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                     child: Text(
                       "See Details",
                       style: TextStyle(
-                        color: Colors.white,
+                        color: AppColors.pureWhite,
                         fontWeight: FontWeight.w600,
                         fontSize: 14,
                       ),
@@ -477,7 +482,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                     child: Text(
                       "Request Leave",
                       style: TextStyle(
-                        color: Colors.white,
+                        color: AppColors.pureWhite,
                         fontWeight: FontWeight.w600,
                         fontSize: 14,
                       ),

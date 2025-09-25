@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/core/constants/colors.dart';
 import 'check_email_page.dart';
 import 'help_desk_page.dart';
 
@@ -19,8 +20,8 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
       backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
         title: const Text('Settings'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        backgroundColor: AppColors.pureWhite,
+        foregroundColor: AppColors.black,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -116,7 +117,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                     _showLogoutDialog(context);
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
+                    backgroundColor: AppColors.errorRed,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
@@ -125,7 +126,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                   child: const Text(
                     "Logout",
                     style: TextStyle(
-                      color: Colors.white,
+                      color: AppColors.pureWhite,
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
@@ -155,11 +156,11 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
   Widget _buildSettingsCard(List<Widget> children) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.pureWhite,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: AppColors.black.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -252,7 +253,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                 (route) => false,
               );
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.errorRed),
             child: const Text("Logout"),
           ),
         ],

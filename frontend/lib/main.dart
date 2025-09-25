@@ -15,11 +15,12 @@ import 'modules/splash_page.dart';
 // Admin
 import 'modules/admin/dashboard/dashboard_page.dart';
 import 'modules/admin/employee/employee_page.dart';
-import 'modules/admin/attandance/attandace_page.dart';
-import 'modules/admin/assigment/assigment_page.dart';
+import 'modules/admin/attendance/attendance_page.dart';
+import 'modules/admin/assignment/assignment_page.dart';
 import 'modules/admin/letter/letter_page.dart';
 import 'modules/admin/profile/profile_page.dart';
 
+// User
 import 'modules/user/dashboard/dashboard_page.dart';
 import 'modules/user/attendance/attendance_page.dart';
 import 'modules/user/attendance/user_attendance_form_page.dart';
@@ -29,7 +30,7 @@ import 'modules/user/profile/profile_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize date formatting with error handling
   try {
     await initializeDateFormatting('id_ID', null);
@@ -49,10 +50,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'BPR Absence',
-      theme: ThemeData(
-        useMaterial3: true,
-        fontFamily: 'Roboto',
-      ),
+      theme: ThemeData(useMaterial3: true, fontFamily: 'Roboto'),
       initialRoute: '/', // Splash pertama
       routes: {
         // General
@@ -67,8 +65,8 @@ class MyApp extends StatelessWidget {
         // Admin routes
         '/admin/dashboard': (_) => const AdminDashboardPage(),
         '/admin/employees': (_) => const EmployeePage(),
-        '/admin/attendance': (_) => const AttandancePage(),
-        '/admin/assigment': (_) => const AssigmentPage(),
+        '/admin/attendance': (_) => const AttendancePage(),
+        '/admin/assignment': (_) => const AssignmentPage(),
         '/admin/letter': (_) => const LetterPage(),
         '/admin/profile': (_) => const ProfilePage(),
 

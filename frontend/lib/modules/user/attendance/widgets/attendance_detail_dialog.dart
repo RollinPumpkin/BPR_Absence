@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/core/constants/colors.dart';
 
 class AttendanceDetailDialog extends StatelessWidget {
   final String status;
@@ -27,11 +28,11 @@ class AttendanceDetailDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppColors.transparent,
       insetPadding: const EdgeInsets.all(16),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.pureWhite,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
@@ -55,7 +56,7 @@ class AttendanceDetailDialog extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
-                      color: Colors.black87,
+                      color: AppColors.black87,
                     ),
                   ),
                   GestureDetector(
@@ -69,7 +70,7 @@ class AttendanceDetailDialog extends StatelessWidget {
                       child: const Icon(
                         Icons.close,
                         size: 20,
-                        color: Colors.black54,
+                        color: AppColors.black54,
                       ),
                     ),
                   ),
@@ -108,7 +109,7 @@ class AttendanceDetailDialog extends StatelessWidget {
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
-                                  color: Colors.black87,
+                                  color: AppColors.black87,
                                 ),
                               ),
                               const SizedBox(height: 4),
@@ -125,9 +126,9 @@ class AttendanceDetailDialog extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: Colors.green.shade50,
+                            color: AppColors.primaryGreen,
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.green.shade200),
+                            border: Border.all(color: AppColors.primaryGreen),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -135,14 +136,14 @@ class AttendanceDetailDialog extends StatelessWidget {
                               Icon(
                                 Icons.check_circle,
                                 size: 14,
-                                color: Colors.green.shade600,
+                                color: AppColors.primaryGreen
                               ),
                               const SizedBox(width: 4),
                               Text(
                                 'Status Approve',
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: Colors.green.shade600,
+                                  color: AppColors.primaryGreen,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -260,7 +261,7 @@ class AttendanceDetailDialog extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.pureWhite,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey.shade200),
       ),
@@ -273,7 +274,7 @@ class AttendanceDetailDialog extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Colors.black87,
+                color: AppColors.black87,
               ),
             ),
             const SizedBox(height: 12),
@@ -301,7 +302,7 @@ class AttendanceDetailDialog extends StatelessWidget {
           value,
           style: const TextStyle(
             fontSize: 14,
-            color: Colors.black87,
+            color: AppColors.black87,
             fontWeight: FontWeight.w600,
           ),
         ),

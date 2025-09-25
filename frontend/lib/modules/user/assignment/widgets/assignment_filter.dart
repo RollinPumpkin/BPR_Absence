@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/core/constants/colors.dart';
 
 class AssignmentFilter extends StatelessWidget {
   final String selectedFilter;
@@ -25,16 +26,16 @@ class AssignmentFilter extends StatelessWidget {
               margin: const EdgeInsets.only(right: 12),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: isSelected ? Colors.blue : Colors.grey.shade100,
+                color: isSelected ? AppColors.primaryBlue : Colors.grey.shade100,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: isSelected ? Colors.blue : Colors.grey.shade300,
+                  color: isSelected ? AppColors.primaryBlue : Colors.grey.shade300,
                 ),
               ),
               child: Text(
                 filter,
                 style: TextStyle(
-                  color: isSelected ? Colors.white : Colors.grey.shade700,
+                  color: isSelected ? AppColors.pureWhite : Colors.grey.shade700,
                   fontWeight: FontWeight.w600,
                   fontSize: 14,
                 ),

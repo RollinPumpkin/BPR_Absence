@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:frontend/core/constants/colors.dart';
 
@@ -51,18 +53,18 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
                   width: 90,
                   height: 90,
                   decoration: BoxDecoration(
-                    color: Colors.blueGrey[900],
+                    color: AppColors.primaryBlueGrey[900],
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(Icons.person, color: Colors.white, size: 40),
+                  child: const Icon(Icons.person, color: AppColors.pureWhite, size: 40),
                 ),
                 const SizedBox(width: 16),
                 ElevatedButton.icon(
                   onPressed: () {},
-                  icon: const Icon(Icons.add, color: Colors.white),
+                  icon: const Icon(Icons.add, color: AppColors.pureWhite),
                   label: const Text("Upload Foto"),
                   style: ElevatedButton.styleFrom(
-                    foregroundColor: Colors.white,
+                    foregroundColor: AppColors.pureWhite,
                     backgroundColor: AppColors.primaryBlue,
                   ),
                 ),
@@ -136,7 +138,7 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryRed,
                   ),
-                  child: const Text("Cancel", style: TextStyle(color: Colors.white)),
+                  child: const Text("Cancel", style: TextStyle(color: AppColors.pureWhite)),
                 ),
                 const SizedBox(width: 16),
                 ElevatedButton(
@@ -146,7 +148,7 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryGreen,
                   ),
-                  child: const Text("Save", style: TextStyle(color: Colors.white)),
+                  child: const Text("Save", style: TextStyle(color: AppColors.pureWhite)),
                 ),
               ],
             ),

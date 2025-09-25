@@ -49,7 +49,7 @@ class ProfileHeader extends StatelessWidget {
                     child: Container(
                       decoration: const BoxDecoration(
                         shape: BoxShape.circle,
-                        color: Colors.white,
+                        color: AppColors.pureWhite,
                       ),
                       child: const Icon(Icons.edit, size: 16),
                     ),
@@ -64,14 +64,14 @@ class ProfileHeader extends StatelessWidget {
                     "Anindya Nurhaliza Putri",
                     style: TextStyle(
                       fontSize: 16,
-                      color: Colors.white,
+                      color: AppColors.pureWhite,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   SizedBox(height: 4),
                   Text(
                     "Last update 1 day ago",
-                    style: TextStyle(fontSize: 12, color: Colors.white),
+                    style: TextStyle(fontSize: 12, color: AppColors.pureWhite),
                   ),
                 ],
               ),

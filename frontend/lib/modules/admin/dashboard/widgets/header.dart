@@ -36,7 +36,7 @@ class DashboardHeader extends StatelessWidget {
                   Text(
                     DateFormat('EEEE, d MMMM y', 'id_ID').format(DateTime.now()),
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: AppColors.pureWhite,
                       fontSize: 14,
                     ),
                   ),
@@ -47,7 +47,7 @@ class DashboardHeader extends StatelessWidget {
                       return Text(
                         DateFormat('HH:mm:ss').format(DateTime.now()),
                         style: const TextStyle(
-                          color: Colors.white,
+                          color: AppColors.pureWhite,
                           fontSize: 14,
                         ),
                       );
@@ -60,7 +60,7 @@ class DashboardHeader extends StatelessWidget {
               Row(
                 children: const [
                   CircleAvatar(
-                    backgroundColor: Colors.white,
+                    backgroundColor: AppColors.pureWhite,
                     child: Icon(Icons.notifications, color: AppColors.accentBlue),
                   ),
                   SizedBox(width: 10),
@@ -79,7 +79,7 @@ class DashboardHeader extends StatelessWidget {
           const Text(
             "Good Morning, Admin\nHave a Great Day!",
             style: TextStyle(
-              color: Colors.white,
+              color: AppColors.pureWhite,
               fontSize: 22,
               fontWeight: FontWeight.bold,
               height: 1.4,
