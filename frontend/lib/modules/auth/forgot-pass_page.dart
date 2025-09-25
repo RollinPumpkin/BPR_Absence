@@ -1,4 +1,7 @@
+// ignore_for_file: file_names
+
 import 'package:flutter/material.dart';
+import 'package:frontend/core/constants/colors.dart';
 
 class ForgotPassPage extends StatelessWidget {
   const ForgotPassPage({super.key});
@@ -31,7 +34,7 @@ class ForgotPassPage extends StatelessWidget {
               const Text(
                 "No worries! Enter your email address below, and we’ll send you a link to reset your password.",
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 14, color: Colors.black54),
+                style: TextStyle(fontSize: 14, color: AppColors.black),
               ),
               const SizedBox(height: 24),
 
@@ -65,7 +68,7 @@ class ForgotPassPage extends StatelessWidget {
                 width: double.infinity,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red.shade900,
+                    backgroundColor: AppColors.errorRed,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
                   onPressed: () {
@@ -76,7 +79,7 @@ class ForgotPassPage extends StatelessWidget {
                   },
                   child: const Text(
                     "Reset password",
-                    style: TextStyle(fontSize: 16, color: Colors.white),
+                    style: TextStyle(fontSize: 16, color: AppColors.pureWhite),
                   ),
                 ),
               ),
@@ -89,7 +92,7 @@ class ForgotPassPage extends StatelessWidget {
                 },
                 child: const Text(
                   "← Back to log in",
-                  style: TextStyle(color: Colors.black),
+                  style: TextStyle(color: AppColors.black),
                 ),
               ),
             ],

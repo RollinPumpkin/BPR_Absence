@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/core/constants/colors.dart';
 
 class QuickActionButton extends StatelessWidget {
   final IconData icon;
@@ -36,7 +37,7 @@ class QuickActionButton extends StatelessWidget {
               ),
               child: Icon(
                 icon,
-                color: Colors.white,
+                color: AppColors.pureWhite,
                 size: 24,
               ),
             ),

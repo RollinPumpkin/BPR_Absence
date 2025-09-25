@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:frontend/core/constants/colors.dart';
 
@@ -23,11 +25,11 @@ class AssignmentCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.pureWhite,
         borderRadius: BorderRadius.circular(12), 
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.9),
+            color: AppColors.black.withOpacity(0.9),
             blurRadius: 5,
             offset: const Offset(0, 2),
           ),
@@ -74,7 +76,7 @@ class AssignmentCard extends StatelessWidget {
             description,
             style: const TextStyle(
               fontSize: 13,
-              color: Colors.black87,
+              color: AppColors.black,
               height: 1.4,
             ),
             maxLines: 3,

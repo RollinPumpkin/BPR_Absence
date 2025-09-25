@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/core/constants/colors.dart';
 
 class ActivitySummaryWidget extends StatelessWidget {
   const ActivitySummaryWidget({super.key});
@@ -8,7 +9,7 @@ class ActivitySummaryWidget extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.pureWhite,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -36,7 +37,7 @@ class ActivitySummaryWidget extends StatelessWidget {
             child: const Text(
               "Activity Summary",
               style: TextStyle(
-                color: Colors.white,
+                color: AppColors.pureWhite,
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
               ),
@@ -54,7 +55,7 @@ class ActivitySummaryWidget extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w400,
-                    color: Colors.black87,
+                    color: AppColors.black87,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -63,9 +64,9 @@ class ActivitySummaryWidget extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _buildStatItem("Days", "5", Colors.blue),
-                    _buildStatItem("Hours", "55", Colors.green),
-                    _buildStatItem("Tasks", "12", Colors.orange),
+                    _buildStatItem("Days", "5", AppColors.primaryBlue),
+                    _buildStatItem("Hours", "55", AppColors.primaryGreen),
+                    _buildStatItem("Tasks", "12", AppColors.vibrantOrange),
                   ],
                 ),
               ],

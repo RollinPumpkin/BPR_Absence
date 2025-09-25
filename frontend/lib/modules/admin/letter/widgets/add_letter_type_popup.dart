@@ -54,7 +54,7 @@ class AddLetterTypePopup extends StatelessWidget {
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryGreen,
-                    foregroundColor: Colors.white,
+                    foregroundColor: AppColors.pureWhite,
                   ),
                   child: const Text("Submit"),
                 ),

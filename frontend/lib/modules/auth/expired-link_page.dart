@@ -1,3 +1,5 @@
+// ignore_for_file: file_names
+
 import 'package:flutter/material.dart';
 import 'package:frontend/core/constants/colors.dart';
 
@@ -21,7 +23,7 @@ class LinkExpiredPage extends StatelessWidget {
                   child: const Icon(
                     Icons.link_off,
                     size: 40,
-                    color: Colors.white,
+                    color: AppColors.pureWhite,
                   ),
                 ),
                 const SizedBox(height: 30),
@@ -42,7 +44,7 @@ class LinkExpiredPage extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.black54,
+                    color: AppColors.black,
                   ),
                 ),
                 const SizedBox(height: 30),
@@ -66,7 +68,7 @@ class LinkExpiredPage extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: Colors.white,
+                        color: AppColors.pureWhite,
                       ),
                     ),
                   ),

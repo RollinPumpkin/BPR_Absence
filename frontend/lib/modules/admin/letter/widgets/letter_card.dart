@@ -1,4 +1,7 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
+import 'package:frontend/core/constants/colors.dart';
 
 class LetterCard extends StatelessWidget {
   final String name;
@@ -31,11 +34,11 @@ class LetterCard extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.pureWhite,
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black12.withOpacity(0.05),
+              color: AppColors.black.withOpacity(0.05),
               blurRadius: 5,
               offset: const Offset(0, 3),
             )

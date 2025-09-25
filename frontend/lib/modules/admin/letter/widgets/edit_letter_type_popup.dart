@@ -67,7 +67,7 @@ class EditLetterTypePopup extends StatelessWidget {
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryYellow,
-                    foregroundColor: Colors.white,
+                    foregroundColor: AppColors.pureWhite,
                   ),
                   child: const Text("Update"),
                 ),

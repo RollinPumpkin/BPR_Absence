@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/core/constants/colors.dart';
 
 class SectionTitle extends StatelessWidget {
   final String title;
@@ -22,7 +23,7 @@ class SectionTitle extends StatelessWidget {
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
-            color: Colors.black87,
+            color: AppColors.black87,
           ),
         ),
         GestureDetector(
@@ -32,7 +33,7 @@ class SectionTitle extends StatelessWidget {
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
-              color: Colors.blue,
+              color: AppColors.primaryBlue,
             ),
           ),
         ),

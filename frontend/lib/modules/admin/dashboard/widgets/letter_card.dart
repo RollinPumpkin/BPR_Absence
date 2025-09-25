@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:frontend/core/constants/colors.dart';
 
@@ -21,7 +23,7 @@ class LetterCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.pureWhite,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -56,7 +58,7 @@ class LetterCard extends StatelessWidget {
           const SizedBox(height: 6),
           const Text(
             "27 Agustus 2024",
-            style: TextStyle(color: Colors.black54, fontSize: 12),
+            style: TextStyle(color: AppColors.black, fontSize: 12),
           ),
 
           const SizedBox(height: 4),
@@ -70,7 +72,7 @@ class LetterCard extends StatelessWidget {
             "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt.",
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(color: Colors.black54, height: 1.3),
+            style: TextStyle(color: AppColors.black, height: 1.3),
           ),
 
           const SizedBox(height: 12),
@@ -79,7 +81,7 @@ class LetterCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.pureWhite,
               borderRadius: BorderRadius.circular(30),
               boxShadow: [
                 BoxShadow(

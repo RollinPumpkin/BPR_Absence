@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:frontend/core/widgets/custom_bottom_nav.dart';
-import 'package:frontend/modules/user/shared/user_navigation_constants.dart';
+import 'package:frontend/core/constants/colors.dart';
+import 'package:frontend/core/widgets/custom_bottom_nav_router.dart';
+import 'package:frontend/modules/user/shared/user_nav_items.dart';
+
 import 'letter_form_page.dart';
 
 class UserLettersPage extends StatefulWidget {
@@ -27,10 +29,13 @@ class _UserLettersPageState extends State<UserLettersPage> {
           ],
         ),
       ),
-      bottomNavigationBar: CustomBottomNav(
-        currentIndex: 3, // Letters page index
-        icons: UserNavigationConstants.icons,
-        pages: UserNavigationConstants.pages,
+
+      bottomNavigationBar: CustomBottomNavRouter(
+        currentIndex: 3,
+        items: UserNavItems.items,
+        style: SimpleNavStyle.preset().copyWith(
+          indicatorColor: AppColors.primaryRed,
+        ),
       ),
     );
   }
@@ -39,14 +44,14 @@ class _UserLettersPageState extends State<UserLettersPage> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.pureWhite,
         borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(20),
           bottomRight: Radius.circular(20),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: AppColors.black.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -63,7 +68,7 @@ class _UserLettersPageState extends State<UserLettersPage> {
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                  color: AppColors.black87,
                 ),
               ),
               GestureDetector(
@@ -78,7 +83,7 @@ class _UserLettersPageState extends State<UserLettersPage> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
-                    color: Colors.orange.shade400,
+                    color: AppColors.vibrantOrange,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
@@ -86,14 +91,14 @@ class _UserLettersPageState extends State<UserLettersPage> {
                     children: [
                       Icon(
                         Icons.add,
-                        color: Colors.white,
+                        color: AppColors.pureWhite,
                         size: 16,
                       ),
                       const SizedBox(width: 4),
                       const Text(
                         "Add Letters",
                         style: TextStyle(
-                          color: Colors.white,
+                          color: AppColors.pureWhite,
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                         ),
@@ -156,7 +161,7 @@ class _UserLettersPageState extends State<UserLettersPage> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.grey.shade200 : Colors.transparent,
+          color: isSelected ? Colors.grey.shade200 : AppColors.transparent,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected ? Colors.grey.shade400 : Colors.grey.shade300,
@@ -165,7 +170,7 @@ class _UserLettersPageState extends State<UserLettersPage> {
         child: Text(
           filter,
           style: TextStyle(
-            color: isSelected ? Colors.black87 : Colors.grey.shade600,
+            color: isSelected ? AppColors.black87 : Colors.grey.shade600,
             fontSize: 12,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
           ),
@@ -214,11 +219,11 @@ class _UserLettersPageState extends State<UserLettersPage> {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.pureWhite,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: AppColors.black.withOpacity(0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -235,7 +240,7 @@ class _UserLettersPageState extends State<UserLettersPage> {
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                  color: AppColors.black87,
                 ),
               ),
               _buildStatusBadge(letter['type']),
@@ -291,14 +296,14 @@ class _UserLettersPageState extends State<UserLettersPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.blue.shade100,
+        color: AppColors.primaryBlue,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
         type,
         style: TextStyle(
           fontSize: 10,
-          color: Colors.blue.shade700,
+          color: AppColors.primaryBlue,
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -309,13 +314,13 @@ class _UserLettersPageState extends State<UserLettersPage> {
     Color statusColor;
     switch (status.toLowerCase()) {
       case 'Waiting approval':
-        statusColor = Colors.blue.shade600;
+        statusColor = AppColors.primaryBlue;
         break;
       case 'approved':
-        statusColor = Colors.green.shade600;
+        statusColor = AppColors.primaryGreen;
         break;
       case 'rejected':
-        statusColor = Colors.red.shade600;
+        statusColor = AppColors.errorRed;
         break;
       default:
         statusColor = Colors.grey.shade600;

@@ -1,4 +1,7 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
+import 'package:frontend/core/constants/colors.dart';
 
 class MenuButton extends StatelessWidget {
   final IconData icon;
@@ -27,7 +30,7 @@ class MenuButton extends StatelessWidget {
             horizontal: 12,
           ),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.pureWhite,
             border: Border.all(color: color, width: 1.5),
             borderRadius: BorderRadius.circular(12),
             boxShadow: [

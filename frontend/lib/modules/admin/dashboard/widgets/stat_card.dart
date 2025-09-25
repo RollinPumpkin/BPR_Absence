@@ -1,4 +1,7 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
+import 'package:frontend/core/constants/colors.dart';
 
 class StatCard extends StatelessWidget {
   final String title;
@@ -22,7 +25,7 @@ class StatCard extends StatelessWidget {
           horizontal: 12,
         ),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.pureWhite,
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
@@ -41,7 +44,7 @@ class StatCard extends StatelessWidget {
               title,
               style: const TextStyle(
                 fontSize: 14,
-                color: Colors.black54,
+                color: AppColors.black,
                 fontWeight: FontWeight.w500,
               ),
             ),
