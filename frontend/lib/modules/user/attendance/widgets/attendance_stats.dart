@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/core/constants/colors.dart';
 
 class AttendanceStats extends StatelessWidget {
   const AttendanceStats({super.key});
@@ -8,11 +9,11 @@ class AttendanceStats extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.pureWhite,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: AppColors.black.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -26,7 +27,7 @@ class AttendanceStats extends StatelessWidget {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: Colors.black87,
+              color: AppColors.black87,
             ),
           ),
           const SizedBox(height: 16),
@@ -36,25 +37,25 @@ class AttendanceStats extends StatelessWidget {
             children: [
               _buildStatItem(
                 icon: Icons.check_circle,
-                iconColor: Colors.green,
+                iconColor: AppColors.primaryGreen,
                 value: "18",
                 label: "Present",
               ),
               _buildStatItem(
                 icon: Icons.access_time,
-                iconColor: Colors.orange,
+                iconColor: AppColors.vibrantOrange,
                 value: "2",
                 label: "Late",
               ),
               _buildStatItem(
                 icon: Icons.cancel,
-                iconColor: Colors.red,
+                iconColor: AppColors.errorRed,
                 value: "1",
                 label: "Absent",
               ),
               _buildStatItem(
                 icon: Icons.event_available,
-                iconColor: Colors.blue,
+                iconColor: AppColors.primaryBlue,
                 value: "2",
                 label: "Leave",
               ),
@@ -91,7 +92,7 @@ class AttendanceStats extends StatelessWidget {
           style: const TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: Colors.black87,
+            color: AppColors.black87,
           ),
         ),
         const SizedBox(height: 4),

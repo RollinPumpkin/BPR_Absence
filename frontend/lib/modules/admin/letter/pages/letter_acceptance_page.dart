@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:frontend/core/constants/colors.dart';
 
@@ -128,11 +130,11 @@ class _LetterAcceptancePageState extends State<LetterAcceptancePage> {
                     ),
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: AppColors.pureWhite,
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black12.withOpacity(0.05),
+                          color: AppColors.black.withOpacity(0.05),
                           blurRadius: 5,
                           offset: const Offset(0, 3),
                         ),

@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:frontend/core/widgets/custom_bottom_nav.dart';
-import 'package:frontend/modules/admin/dashboard/dashboard_page.dart';
-import 'package:frontend/modules/admin/attandance/attandace_page.dart';
-import 'package:frontend/modules/admin/assigment/assigment_page.dart';
-import 'package:frontend/modules/admin/profile/profile_page.dart';
+import 'package:frontend/core/widgets/custom_bottom_nav_router.dart';
+import 'package:frontend/modules/admin/shared/admin_nav_items.dart';
 import 'package:frontend/core/constants/colors.dart';
 
 import 'widgets/letter_card.dart';
@@ -37,8 +34,8 @@ class LetterPage extends StatelessWidget {
                       icon: const Icon(Icons.filter_list, size: 16),
                       label: const Text("Filter"),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: Colors.black,
+                        backgroundColor: AppColors.pureWhite,
+                        foregroundColor: AppColors.black,
                         side: const BorderSide(color: Colors.grey),
                         padding: const EdgeInsets.symmetric(
                           horizontal: 12,
@@ -50,7 +47,7 @@ class LetterPage extends StatelessWidget {
                     ElevatedButton(
                       onPressed: () {},
                       style: ElevatedButton.styleFrom(
-                        foregroundColor: Colors.white,
+                        foregroundColor: AppColors.pureWhite,
                         backgroundColor: AppColors.primaryRed,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 20,
@@ -70,7 +67,7 @@ class LetterPage extends StatelessWidget {
                         );
                       },
                       style: ElevatedButton.styleFrom(
-                        foregroundColor: Colors.white,
+                        foregroundColor: AppColors.pureWhite,
                         backgroundColor: AppColors.primaryBlue,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 20,
@@ -92,7 +89,7 @@ class LetterPage extends StatelessWidget {
                         );
                       },
                       style: ElevatedButton.styleFrom(
-                        foregroundColor: Colors.white,
+                        foregroundColor: AppColors.pureWhite,
                         backgroundColor: AppColors.primaryGreen,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 20,
@@ -114,7 +111,7 @@ class LetterPage extends StatelessWidget {
                         );
                       },
                       style: ElevatedButton.styleFrom(
-                        foregroundColor: Colors.white,
+                        foregroundColor: AppColors.pureWhite,
                         backgroundColor: AppColors.primaryYellow,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 20,
@@ -183,22 +180,10 @@ class LetterPage extends StatelessWidget {
           ),
         ),
       ),
-      bottomNavigationBar: CustomBottomNav(
+
+      bottomNavigationBar: CustomBottomNavRouter(
         currentIndex: 3,
-        icons: const [
-          Icons.home,
-          Icons.calendar_today,
-          Icons.check_box,
-          Icons.mail_outline,
-          Icons.person_outline,
-        ],
-        pages: const [
-          AdminDashboardPage(),
-          AttandancePage(),
-          AssigmentPage(),
-          LetterPage(),
-          ProfilePage(),
-        ],
+        items: AdminNavItems.items,
       ),
     );
   }

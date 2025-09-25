@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/core/constants/colors.dart';
 
 class UpcomingTasksWidget extends StatelessWidget {
   const UpcomingTasksWidget({super.key});
@@ -8,11 +9,11 @@ class UpcomingTasksWidget extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.pureWhite,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: AppColors.black.withOpacity(0.1),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -25,7 +26,7 @@ class UpcomingTasksWidget extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: const BoxDecoration(
-              color: Colors.red,
+              color: AppColors.errorRed,
               borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(12),
                 topRight: Radius.circular(12),
@@ -34,7 +35,7 @@ class UpcomingTasksWidget extends StatelessWidget {
             child: const Text(
               'Upcoming Tasks',
               style: TextStyle(
-                color: Colors.white,
+                color: AppColors.pureWhite,
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
               ),
@@ -71,7 +72,7 @@ class UpcomingTasksWidget extends StatelessWidget {
         taskText,
         style: const TextStyle(
           fontSize: 14,
-          color: Colors.black87,
+          color: AppColors.black87,
         ),
       ),
     );

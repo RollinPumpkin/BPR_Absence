@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/core/constants/colors.dart';
 import 'develop_team_page.dart';
 import 'help_support_page.dart';
 
@@ -105,7 +106,7 @@ class SettingsPage extends StatelessWidget {
         decoration: BoxDecoration(
           border: Border.all(color: Colors.grey.shade300),
           borderRadius: BorderRadius.circular(8),
-          color: Colors.white,
+          color: AppColors.pureWhite,
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -126,7 +127,7 @@ class SettingsPage extends StatelessWidget {
       decoration: BoxDecoration(
         border: Border.all(color: Colors.grey.shade300),
         borderRadius: BorderRadius.circular(8),
-        color: Colors.white,
+        color: AppColors.pureWhite,
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,

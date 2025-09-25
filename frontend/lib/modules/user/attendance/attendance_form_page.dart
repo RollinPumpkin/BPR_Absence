@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/core/constants/colors.dart';
 import 'package:intl/intl.dart';
 
 class AttendanceFormPage extends StatefulWidget {
@@ -32,16 +33,16 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.pureWhite,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: const Icon(Icons.arrow_back, color: AppColors.black),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
           'Attendance Form',
           style: TextStyle(
-            color: Colors.black,
+            color: AppColors.black,
             fontSize: 18,
             fontWeight: FontWeight.w600,
           ),
@@ -58,7 +59,7 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
-                color: Colors.black87,
+                color: AppColors.black87,
               ),
             ),
             const SizedBox(height: 8),
@@ -66,7 +67,7 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.pureWhite,
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: Colors.grey.shade300),
               ),
@@ -74,7 +75,7 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                 currentTime,
                 style: const TextStyle(
                   fontSize: 16,
-                  color: Colors.black87,
+                  color: AppColors.black87,
                 ),
               ),
             ),
@@ -86,7 +87,7 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.pureWhite,
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: Colors.grey.shade300),
               ),
@@ -101,7 +102,7 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                   items: absentTypes.map((String type) {
                     Color? backgroundColor;
                     if (type == 'Absent') {
-                      backgroundColor = Colors.yellow.shade200;
+                      backgroundColor = AppColors.primaryYellow;
                     }
                     
                     return DropdownMenuItem<String>(
@@ -116,7 +117,7 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                           type,
                           style: const TextStyle(
                             fontSize: 16,
-                            color: Colors.black87,
+                            color: AppColors.black87,
                           ),
                         ),
                       ),
@@ -145,7 +146,7 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
-                          color: Colors.black87,
+                          color: AppColors.black87,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -154,7 +155,7 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: AppColors.pureWhite,
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(color: Colors.grey.shade300),
                           ),
@@ -168,7 +169,7 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                                     : 'dd/mm/yyyy',
                                 style: TextStyle(
                                   fontSize: 14,
-                                  color: startDate != null ? Colors.black87 : Colors.grey,
+                                  color: startDate != null ? AppColors.black87 : Colors.grey,
                                 ),
                               ),
                             ],
@@ -188,7 +189,7 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
-                          color: Colors.black87,
+                          color: AppColors.black87,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -197,7 +198,7 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: AppColors.pureWhite,
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(color: Colors.grey.shade300),
                           ),
@@ -211,7 +212,7 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                                     : 'dd/mm/yyyy',
                                 style: TextStyle(
                                   fontSize: 14,
-                                  color: endDate != null ? Colors.black87 : Colors.grey,
+                                  color: endDate != null ? AppColors.black87 : Colors.grey,
                                 ),
                               ),
                             ],
@@ -232,7 +233,7 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
-                color: Colors.black87,
+                color: AppColors.black87,
               ),
             ),
             const SizedBox(height: 12),
@@ -240,7 +241,7 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
               width: double.infinity,
               height: 110,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.pureWhite,
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: Colors.grey.shade300, style: BorderStyle.solid),
               ),
@@ -264,7 +265,7 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                     'Drag and Drop Here',
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.black87,
+                      color: AppColors.black87,
                     ),
                   ),
                   const Text(
@@ -285,7 +286,7 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                       'Browse',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.blue,
+                        color: AppColors.primaryBlue,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -302,7 +303,7 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
               child: ElevatedButton(
                 onPressed: () {},
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
+                  backgroundColor: AppColors.errorRed,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -311,7 +312,7 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                 child: const Text(
                   'Save Pictures',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: AppColors.pureWhite,
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
@@ -327,7 +328,7 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
-                color: Colors.black87,
+                color: AppColors.black87,
               ),
             ),
             const SizedBox(height: 12),
@@ -337,7 +338,7 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.pureWhite,
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: Colors.grey.shade300),
               ),
@@ -348,7 +349,7 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                     selectedLocation,
                     style: TextStyle(
                       fontSize: 16,
-                      color: selectedLocation == 'Choose Location' ? Colors.grey : Colors.black87,
+                      color: selectedLocation == 'Choose Location' ? Colors.grey : AppColors.black87,
                     ),
                   ),
                   const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
@@ -375,14 +376,14 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                     Container(
                       width: double.infinity,
                       height: double.infinity,
-                      color: Colors.green.shade100,
+                      color: AppColors.primaryGreen,
                       child: const Center(
                         child: Text(
                           'Map View\n(Malang City Area)',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 14,
-                            color: Colors.black54,
+                            color: AppColors.black54,
                           ),
                         ),
                       ),
@@ -393,7 +394,7 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                       top: 20,
                       child: Icon(
                         Icons.location_on,
-                        color: Colors.red,
+                        color: AppColors.errorRed,
                         size: 30,
                       ),
                     ),
@@ -410,7 +411,7 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
-                color: Colors.black87,
+                color: AppColors.black87,
               ),
             ),
             const SizedBox(height: 8),
@@ -418,7 +419,7 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.pureWhite,
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: Colors.grey.shade300),
               ),
@@ -429,7 +430,7 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                     detailAddress,
                     style: const TextStyle(
                       fontSize: 16,
-                      color: Colors.black87,
+                      color: AppColors.black87,
                     ),
                   ),
                   const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
@@ -451,14 +452,14 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
-                          color: Colors.black87,
+                          color: AppColors.black87,
                         ),
                       ),
                       const SizedBox(height: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: AppColors.pureWhite,
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(color: Colors.grey.shade300),
                         ),
@@ -483,14 +484,14 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
-                          color: Colors.black87,
+                          color: AppColors.black87,
                         ),
                       ),
                       const SizedBox(height: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: AppColors.pureWhite,
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(color: Colors.grey.shade300),
                         ),
@@ -541,13 +542,13 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Attendance saved successfully!'),
-                          backgroundColor: Colors.green,
+                          backgroundColor: AppColors.primaryGreen,
                         ),
                       );
                       Navigator.pop(context);
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
+                      backgroundColor: AppColors.primaryGreen,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
@@ -556,7 +557,7 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                     child: const Text(
                       'Save',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: AppColors.pureWhite,
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),

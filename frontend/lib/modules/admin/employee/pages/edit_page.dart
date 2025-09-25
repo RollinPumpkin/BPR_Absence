@@ -9,11 +9,11 @@ class EditPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        backgroundColor: AppColors.pureWhite,
+        foregroundColor: AppColors.black,
         title: const Text(
           "Edit Information Profile",
-          style: TextStyle(color: Colors.black),
+          style: TextStyle(color: AppColors.black),
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -39,7 +39,7 @@ class EditPage extends StatelessWidget {
                     child: const Icon(
                       Icons.person,
                       size: 50,
-                      color: Colors.white,
+                      color: AppColors.pureWhite,
                     ),
                   ),
                   Positioned(
@@ -48,7 +48,7 @@ class EditPage extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: AppColors.pureWhite,
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: const Icon(
@@ -158,7 +158,7 @@ class EditPage extends StatelessWidget {
               children: [
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    foregroundColor: Colors.white,
+                    foregroundColor: AppColors.pureWhite,
                     backgroundColor: AppColors.primaryRed,
                   ),
                   onPressed: () {
@@ -168,7 +168,7 @@ class EditPage extends StatelessWidget {
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    foregroundColor: Colors.white,
+                    foregroundColor: AppColors.pureWhite,
                     backgroundColor: AppColors.primaryGreen,
                   ),
                   onPressed: () {
@@ -197,7 +197,7 @@ class _InputLabel extends StatelessWidget {
       style: const TextStyle(
         fontSize: 14,
         fontWeight: FontWeight.bold,
-        color: Colors.black,
+        color: AppColors.black,
       ),
     );
   }

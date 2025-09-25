@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:frontend/core/widgets/custom_bottom_nav.dart';
-import 'package:frontend/modules/user/attendance/attendance_page.dart';
-import 'package:frontend/modules/user/assignment/assignment_page.dart';
-import 'package:frontend/modules/user/letter/letter_page.dart';
-import 'package:frontend/modules/user/profile/profile_page.dart';
-import 'package:frontend/modules/user/shared/user_navigation_constants.dart';
+import 'package:frontend/core/constants/colors.dart';
+import 'package:frontend/core/widgets/custom_bottom_nav_router.dart';
+import 'package:frontend/modules/user/shared/user_nav_items.dart';
 
 import 'widgets/user_header.dart';
 import 'widgets/upcoming_tasks_widget.dart';
@@ -25,27 +22,28 @@ class UserDashboardPage extends StatelessWidget {
           children: [
             /// Header with integrated clock card
             const UserHeader(),
-            
+
             const SizedBox(height: 20),
 
             /// Upcoming Tasks
             const UpcomingTasksWidget(),
-            
+
             const SizedBox(height: 20),
 
             /// Activity Summary
             const ActivitySummaryWidget(),
-            
+
             const SizedBox(height: 20),
           ],
         ),
       ),
 
-      /// Bottom Navigation
-      bottomNavigationBar: CustomBottomNav(
+      bottomNavigationBar: CustomBottomNavRouter(
         currentIndex: 0,
-        icons: UserNavigationConstants.icons,
-        pages: UserNavigationConstants.pages,
+        items: UserNavItems.items,
+        style: SimpleNavStyle.preset().copyWith(
+          indicatorColor: AppColors.primaryRed,
+        ),
       ),
     );
   }

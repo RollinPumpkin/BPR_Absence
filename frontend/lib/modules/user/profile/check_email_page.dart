@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/core/constants/colors.dart';
 
 class CheckEmailPage extends StatelessWidget {
   const CheckEmailPage({super.key});
@@ -37,7 +38,7 @@ class CheckEmailPage extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                  color: AppColors.black87,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -50,7 +51,7 @@ class CheckEmailPage extends StatelessWidget {
                 text: TextSpan(
                   style: const TextStyle(
                     fontSize: 16,
-                    color: Colors.black54,
+                    color: AppColors.black54,
                     height: 1.5,
                   ),
                   children: [
@@ -58,7 +59,7 @@ class CheckEmailPage extends StatelessWidget {
                     TextSpan(
                       text: "uremail@gmail.com",
                       style: TextStyle(
-                        color: Colors.blue.shade600,
+                        color: AppColors.primaryBlue,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -80,7 +81,7 @@ class CheckEmailPage extends StatelessWidget {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text("Opening email app..."),
-                        backgroundColor: Colors.green,
+                        backgroundColor: AppColors.primaryGreen,
                       ),
                     );
                   },
@@ -94,7 +95,7 @@ class CheckEmailPage extends StatelessWidget {
                   child: const Text(
                     "Open Your Email",
                     style: TextStyle(
-                      color: Colors.white,
+                      color: AppColors.pureWhite,
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
@@ -110,7 +111,7 @@ class CheckEmailPage extends StatelessWidget {
                 text: TextSpan(
                   style: const TextStyle(
                     fontSize: 14,
-                    color: Colors.black54,
+                    color: AppColors.black54,
                   ),
                   children: [
                     const TextSpan(text: "Don't receive the email? "),
@@ -120,14 +121,14 @@ class CheckEmailPage extends StatelessWidget {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text("Password reset email resent!"),
-                              backgroundColor: Colors.green,
+                              backgroundColor: AppColors.primaryGreen,
                             ),
                           );
                         },
                         child: Text(
                           "Click here to resend!",
                           style: TextStyle(
-                            color: Colors.blue.shade600,
+                            color: AppColors.primaryBlue,
                             fontWeight: FontWeight.w500,
                             decoration: TextDecoration.underline,
                           ),
@@ -151,14 +152,14 @@ class CheckEmailPage extends StatelessWidget {
                     Icon(
                       Icons.arrow_back_ios,
                       size: 16,
-                      color: Colors.black87,
+                      color: AppColors.black87,
                     ),
                     const SizedBox(width: 4),
                     const Text(
                       "Back to log in",
                       style: TextStyle(
                         fontSize: 16,
-                        color: Colors.black87,
+                        color: AppColors.black87,
                         fontWeight: FontWeight.w500,
                       ),
                     ),

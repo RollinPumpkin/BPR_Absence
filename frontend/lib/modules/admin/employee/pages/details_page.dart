@@ -10,11 +10,11 @@ class DetailsPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        backgroundColor: AppColors.pureWhite,
+        foregroundColor: AppColors.black,
         title: const Text(
           "Information Profile",
-          style: TextStyle(color: Colors.black),
+          style: TextStyle(color: AppColors.black),
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -38,7 +38,7 @@ class DetailsPage extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(Icons.person,
-                        size: 50, color: Colors.white),
+                        size: 50, color: AppColors.pureWhite),
                   ),
                   Positioned(
                     bottom: 4,
@@ -46,7 +46,7 @@ class DetailsPage extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: AppColors.pureWhite,
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: const Icon(
@@ -95,7 +95,7 @@ class DetailsPage extends StatelessWidget {
                 ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryYellow,
-                    foregroundColor: Colors.white,
+                    foregroundColor: AppColors.pureWhite,
                     padding: const EdgeInsets.symmetric(
                         horizontal: 20, vertical: 12),
                     shape: RoundedRectangleBorder(
@@ -117,7 +117,7 @@ class DetailsPage extends StatelessWidget {
                 ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryRed,
-                    foregroundColor: Colors.white,
+                    foregroundColor: AppColors.pureWhite,
                     padding: const EdgeInsets.symmetric(
                         horizontal: 20, vertical: 12),
                     shape: RoundedRectangleBorder(
@@ -141,7 +141,7 @@ class DetailsPage extends StatelessWidget {
                           ElevatedButton(
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.primaryRed,
-                              foregroundColor: Colors.white,
+                              foregroundColor: AppColors.pureWhite,
                             ),
                             onPressed: () {
                               Navigator.pop(ctx);
@@ -196,13 +196,13 @@ class _DetailItem extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black,
+                    color: AppColors.black,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   value,
-                  style: const TextStyle(fontSize: 14, color: Colors.black87),
+                  style: const TextStyle(fontSize: 14, color: AppColors.black),
                 ),
               ],
             ),

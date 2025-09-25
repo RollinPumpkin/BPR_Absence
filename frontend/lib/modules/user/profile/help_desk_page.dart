@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/core/constants/colors.dart';
 
 class HelpDeskPage extends StatelessWidget {
   const HelpDeskPage({super.key});
@@ -9,8 +10,8 @@ class HelpDeskPage extends StatelessWidget {
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
         title: const Text('Help Desk'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        backgroundColor: AppColors.pureWhite,
+        foregroundColor: AppColors.black,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -43,7 +44,7 @@ class HelpDeskPage extends StatelessWidget {
                 "We're here to support your workday.",
                 style: TextStyle(
                   fontSize: 16,
-                  color: Colors.black54,
+                  color: AppColors.black54,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -55,7 +56,7 @@ class HelpDeskPage extends StatelessWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: AppColors.pureWhite,
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
@@ -89,7 +90,7 @@ class HelpDeskPage extends StatelessWidget {
                     width: 80,
                     height: 80,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: AppColors.pureWhite,
                       shape: BoxShape.circle,
                       border: Border.all(color: const Color(0xFFB91C1C), width: 3),
                       boxShadow: [
@@ -134,7 +135,7 @@ class HelpDeskPage extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: Colors.black87,
+                      color: AppColors.black87,
                       letterSpacing: 1.2,
                     ),
                     textAlign: TextAlign.center,
@@ -172,7 +173,7 @@ class HelpDeskPage extends StatelessWidget {
           label,
           style: const TextStyle(
             fontSize: 16,
-            color: Colors.black54,
+            color: AppColors.black54,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -181,7 +182,7 @@ class HelpDeskPage extends StatelessWidget {
             value,
             style: const TextStyle(
               fontSize: 16,
-              color: Colors.black87,
+              color: AppColors.black87,
               fontWeight: FontWeight.w600,
             ),
             textAlign: TextAlign.right,

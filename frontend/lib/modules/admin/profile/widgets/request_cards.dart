@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/core/constants/colors.dart';
 
 class RequestCards extends StatelessWidget {
   const RequestCards({super.key});
@@ -11,7 +12,7 @@ class RequestCards extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.pureWhite,
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: Colors.grey.shade300),
             ),
@@ -30,13 +31,13 @@ class RequestCards extends StatelessWidget {
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 6),
                   decoration: BoxDecoration(
-                    color: Colors.green,
+                    color: AppColors.primaryGreen,
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: const Center(
                     child: Text(
                       "See Details",
-                      style: TextStyle(color: Colors.white, fontSize: 12),
+                      style: TextStyle(color: AppColors.pureWhite, fontSize: 12),
                     ),
                   ),
                 ),
@@ -49,7 +50,7 @@ class RequestCards extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.pureWhite,
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: Colors.grey.shade300),
             ),
@@ -68,13 +69,13 @@ class RequestCards extends StatelessWidget {
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 6),
                   decoration: BoxDecoration(
-                    color: Colors.yellow,
+                    color: AppColors.primaryYellow,
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: const Center(
                     child: Text(
                       "See Details",
-                      style: TextStyle(color: Colors.white, fontSize: 12),
+                      style: TextStyle(color: AppColors.pureWhite, fontSize: 12),
                     ),
                   ),
                 ),

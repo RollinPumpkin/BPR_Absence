@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/core/constants/colors.dart';
 
 class AttendanceChart extends StatelessWidget {
   const AttendanceChart({super.key});
@@ -8,11 +9,11 @@ class AttendanceChart extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.pureWhite,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: AppColors.black.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -30,7 +31,7 @@ class AttendanceChart extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: Colors.black87,
+                  color: AppColors.black87,
                 ),
               ),
               Icon(
@@ -80,10 +81,10 @@ class AttendanceChart extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
-        _buildLegendItem('Present', Colors.green.shade600),
-        _buildLegendItem('Late', Colors.orange.shade600),
-        _buildLegendItem('Absent', Colors.red.shade600),
-        _buildLegendItem('Leave', Colors.blue.shade600),
+        _buildLegendItem('Present', AppColors.primaryGreen),
+        _buildLegendItem('Late', AppColors.vibrantOrange),
+        _buildLegendItem('Absent', AppColors.errorRed),
+        _buildLegendItem('Leave', AppColors.primaryBlue),
       ],
     );
   }
@@ -129,10 +130,10 @@ class MultiLineAttendanceChartPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     // Define colors for each attendance type
-    final presentColor = Colors.green.shade600;
-    final lateColor = Colors.orange.shade600;
-    final absentColor = Colors.red.shade600;
-    final leaveColor = Colors.blue.shade600;
+    final presentColor = AppColors.primaryGreen;
+    final lateColor = AppColors.vibrantOrange;
+    final absentColor = AppColors.errorRed;
+    final leaveColor = AppColors.primaryBlue;
 
     // Sample data for 7 days (Monday to Sunday)
     // Values represent count of people in each category per day
@@ -216,7 +217,7 @@ class MultiLineAttendanceChartPainter extends CustomPainter {
       canvas.drawCircle(point, 3, dotPaint);
       
       // White center
-      canvas.drawCircle(point, 1.5, Paint()..color = Colors.white);
+      canvas.drawCircle(point, 1.5, Paint()..color = AppColors.pureWhite);
     }
   }
 

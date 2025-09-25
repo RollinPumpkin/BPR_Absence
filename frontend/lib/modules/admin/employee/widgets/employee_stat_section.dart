@@ -10,7 +10,7 @@ class EmployeeStatSection extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        color: AppColors.lightGray,
+        color: Colors.grey,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -84,7 +84,7 @@ class _RoundedDropdown extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.pureWhite,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.grey.shade300),
       ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/core/constants/colors.dart';
 
 class AddLetterPage extends StatelessWidget {
   const AddLetterPage({super.key});
@@ -119,7 +120,7 @@ class AddLetterPage extends StatelessWidget {
                 readOnly: true,
                 decoration: InputDecoration(
                   hintText: "dd/mm/yyyy",
-                  prefixIcon: const Icon(Icons.calendar_today, color: Colors.blue),
+                  prefixIcon: const Icon(Icons.calendar_today, color: AppColors.primaryBlue),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -163,7 +164,7 @@ class AddLetterPage extends StatelessWidget {
                     Text(
                       "Browse",
                       style: TextStyle(
-                        color: Colors.blue,
+                        color: AppColors.primaryBlue,
                         decoration: TextDecoration.underline,
                       ),
                     ),
@@ -182,12 +183,12 @@ class AddLetterPage extends StatelessWidget {
                     );
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
+                    backgroundColor: AppColors.primaryBlue,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
                   child: const Text(
                     "Save",
-                    style: TextStyle(fontSize: 16, color: Colors.white),
+                    style: TextStyle(fontSize: 16, color: AppColors.pureWhite),
                   ),
                 ),
               ),

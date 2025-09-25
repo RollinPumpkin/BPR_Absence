@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/core/constants/colors.dart';
 import 'widgets/attendance_detail_dialog.dart';
 
 class AttendanceHistoryPage extends StatefulWidget {
@@ -17,8 +18,8 @@ class _AttendanceHistoryPageState extends State<AttendanceHistoryPage> {
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
         title: const Text('Attendance History'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        backgroundColor: AppColors.pureWhite,
+        foregroundColor: AppColors.black,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -29,7 +30,7 @@ class _AttendanceHistoryPageState extends State<AttendanceHistoryPage> {
         children: [
           // Filter Section
           Container(
-            color: Colors.white,
+            color: AppColors.pureWhite,
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
@@ -63,13 +64,13 @@ class _AttendanceHistoryPageState extends State<AttendanceHistoryPage> {
     
     // All attendance data
     final allItems = [
-      {'status': 'On Time', 'date': '27 Aug', 'time': '07:45:32 - 16:06:44', 'duration': '10 hr 15 mins', 'color': Colors.green, 'category': 'on_time'},
-      {'status': 'Late', 'date': '26 Aug', 'time': '08:45:32 - 16:06:44', 'duration': '08 hr 15 mins', 'color': Colors.red, 'category': 'late'},
+      {'status': 'On Time', 'date': '27 Aug', 'time': '07:45:32 - 16:06:44', 'duration': '10 hr 15 mins', 'color': AppColors.primaryGreen, 'category': 'on_time'},
+      {'status': 'Late', 'date': '26 Aug', 'time': '08:45:32 - 16:06:44', 'duration': '08 hr 15 mins', 'color': AppColors.errorRed, 'category': 'late'},
       {'status': 'Annual Leave', 'date': '25 Aug', 'time': 'Weekend Annual', 'duration': 'Thu weekend', 'color': Colors.grey, 'category': 'leave'},
-      {'status': 'Sick', 'date': '24 Aug', 'time': '07:45:32', 'duration': '', 'color': Colors.orange, 'category': 'leave'},
-      {'status': 'Late', 'date': '23 Aug', 'time': '08:45:32 - 16:06:44', 'duration': '08 hr 15 mins', 'color': Colors.red, 'category': 'late'},
-      {'status': 'On Time', 'date': '22 Aug', 'time': '07:45:32 - 16:06:44', 'duration': '10 hr 15 mins', 'color': Colors.green, 'category': 'on_time'},
-      {'status': 'On Time', 'date': '21 Aug', 'time': '07:45:32 - 16:06:44', 'duration': '10 hr 15 mins', 'color': Colors.green, 'category': 'on_time'},
+      {'status': 'Sick', 'date': '24 Aug', 'time': '07:45:32', 'duration': '', 'color': AppColors.vibrantOrange, 'category': 'leave'},
+      {'status': 'Late', 'date': '23 Aug', 'time': '08:45:32 - 16:06:44', 'duration': '08 hr 15 mins', 'color': AppColors.errorRed, 'category': 'late'},
+      {'status': 'On Time', 'date': '22 Aug', 'time': '07:45:32 - 16:06:44', 'duration': '10 hr 15 mins', 'color': AppColors.primaryGreen, 'category': 'on_time'},
+      {'status': 'On Time', 'date': '21 Aug', 'time': '07:45:32 - 16:06:44', 'duration': '10 hr 15 mins', 'color': AppColors.primaryGreen, 'category': 'on_time'},
     ];
 
     for (int i = 0; i < allItems.length; i++) {
@@ -115,10 +116,10 @@ class _AttendanceHistoryPageState extends State<AttendanceHistoryPage> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.blue.shade50 : Colors.grey.shade100,
+          color: isSelected ? AppColors.primaryBlue : Colors.grey.shade100,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? Colors.blue : Colors.grey.shade300,
+            color: isSelected ? AppColors.primaryBlue : Colors.grey.shade300,
             width: 1,
           ),
         ),
@@ -129,7 +130,7 @@ class _AttendanceHistoryPageState extends State<AttendanceHistoryPage> {
               Icon(
                 icon,
                 size: 18,
-                color: isSelected ? Colors.blue : Colors.grey.shade600,
+                color: isSelected ? AppColors.primaryBlue : Colors.grey.shade600,
               ),
               const SizedBox(width: 6),
             ],
@@ -138,7 +139,7 @@ class _AttendanceHistoryPageState extends State<AttendanceHistoryPage> {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
-                color: isSelected ? Colors.blue : Colors.grey.shade700,
+                color: isSelected ? AppColors.primaryBlue : Colors.grey.shade700,
               ),
             ),
           ],
@@ -168,7 +169,7 @@ class _AttendanceHistoryPageState extends State<AttendanceHistoryPage> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.pureWhite,
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
@@ -198,7 +199,7 @@ class _AttendanceHistoryPageState extends State<AttendanceHistoryPage> {
                     time,
                     style: const TextStyle(
                       fontSize: 14,
-                      color: Colors.black87,
+                      color: AppColors.black87,
                     ),
                   ),
                   if (duration.isNotEmpty) ...[

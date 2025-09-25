@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/core/constants/colors.dart';
 
 class AttendanceHistoryCard extends StatelessWidget {
   final String date;
@@ -25,7 +26,7 @@ class AttendanceHistoryCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.pureWhite,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: Colors.grey.shade200),
           boxShadow: [
@@ -47,7 +48,7 @@ class AttendanceHistoryCard extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: Colors.black87,
+                    color: AppColors.black87,
                   ),
                 ),
                 Container(
@@ -71,7 +72,7 @@ class AttendanceHistoryCard extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  child: _buildTimeItem("Clock In", clockIn, Icons.login, Colors.green),
+                  child: _buildTimeItem("Clock In", clockIn, Icons.login, AppColors.primaryGreen),
                 ),
                 Container(
                   width: 1,
@@ -80,7 +81,7 @@ class AttendanceHistoryCard extends StatelessWidget {
                   margin: const EdgeInsets.symmetric(horizontal: 16),
                 ),
                 Expanded(
-                  child: _buildTimeItem("Clock Out", clockOut, Icons.logout, Colors.red),
+                  child: _buildTimeItem("Clock Out", clockOut, Icons.logout, AppColors.errorRed),
                 ),
               ],
             ),
@@ -114,7 +115,7 @@ class AttendanceHistoryCard extends StatelessWidget {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: time == "-" ? Colors.grey : Colors.black87,
+                color: time == "-" ? Colors.grey : AppColors.black87,
               ),
             ),
           ],

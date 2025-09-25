@@ -7,7 +7,7 @@ class SuccessResetPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.pureWhite,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -19,7 +19,7 @@ class SuccessResetPage extends StatelessWidget {
               /// Circle Icon Placeholder
               const CircleAvatar(
                 radius: 50,
-                backgroundColor: Colors.black12,
+                backgroundColor: AppColors.black,
               ),
               const SizedBox(height: 40),
 
@@ -37,7 +37,7 @@ class SuccessResetPage extends StatelessWidget {
               const Text(
                 "You can log in with your new password. If you encounter any issues, please contact support !",
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 14, color: Colors.black87),
+                style: TextStyle(fontSize: 14, color: AppColors.black),
               ),
               const SizedBox(height: 40),
 
@@ -57,7 +57,7 @@ class SuccessResetPage extends StatelessWidget {
                   },
                   child: const Text(
                     "Login Now",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.white),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.pureWhite),
                   ),
                 ),
               ),
@@ -68,11 +68,11 @@ class SuccessResetPage extends StatelessWidget {
                 onPressed: () {
                   Navigator.pop(context);
                 },
-                icon: const Icon(Icons.arrow_back, size: 16, color: Colors.black),
+                icon: const Icon(Icons.arrow_back, size: 16, color: AppColors.black),
                 label: const Text(
                   "Back to log in",
                   style: TextStyle(
-                    color: Colors.black,
+                    color: AppColors.black,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -84,7 +84,7 @@ class SuccessResetPage extends StatelessWidget {
               const Text(
                 "If you encounter any issues, please contact support!",
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 12, color: Colors.black54),
+                style: TextStyle(fontSize: 12, color: AppColors.black),
               ),
               const SizedBox(height: 20),
             ],

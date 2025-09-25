@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/core/constants/colors.dart';
 
 class LetterTypeCard extends StatelessWidget {
   final String title;
@@ -23,7 +24,7 @@ class LetterTypeCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.pureWhite,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: Colors.grey.shade200),
           boxShadow: [
@@ -59,7 +60,7 @@ class LetterTypeCard extends StatelessWidget {
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: Colors.black87,
+                      color: AppColors.black87,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -152,7 +153,7 @@ class LetterTypeCard extends StatelessWidget {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text("Letter submitted successfully!"),
-                  backgroundColor: Colors.green,
+                  backgroundColor: AppColors.primaryGreen,
                 ),
               );
             },

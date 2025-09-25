@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:frontend/core/widgets/custom_bottom_nav.dart';
-import 'package:frontend/modules/user/dashboard/dashboard_page.dart';
-import 'package:frontend/modules/user/attendance/attendance_page.dart';
-import 'package:frontend/modules/user/assignment/assignment_page.dart';
-import 'package:frontend/modules/user/profile/profile_page.dart';
-import 'package:frontend/modules/user/shared/user_navigation_constants.dart';
+import 'package:frontend/core/constants/colors.dart';
+import 'package:frontend/core/widgets/custom_bottom_nav_router.dart';
+import 'package:frontend/modules/user/shared/user_nav_items.dart';
 
 import 'widgets/letter_type_card.dart';
 import 'widgets/my_letter_card.dart';
@@ -35,20 +32,20 @@ class _UserLetterPageState extends State<UserLetterPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.pureWhite,
       appBar: AppBar(
         title: const Text(
           "Letters",
           style: TextStyle(fontWeight: FontWeight.w600),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.pureWhite,
         elevation: 0,
-        foregroundColor: Colors.black,
+        foregroundColor: AppColors.black,
         centerTitle: false,
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: Colors.blue,
-          labelColor: Colors.blue,
+          indicatorColor: AppColors.primaryBlue,
+          labelColor: AppColors.primaryBlue,
           unselectedLabelColor: Colors.grey,
           tabs: const [
             Tab(text: "Submit Letter"),
@@ -70,7 +67,7 @@ class _UserLetterPageState extends State<UserLetterPage>
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
-                    color: Colors.black87,
+                    color: AppColors.black87,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -79,7 +76,7 @@ class _UserLetterPageState extends State<UserLetterPage>
                   title: "Leave Request",
                   description: "Request for annual leave, sick leave, or personal leave",
                   icon: Icons.event_available,
-                  color: Colors.green,
+                  color: AppColors.primaryGreen,
                 ),
                 const SizedBox(height: 12),
 
@@ -87,7 +84,7 @@ class _UserLetterPageState extends State<UserLetterPage>
                   title: "Permission Letter",
                   description: "Request permission to leave during work hours",
                   icon: Icons.schedule,
-                  color: Colors.orange,
+                  color: AppColors.vibrantOrange,
                 ),
                 const SizedBox(height: 12),
 
@@ -95,7 +92,7 @@ class _UserLetterPageState extends State<UserLetterPage>
                   title: "Overtime Request",
                   description: "Request for overtime work authorization",
                   icon: Icons.access_time,
-                  color: Colors.blue,
+                  color: AppColors.primaryBlue,
                 ),
                 const SizedBox(height: 12),
 
@@ -134,10 +131,13 @@ class _UserLetterPageState extends State<UserLetterPage>
           ),
         ],
       ),
-      bottomNavigationBar: CustomBottomNav(
+      
+      bottomNavigationBar: CustomBottomNavRouter(
         currentIndex: 3,
-        icons: UserNavigationConstants.icons,
-        pages: UserNavigationConstants.pages,
+        items: UserNavItems.items,
+        style: SimpleNavStyle.preset().copyWith(
+          indicatorColor: AppColors.primaryRed,
+        ),
       ),
     );
   }
@@ -175,7 +175,7 @@ class _UserLetterPageState extends State<UserLetterPage>
   }
 
   Color _getLetterStatusColor(int index) {
-    final colors = [Colors.green, Colors.orange, Colors.green, Colors.red, Colors.orange];
+    final colors = [AppColors.primaryGreen, AppColors.vibrantOrange, AppColors.primaryGreen, AppColors.errorRed, AppColors.vibrantOrange];
     return colors[index % colors.length];
   }
 }

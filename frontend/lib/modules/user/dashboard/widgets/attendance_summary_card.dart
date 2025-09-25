@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/core/constants/colors.dart';
 
 class AttendanceSummaryCard extends StatelessWidget {
   const AttendanceSummaryCard({super.key});
@@ -20,7 +21,7 @@ class AttendanceSummaryCard extends StatelessWidget {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: Colors.black87,
+              color: AppColors.black87,
             ),
           ),
           const SizedBox(height: 16),
@@ -31,7 +32,7 @@ class AttendanceSummaryCard extends StatelessWidget {
                 child: _buildAttendanceItem(
                   "Clock In",
                   "08:30",
-                  Colors.green,
+                  AppColors.primaryGreen,
                   Icons.login,
                 ),
               ),
@@ -60,7 +61,7 @@ class AttendanceSummaryCard extends StatelessWidget {
                 child: _buildSummaryItem(
                   "Working Hours",
                   "7h 30m",
-                  Colors.blue,
+                  AppColors.primaryBlue,
                 ),
               ),
               const SizedBox(width: 16),
@@ -68,7 +69,7 @@ class AttendanceSummaryCard extends StatelessWidget {
                 child: _buildSummaryItem(
                   "Break Time",
                   "1h 00m",
-                  Colors.orange,
+                  AppColors.vibrantOrange,
                 ),
               ),
             ],

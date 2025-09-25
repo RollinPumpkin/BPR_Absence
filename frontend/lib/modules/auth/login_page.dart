@@ -99,7 +99,7 @@ class _LoginPageState extends State<LoginPage>
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Login successful!'),
-            backgroundColor: Colors.green,
+            backgroundColor: AppColors.primaryGreen,
           ),
         );
       }
@@ -139,7 +139,7 @@ class _LoginPageState extends State<LoginPage>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Login failed: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.errorRed,
           ),
         );
       }
@@ -155,7 +155,7 @@ class _LoginPageState extends State<LoginPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.pureWhite,
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: FadeTransition(
@@ -254,7 +254,7 @@ class _LoginPageState extends State<LoginPage>
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primaryRed,
-                        foregroundColor: Colors.white,
+                        foregroundColor: AppColors.pureWhite,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         textStyle: const TextStyle(fontSize: 16),
                       ),
@@ -266,7 +266,7 @@ class _LoginPageState extends State<LoginPage>
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
                                 valueColor: AlwaysStoppedAnimation<Color>(
-                                  Colors.white,
+                                  AppColors.pureWhite,
                                 ),
                               ),
                             )
@@ -279,7 +279,7 @@ class _LoginPageState extends State<LoginPage>
                   RichText(
                     textAlign: TextAlign.center,
                     text: TextSpan(
-                      style: const TextStyle(color: Colors.black, fontSize: 14),
+                      style: const TextStyle(color: AppColors.black, fontSize: 14),
                       children: [
                         const TextSpan(text: "Don’t have an account? "),
                         TextSpan(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/core/constants/colors.dart';
 
 class FigmaClockCard extends StatelessWidget {
   const FigmaClockCard({super.key});
@@ -9,11 +10,11 @@ class FigmaClockCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.pureWhite,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: AppColors.black.withOpacity(0.1),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -33,7 +34,7 @@ class FigmaClockCard extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
-                        color: Colors.black87,
+                        color: AppColors.black87,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -42,7 +43,7 @@ class FigmaClockCard extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black,
+                        color: AppColors.black,
                       ),
                     ),
                   ],
@@ -62,7 +63,7 @@ class FigmaClockCard extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
-                        color: Colors.black87,
+                        color: AppColors.black87,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -71,7 +72,7 @@ class FigmaClockCard extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black,
+                        color: AppColors.black,
                       ),
                     ),
                   ],
@@ -91,24 +92,24 @@ class FigmaClockCard extends StatelessWidget {
                   icon: Container(
                     padding: const EdgeInsets.all(4),
                     decoration: const BoxDecoration(
-                      color: Colors.white,
+                      color: AppColors.pureWhite,
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
                       Icons.login,
-                      color: Colors.green,
+                      color: AppColors.primaryGreen,
                       size: 16,
                     ),
                   ),
                   label: const Text(
                     'In',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: AppColors.pureWhite,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
+                    backgroundColor: AppColors.primaryGreen,
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
@@ -123,24 +124,24 @@ class FigmaClockCard extends StatelessWidget {
                   icon: Container(
                     padding: const EdgeInsets.all(4),
                     decoration: const BoxDecoration(
-                      color: Colors.white,
+                      color: AppColors.pureWhite,
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
                       Icons.logout,
-                      color: Colors.red,
+                      color: AppColors.errorRed,
                       size: 16,
                     ),
                   ),
                   label: const Text(
                     'Out',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: AppColors.pureWhite,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
+                    backgroundColor: AppColors.errorRed,
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),

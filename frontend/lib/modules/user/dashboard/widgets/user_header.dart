@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/core/constants/colors.dart';
 import 'package:intl/intl.dart';
 import '../../attendance/attendance_form_page.dart';
 import '../../profile/profile_page.dart';
@@ -42,7 +43,7 @@ class UserHeader extends StatelessWidget {
                   Text(
                     '${dateFormatter.format(now)}\n${timeFormatter.format(now)}',
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: AppColors.pureWhite,
                       fontSize: 12,
                       fontWeight: FontWeight.w400,
                     ),
@@ -53,12 +54,12 @@ class UserHeader extends StatelessWidget {
                         width: 32,
                         height: 32,
                         decoration: const BoxDecoration(
-                          color: Colors.white24,
+                          color: AppColors.pureWhite,
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
                           Icons.notifications_outlined,
-                          color: Colors.white,
+                          color: AppColors.pureWhite,
                           size: 18,
                         ),
                       ),
@@ -102,7 +103,7 @@ class UserHeader extends StatelessWidget {
                   Text(
                     'Good Morning, Nindy',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: AppColors.pureWhite,
                       fontSize: 20,
                       fontWeight: FontWeight.w600,
                     ),
@@ -111,7 +112,7 @@ class UserHeader extends StatelessWidget {
                   Text(
                     'Have a Great Day!',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: AppColors.pureWhite,
                       fontSize: 14,
                       fontWeight: FontWeight.w400,
                     ),
@@ -126,11 +127,11 @@ class UserHeader extends StatelessWidget {
                 margin: const EdgeInsets.symmetric(horizontal: 0),
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: AppColors.pureWhite,
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: AppColors.black.withOpacity(0.1),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -150,7 +151,7 @@ class UserHeader extends StatelessWidget {
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w500,
-                                  color: Colors.black87,
+                                  color: AppColors.black87,
                                 ),
                               ),
                               const SizedBox(height: 8),
@@ -159,7 +160,7 @@ class UserHeader extends StatelessWidget {
                                 style: TextStyle(
                                   fontSize: 24,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.black,
+                                  color: AppColors.black,
                                 ),
                               ),
                             ],
@@ -179,7 +180,7 @@ class UserHeader extends StatelessWidget {
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w500,
-                                  color: Colors.black87,
+                                  color: AppColors.black87,
                                 ),
                               ),
                               const SizedBox(height: 8),
@@ -188,7 +189,7 @@ class UserHeader extends StatelessWidget {
                                 style: TextStyle(
                                   fontSize: 24,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.black,
+                                  color: AppColors.black,
                                 ),
                               ),
                             ],
@@ -206,7 +207,7 @@ class UserHeader extends StatelessWidget {
                           child: Container(
                             height: 65,
                             decoration: BoxDecoration(
-                              color: Colors.green,
+                              color: AppColors.primaryGreen,
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: ElevatedButton.icon(
@@ -223,25 +224,25 @@ class UserHeader extends StatelessWidget {
                               icon: Container(
                                 padding: const EdgeInsets.all(3),
                                 decoration: const BoxDecoration(
-                                  color: Colors.white,
+                                  color: AppColors.pureWhite,
                                   shape: BoxShape.circle,
                                 ),
                                 child: const Icon(
                                   Icons.login,
-                                  color: Colors.green,
+                                  color: AppColors.primaryGreen,
                                   size: 14,
                                 ),
                               ),
                               label: const Text(
                                 'In',
                                 style: TextStyle(
-                                  color: Colors.white,
+                                  color: AppColors.pureWhite,
                                   fontWeight: FontWeight.w600,
                                   fontSize: 14,
                                 ),
                               ),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.green,
+                                backgroundColor: AppColors.primaryGreen,
                                 elevation: 0,
                                 padding: const EdgeInsets.symmetric(vertical: 8),
                                 shape: RoundedRectangleBorder(
@@ -256,7 +257,7 @@ class UserHeader extends StatelessWidget {
                           child: Container(
                             height: 65,
                             decoration: BoxDecoration(
-                              color: Colors.red,
+                              color: AppColors.errorRed,
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: ElevatedButton.icon(
@@ -266,25 +267,25 @@ class UserHeader extends StatelessWidget {
                               icon: Container(
                                 padding: const EdgeInsets.all(3),
                                 decoration: const BoxDecoration(
-                                  color: Colors.white,
+                                  color: AppColors.pureWhite,
                                   shape: BoxShape.circle,
                                 ),
                                 child: const Icon(
                                   Icons.logout,
-                                  color: Colors.red,
+                                  color: AppColors.errorRed,
                                   size: 14,
                                 ),
                               ),
                               label: const Text(
                                 'Out',
                                 style: TextStyle(
-                                  color: Colors.white,
+                                  color: AppColors.pureWhite,
                                   fontWeight: FontWeight.w600,
                                   fontSize: 14,
                                 ),
                               ),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red,
+                                backgroundColor: AppColors.errorRed,
                                 elevation: 0,
                                 padding: const EdgeInsets.symmetric(vertical: 8),
                                 shape: RoundedRectangleBorder(

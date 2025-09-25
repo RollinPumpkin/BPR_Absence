@@ -17,7 +17,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.pureWhite,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -40,7 +40,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
               const Text(
                 "Enter your new password below to complete the reset process. Ensure it’s strong and secure",
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 14, color: Colors.black87),
+                style: TextStyle(fontSize: 14, color: AppColors.black),
               ),
               const SizedBox(height: 40),
 
@@ -123,7 +123,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                   },
                   child: const Text(
                     "Reset password",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.white),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.pureWhite),
                   ),
                 ),
               ),
@@ -134,11 +134,11 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                 onPressed: () {
                   Navigator.pop(context);
                 },
-                icon: const Icon(Icons.arrow_back, size: 16, color: Colors.black),
+                icon: const Icon(Icons.arrow_back, size: 16, color: AppColors.black),
                 label: const Text(
                   "Back to log in",
                   style: TextStyle(
-                    color: Colors.black,
+                    color: AppColors.black,
                     fontWeight: FontWeight.bold,
                   ),
                 ),

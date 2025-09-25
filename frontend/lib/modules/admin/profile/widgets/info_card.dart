@@ -23,10 +23,10 @@ class InfoCard extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
         border: Border(left: BorderSide(color: borderColor, width: 6)),
-        color: Colors.white,
+        color: AppColors.pureWhite,
         boxShadow: [
           BoxShadow(
-            color: Colors.black12,
+            color: AppColors.black,
             blurRadius: 6,
             offset: const Offset(0, 3),
           )

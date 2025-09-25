@@ -15,8 +15,8 @@ class EmailPage extends StatelessWidget {
             children: [
               const CircleAvatar(
                 radius: 40,
-                backgroundColor: Colors.black12,
-                child: Icon(Icons.mail_outline, size: 40, color: Colors.black54),
+                backgroundColor: AppColors.black,
+                child: Icon(Icons.mail_outline, size: 40, color: AppColors.black),
               ),
               const SizedBox(height: 32),
 
@@ -34,7 +34,7 @@ class EmailPage extends StatelessWidget {
                 "The link is valid for 24 hours after it's received. "
                 "Please check your inbox!",
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 14, color: Colors.black87),
+                style: TextStyle(fontSize: 14, color: AppColors.black),
               ),
               const SizedBox(height: 32),
 
@@ -55,7 +55,7 @@ class EmailPage extends StatelessWidget {
                     "Open Your Email",
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: AppColors.white,
+                      color: AppColors.pureWhite,
                     ),
                   ),
                 ),
@@ -72,7 +72,7 @@ class EmailPage extends StatelessWidget {
                 child: const Text.rich(
                   TextSpan(
                     text: "Don’t receive the email? ",
-                    style: TextStyle(color: Colors.black87),
+                    style: TextStyle(color: AppColors.black),
                     children: [
                       TextSpan(
                         text: "Click here to resend!",
@@ -94,7 +94,7 @@ class EmailPage extends StatelessWidget {
                 },
                 child: const Text(
                   "← Back to log in",
-                  style: TextStyle(color: Colors.black87),
+                  style: TextStyle(color: AppColors.black),
                 ),
               )
             ],

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/core/constants/colors.dart';
 import 'package:intl/intl.dart';
 
 class UserAttendanceFormPage extends StatefulWidget {
@@ -26,18 +27,18 @@ class _UserAttendanceFormPageState extends State<UserAttendanceFormPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.pureWhite,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.pureWhite,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: const Icon(Icons.arrow_back, color: AppColors.black),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
           'Attendance Form',
           style: TextStyle(
-            color: Colors.black,
+            color: AppColors.black,
             fontSize: 18,
             fontWeight: FontWeight.w600,
           ),
@@ -54,7 +55,7 @@ class _UserAttendanceFormPageState extends State<UserAttendanceFormPage> {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Colors.black87,
+                color: AppColors.black87,
               ),
             ),
             const SizedBox(height: 8),
@@ -70,7 +71,7 @@ class _UserAttendanceFormPageState extends State<UserAttendanceFormPage> {
                 DateFormat('HH : mm : ss').format(DateTime.now()),
                 style: const TextStyle(
                   fontSize: 16,
-                  color: Colors.black87,
+                  color: AppColors.black87,
                 ),
               ),
             ),
@@ -94,7 +95,7 @@ class _UserAttendanceFormPageState extends State<UserAttendanceFormPage> {
                   items: absentTypes.map((String type) {
                     Color? backgroundColor;
                     if (type == 'Absent') {
-                      backgroundColor = Colors.yellow.shade200;
+                      backgroundColor = AppColors.primaryYellow;
                     }
                     
                     return DropdownMenuItem<String>(
@@ -110,7 +111,7 @@ class _UserAttendanceFormPageState extends State<UserAttendanceFormPage> {
                           type,
                           style: const TextStyle(
                             fontSize: 16,
-                            color: Colors.black87,
+                            color: AppColors.black87,
                           ),
                         ),
                       ),
@@ -139,7 +140,7 @@ class _UserAttendanceFormPageState extends State<UserAttendanceFormPage> {
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
-                          color: Colors.black87,
+                          color: AppColors.black87,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -173,7 +174,7 @@ class _UserAttendanceFormPageState extends State<UserAttendanceFormPage> {
                                     ? DateFormat('dd/MM/yyyy').format(startDate!)
                                     : 'dd/mm/yyyy',
                                 style: TextStyle(
-                                  color: startDate != null ? Colors.black87 : Colors.grey,
+                                  color: startDate != null ? AppColors.black87 : Colors.grey,
                                 ),
                               ),
                             ],
@@ -193,7 +194,7 @@ class _UserAttendanceFormPageState extends State<UserAttendanceFormPage> {
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
-                          color: Colors.black87,
+                          color: AppColors.black87,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -227,7 +228,7 @@ class _UserAttendanceFormPageState extends State<UserAttendanceFormPage> {
                                     ? DateFormat('dd/MM/yyyy').format(endDate!)
                                     : 'dd/mm/yyyy',
                                 style: TextStyle(
-                                  color: endDate != null ? Colors.black87 : Colors.grey,
+                                  color: endDate != null ? AppColors.black87 : Colors.grey,
                                 ),
                               ),
                             ],
@@ -248,7 +249,7 @@ class _UserAttendanceFormPageState extends State<UserAttendanceFormPage> {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Colors.black87,
+                color: AppColors.black87,
               ),
             ),
             const SizedBox(height: 8),
@@ -272,21 +273,21 @@ class _UserAttendanceFormPageState extends State<UserAttendanceFormPage> {
                   Text(
                     'Drag and Drop Here',
                     style: TextStyle(
-                      color: Colors.black54,
+                      color: AppColors.black54,
                       fontSize: 14,
                     ),
                   ),
                   Text(
                     'Or',
                     style: TextStyle(
-                      color: Colors.black54,
+                      color: AppColors.black54,
                       fontSize: 12,
                     ),
                   ),
                   Text(
                     'Browse',
                     style: TextStyle(
-                      color: Colors.blue,
+                      color: AppColors.primaryBlue,
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                     ),
@@ -303,7 +304,7 @@ class _UserAttendanceFormPageState extends State<UserAttendanceFormPage> {
               child: ElevatedButton(
                 onPressed: () {},
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
+                  backgroundColor: AppColors.errorRed,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -312,7 +313,7 @@ class _UserAttendanceFormPageState extends State<UserAttendanceFormPage> {
                 child: const Text(
                   'Save Pictures',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: AppColors.pureWhite,
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
@@ -328,7 +329,7 @@ class _UserAttendanceFormPageState extends State<UserAttendanceFormPage> {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Colors.black87,
+                color: AppColors.black87,
               ),
             ),
             const SizedBox(height: 8),
@@ -347,7 +348,7 @@ class _UserAttendanceFormPageState extends State<UserAttendanceFormPage> {
                     selectedLocation,
                     style: TextStyle(
                       fontSize: 16,
-                      color: selectedLocation == 'Choose Location' ? Colors.grey : Colors.black87,
+                      color: selectedLocation == 'Choose Location' ? Colors.grey : AppColors.black87,
                     ),
                   ),
                   const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
@@ -369,7 +370,7 @@ class _UserAttendanceFormPageState extends State<UserAttendanceFormPage> {
                 child: Text(
                   'Map will be displayed here',
                   style: TextStyle(
-                    color: Colors.black54,
+                    color: AppColors.black54,
                     fontSize: 14,
                   ),
                 ),
@@ -384,7 +385,7 @@ class _UserAttendanceFormPageState extends State<UserAttendanceFormPage> {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Colors.black87,
+                color: AppColors.black87,
               ),
             ),
             const SizedBox(height: 8),
@@ -403,7 +404,7 @@ class _UserAttendanceFormPageState extends State<UserAttendanceFormPage> {
                     detailAddress,
                     style: const TextStyle(
                       fontSize: 16,
-                      color: Colors.black87,
+                      color: AppColors.black87,
                     ),
                   ),
                   const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
@@ -425,7 +426,7 @@ class _UserAttendanceFormPageState extends State<UserAttendanceFormPage> {
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
-                          color: Colors.black87,
+                          color: AppColors.black87,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -457,7 +458,7 @@ class _UserAttendanceFormPageState extends State<UserAttendanceFormPage> {
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
-                          color: Colors.black87,
+                          color: AppColors.black87,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -517,7 +518,7 @@ class _UserAttendanceFormPageState extends State<UserAttendanceFormPage> {
                       Navigator.pop(context);
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
+                      backgroundColor: AppColors.primaryGreen,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
@@ -526,7 +527,7 @@ class _UserAttendanceFormPageState extends State<UserAttendanceFormPage> {
                     child: const Text(
                       'Save',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: AppColors.pureWhite,
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),

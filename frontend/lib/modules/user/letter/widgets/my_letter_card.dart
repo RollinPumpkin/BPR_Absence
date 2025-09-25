@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/core/constants/colors.dart';
 
 class MyLetterCard extends StatelessWidget {
   final String title;
@@ -21,7 +22,7 @@ class MyLetterCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.pureWhite,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey.shade200),
         boxShadow: [
@@ -45,7 +46,7 @@ class MyLetterCard extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: Colors.black87,
+                    color: AppColors.black87,
                   ),
                 ),
               ),
@@ -73,7 +74,7 @@ class MyLetterCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.1),
+                  color: AppColors.primaryBlue.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -81,7 +82,7 @@ class MyLetterCard extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: Colors.blue,
+                    color: AppColors.primaryBlue,
                   ),
                 ),
               ),
@@ -119,7 +120,7 @@ class MyLetterCard extends StatelessWidget {
                     _showCancelDialog(context);
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
+                    backgroundColor: AppColors.errorRed,
                   ),
                   child: const Text("Cancel"),
                 ),
@@ -175,11 +176,11 @@ class MyLetterCard extends StatelessWidget {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text("Letter request cancelled"),
-                  backgroundColor: Colors.orange,
+                  backgroundColor: AppColors.vibrantOrange,
                 ),
               );
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.errorRed),
             child: const Text("Yes, Cancel"),
           ),
         ],
