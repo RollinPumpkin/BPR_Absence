@@ -9,187 +9,195 @@ class AttendanceDetailDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return Dialog(
       insetPadding: const EdgeInsets.all(16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            // 🔹 Header
+            // Header
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  "Attendance Details",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                const Expanded(
+                  child: Text(
+                    'Attendance Details',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.neutral800,
+                    ),
+                  ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close),
+                  icon: const Icon(Icons.close, color: AppColors.neutral800),
                   onPressed: () => Navigator.pop(context),
+                  splashRadius: 20,
                 ),
               ],
             ),
-
             const SizedBox(height: 8),
 
-            // 🔹 Employee Info
+            // Employee Info
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                border: Border.all(color: AppColors.black),
-                borderRadius: BorderRadius.circular(8),
+                color: AppColors.pureWhite,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.dividerGray),
+                boxShadow: const [
+                  BoxShadow(
+                    color: AppColors.shadowColor,
+                    blurRadius: 10,
+                    offset: Offset(0, 3),
+                  ),
+                ],
               ),
               child: Row(
                 children: [
-                  const CircleAvatar(radius: 24, child: Icon(Icons.person)),
+                  const CircleAvatar(
+                    radius: 24,
+                    backgroundColor: AppColors.neutral100,
+                    child: Icon(Icons.person, color: AppColors.neutral500),
+                  ),
                   const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          "Septa Puma Surya",
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                        const Text(
-                          "Jabatan",
-                          style: TextStyle(color: AppColors.black),
-                        ),
-                      ],
+                  const Expanded(
+                    child: _EmpNamePosition(
+                      name: 'Septa Puma Surya',
+                      position: 'Jabatan',
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryGreen,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Text(
-                      "Check In",
-                      style: TextStyle(color: AppColors.pureWhite, fontSize: 12),
-                    ),
+                  const _StatusChip(text: 'Check In', color: AppColors.primaryGreen),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Attendance Information
+            _SectionBox(
+              title: 'Attendance Information',
+              child: Column(
+                children: const [
+                  _TwoColRow(
+                    leftLabel: 'Date',
+                    leftValue: '1 March 2025',
+                    rightLabel: 'Check In',
+                    rightValue: '09:00',
+                  ),
+                  SizedBox(height: 8),
+                  _TwoColRow(
+                    leftLabel: 'Status',
+                    leftValue: 'Present',
+                    rightLabel: 'Check Out',
+                    rightValue: '-',
+                  ),
+                  SizedBox(height: 8),
+                  _TwoColRow(
+                    leftLabel: 'Work Hours',
+                    leftValue: '8 Hours',
                   ),
                 ],
               ),
             ),
-
             const SizedBox(height: 12),
 
-            // 🔹 Attendance Information
-            _sectionBox(
-              "Attendance Information",
-              Column(
-                children: [
-                  _infoRow("Date", "1 March 2025", "Check In", "09:00"),
-                  const SizedBox(height: 8),
-                  _infoRow("Status", "Present", "Check Out", "-"),
-                  const SizedBox(height: 8),
-                  _infoRow("Work Hours", "8 Hours", "", ""),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 12),
-
-            // 🔹 Location Information
-            _sectionBox(
-              "Location Information",
-              Column(
-                children: [
-                  _infoRow(
-                    "Location",
-                    "Office",
-                    "Detail Address",
-                    "Jl. Soekarno Hatta No. 8, Jatimulyo, Lowokwaru, Kota Malang",
+            // Location Information
+            _SectionBox(
+              title: 'Location Information',
+              child: Column(
+                children: const [
+                  _TwoColRow(
+                    leftLabel: 'Location',
+                    leftValue: 'Office',
+                    rightLabel: 'Detail Address',
+                    rightValue:
+                        'Jl. Soekarno Hatta No. 8, Jatimulyo, Lowokwaru, Kota Malang',
                   ),
-                  const SizedBox(height: 8),
-                  _infoRow("Lat", "-2241720016", "Long", "2241720119"),
+                  SizedBox(height: 8),
+                  _TwoColRow(
+                    leftLabel: 'Lat',
+                    leftValue: '-2241720016',
+                    rightLabel: 'Long',
+                    rightValue: '2241720119',
+                  ),
                 ],
               ),
             ),
-
             const SizedBox(height: 12),
 
-            // 🔹 Proof of Attendance
-            _sectionBox(
-              "Proof of Attendance",
-              Container(
+            // Proof of Attendance
+            _SectionBox(
+              title: 'Proof of Attendance',
+              child: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  border: Border.all(color: AppColors.black),
-                  borderRadius: BorderRadius.circular(8),
+                  color: AppColors.pureWhite,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.dividerGray),
                 ),
                 child: Row(
                   children: const [
-                    Expanded(child: Text("Wa003198373738.jpg")),
-                    Icon(Icons.download, size: 20),
+                    Expanded(
+                      child: Text(
+                        'Wa003198373738.jpg',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: AppColors.neutral800,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
                     SizedBox(width: 8),
-                    Icon(Icons.visibility, size: 20),
+                    Icon(Icons.file_download_outlined,
+                        size: 20, color: AppColors.primaryBlue),
+                    SizedBox(width: 12),
+                    Icon(Icons.visibility_outlined,
+                        size: 20, color: AppColors.neutral800),
                   ],
                 ),
               ),
             ),
+            const SizedBox(height: 16),
 
-            const SizedBox(height: 20),
-
-            // 🔹 Actions
+            // Actions
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                Container(
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppColors.primaryYellow,
-                  ),
-                  child: IconButton(
-                    icon: const Icon(Icons.edit, color: AppColors.black),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => AttendanceEditPage(
-                            employeeName: "Septa Puma Surya",
-                            position: "Jabatan",
-                            attendanceType: "Check In",
-                            date: "1 March 2025",
-                            checkIn: "09:00",
-                            checkOut: "-",
-                            status: "Present",
-                            workHours: "8 Hours",
-                            location: "Office",
-                            detailAddress:
-                                "Jl. Soekarno Hatta No. 8, Jatimulyo, Lowokwaru, Kota Malang",
-                            lat: "-2241720016",
-                            long: "2241720119",
-                            proofFile: "Wa003198373738.jpg",
-                          ),
+                _CircleAction(
+                  color: AppColors.primaryYellow,
+                  icon: Icons.edit,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const AttendanceEditPage(
+                          employeeName: "Septa Puma Surya",
+                          position: "Jabatan",
+                          attendanceType: "Check In",
+                          date: "1 March 2025",
+                          checkIn: "09:00",
+                          checkOut: "-",
+                          status: "Present",
+                          workHours: "8 Hours",
+                          location: "Office",
+                          detailAddress:
+                              "Jl. Soekarno Hatta No. 8, Jatimulyo, Lowokwaru, Kota Malang",
+                          lat: "-2241720016",
+                          long: "2241720119",
+                          proofFile: "Wa003198373738.jpg",
                         ),
-                      );
-                    },
-                  ),
+                      ),
+                    );
+                  },
                 ),
                 const SizedBox(width: 12),
-                Container(
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppColors.primaryRed,
-                  ),
-                  child: IconButton(
-                    icon: const Icon(Icons.delete, color: AppColors.black),
-                    onPressed: () {
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Deleted Successfully")),
-                      );
-                    },
-                  ),
+                _CircleAction(
+                  color: AppColors.primaryRed,
+                  icon: Icons.delete,
+                  onTap: () => _confirmDelete(context),
                 ),
               ],
             ),
@@ -199,61 +207,238 @@ class AttendanceDetailDialog extends StatelessWidget {
     );
   }
 
-  // 🔹 Widget Section Box
-  Widget _sectionBox(String title, Widget child) {
+  Future<void> _confirmDelete(BuildContext context) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Attendance'),
+        content: const Text(
+          'Are you sure you want to delete this record? This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryRed,
+              foregroundColor: AppColors.pureWhite,
+            ),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    ) ?? false;
+
+    if (ok) {
+      Navigator.of(context).pop(); // tutup dialog detail
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Deleted Successfully'),
+          backgroundColor: AppColors.primaryRed,
+        ),
+      );
+    }
+  }
+}
+
+/// ====== Small, focused widgets ======
+
+class _EmpNamePosition extends StatelessWidget {
+  final String name;
+  final String position;
+  const _EmpNamePosition({required this.name, required this.position});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          name,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            fontWeight: FontWeight.w800,
+            fontSize: 16,
+            color: AppColors.neutral800,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          position,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            color: AppColors.neutral500,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _StatusChip extends StatelessWidget {
+  final String text;
+  final Color color;
+  const _StatusChip({required this.text, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(.12),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(.35)),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: color,
+          fontWeight: FontWeight.w800,
+          fontSize: 12,
+        ),
+      ),
+    );
+  }
+}
+
+class _SectionBox extends StatelessWidget {
+  final String title;
+  final Widget child;
+  const _SectionBox({required this.title, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        border: Border.all(color: AppColors.black),
-        borderRadius: BorderRadius.circular(8),
+        color: AppColors.pureWhite,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.dividerGray),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.shadowColor,
+            blurRadius: 10,
+            offset: Offset(0, 3),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+            style: const TextStyle(
+              fontWeight: FontWeight.w800,
+              fontSize: 14,
+              color: AppColors.neutral800,
+            ),
           ),
-          const Divider(),
+          const SizedBox(height: 8),
+          const Divider(color: AppColors.dividerGray, height: 1),
+          const SizedBox(height: 8),
           child,
         ],
       ),
     );
   }
+}
 
-  // 🔹 Info Row
-  Widget _infoRow(String label1, String value1, String label2, String value2) {
+class _TwoColRow extends StatelessWidget {
+  final String leftLabel;
+  final String leftValue;
+  final String? rightLabel;
+  final String? rightValue;
+
+  const _TwoColRow({
+    required this.leftLabel,
+    required this.leftValue,
+    this.rightLabel,
+    this.rightValue,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final showRight = (rightLabel?.trim().isNotEmpty ?? false) ||
+        (rightValue?.trim().isNotEmpty ?? false);
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label1,
-                style: const TextStyle(fontSize: 12, color: AppColors.black),
-              ),
-              const SizedBox(height: 2),
-              Text(value1, style: const TextStyle(fontSize: 13)),
-            ],
+        Expanded(child: _KV(leftLabel, leftValue)),
+        if (showRight) const SizedBox(width: 12),
+        if (showRight) Expanded(child: _KV(rightLabel ?? '', rightValue ?? '')),
+      ],
+    );
+  }
+}
+
+class _KV extends StatelessWidget {
+  final String label;
+  final String value;
+  const _KV(this.label, this.value);
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            color: AppColors.neutral500,
+            fontWeight: FontWeight.w700,
           ),
         ),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label2,
-                style: const TextStyle(fontSize: 12, color: AppColors.black),
-              ),
-              const SizedBox(height: 2),
-              Text(value2, style: const TextStyle(fontSize: 13)),
-            ],
+        const SizedBox(height: 2),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 13.5,
+            color: AppColors.neutral800,
+            fontWeight: FontWeight.w600,
+            height: 1.4,
           ),
         ),
       ],
+    );
+  }
+}
+
+class _CircleAction extends StatelessWidget {
+  final Color color;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _CircleAction({
+    required this.color,
+    required this.icon,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: color,
+      shape: const CircleBorder(),
+      elevation: 0,
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: SizedBox(
+          width: 44,
+          height: 44,
+          child: Icon(icon, color: AppColors.pureWhite),
+        ),
+      ),
     );
   }
 }
