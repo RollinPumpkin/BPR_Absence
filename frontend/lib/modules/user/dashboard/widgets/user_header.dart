@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../attendance/attendance_form_page.dart';
+import '../../profile/profile_page.dart';
 
 class UserHeader extends StatelessWidget {
   const UserHeader({super.key});
@@ -62,17 +63,29 @@ class UserHeader extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Container(
-                        width: 32,
-                        height: 32,
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.person,
-                          color: Color(0xFF4A90E2),
-                          size: 18,
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            PageRouteBuilder(
+                              pageBuilder: (context, animation, secondaryAnimation) => const UserProfilePage(),
+                              transitionDuration: Duration.zero,
+                              reverseTransitionDuration: Duration.zero,
+                            ),
+                          );
+                        },
+                        child: Container(
+                          width: 32,
+                          height: 32,
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.person,
+                            color: Color(0xFF4A90E2),
+                            size: 18,
+                          ),
                         ),
                       ),
                     ],
@@ -87,7 +100,7 @@ class UserHeader extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Good Morning, Puma',
+                    'Good Morning, Nindy',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 20,
@@ -191,7 +204,7 @@ class UserHeader extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Container(
-                            height: 40,
+                            height: 65,
                             decoration: BoxDecoration(
                               color: Colors.green,
                               borderRadius: BorderRadius.circular(8),
@@ -241,7 +254,7 @@ class UserHeader extends StatelessWidget {
                         const SizedBox(width: 12),
                         Expanded(
                           child: Container(
-                            height: 40,
+                            height: 65,
                             decoration: BoxDecoration(
                               color: Colors.red,
                               borderRadius: BorderRadius.circular(8),
