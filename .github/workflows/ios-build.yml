@@ -18,6 +18,11 @@ jobs:
         with:
           flutter-version: '3.10.0'
           architecture: x64
+      - name: Print Flutter & Dart version
+        run: |
+          flutter --version
+          dart --version
+        working-directory: frontend
       - name: Install dependencies
         run: flutter pub get
         working-directory: frontend
