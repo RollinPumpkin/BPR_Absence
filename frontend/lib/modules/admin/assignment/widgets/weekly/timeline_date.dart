@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/core/constants/colors.dart';
 
+/// Penanda tanggal + garis vertikal yang mengikuti tinggi card (via IntrinsicHeight).
 class TimelineDate extends StatelessWidget {
   final String date;
   final bool isFirst;
@@ -15,25 +16,38 @@ class TimelineDate extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          date,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
+    final Color railColor = isLast ? AppColors.primaryRed : AppColors.neutral300;
+
+    return SizedBox(
+      width: 40, // area tanggal + rail
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Text(
+            date,
+            style: const TextStyle(
+              fontWeight: FontWeight.w800,
+              fontSize: 16,
+              color: AppColors.neutral800,
+            ),
           ),
-        ),
-        Container(
-          width: 2,
-          height: 100,
-          color: isFirst
-              ? Colors.grey
-              : isLast
-                  ? AppColors.primaryRed
-                  : Colors.grey,
-        ),
-      ],
+          const SizedBox(height: 6),
+          // Expanded agar rail menyamai tinggi Row (card di kanan)
+          Expanded(
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: Container(
+                width: 3,
+                margin: EdgeInsets.only(top: isFirst ? 4 : 0, bottom: 4),
+                decoration: BoxDecoration(
+                  color: railColor,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
