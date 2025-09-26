@@ -3,142 +3,196 @@ import 'package:frontend/core/constants/colors.dart';
 import '../../pages/detail_assignment_page.dart';
 
 class AssignmentCard extends StatelessWidget {
-  const AssignmentCard({super.key});
+  // default value supaya pemanggilan const AssignmentCard() tetap valid
+  final String title;
+  final String description;
+  final String status;
+  final String date;
+  final int peopleCount;
+
+  const AssignmentCard({
+    super.key,
+    this.title = 'Go To Bromo',
+    this.description =
+        'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
+    this.status = 'Assigned',
+    this.date = '27 Agustus 2024',
+    this.peopleCount = 27,
+  });
+
+  Color _statusColor(String s) {
+    final x = s.toLowerCase();
+    if (x.contains('progress')) return AppColors.primaryYellow;
+    if (x.contains('assign')) return AppColors.accentBlue;
+    if (x.contains('done') || x.contains('complete')) return AppColors.primaryGreen;
+    if (x.contains('overdue') || x.contains('late')) return AppColors.primaryRed;
+    return AppColors.neutral800;
+  }
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () {
-        // 🔹 Navigasi ke halaman detail
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const DetailAssignmentPage(),
+    final c = _statusColor(status);
+
+    return Material(
+      color: AppColors.pureWhite,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const DetailAssignmentPage()),
+          );
+        },
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: AppColors.pureWhite,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.dividerGray),
+            boxShadow: const [
+              BoxShadow(
+                color: AppColors.shadowColor,
+                blurRadius: 12,
+                offset: Offset(0, 4),
+              ),
+            ],
           ),
-        );
-      },
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.grey.shade100,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.black, width: 1),
-          boxShadow: [
-            BoxShadow(
-              // ignore: deprecated_member_use
-              color: AppColors.black.withOpacity(0.05),
-              spreadRadius: 1,
-              blurRadius: 5,
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Judul + Status
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: const [
-                Text(
-                  "Go To Bromo",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Title + status chip
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.neutral800,
+                      ),
+                    ),
                   ),
-                ),
-                Text(
-                  "Assigned",
-                  style: TextStyle(
-                    color: AppColors.primaryYellow,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-
-            // Tanggal
-            const Text(
-              "27 Agustus 2024",
-              style: TextStyle(
-                fontSize: 12,
-                color: AppColors.black,
+                  const SizedBox(width: 8),
+                  _StatusChip(text: status, color: c),
+                ],
               ),
-            ),
-            const SizedBox(height: 8),
+              const SizedBox(height: 6),
 
-            // Deskripsi
-            const Text(
-              "Lorem ipsum dolor sit amet, consectetur adipiscing elit, "
-              "sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-              style: TextStyle(
-                fontSize: 13,
-                color: AppColors.black,
+              // Date
+              Row(
+                children: [
+                  const Icon(Icons.calendar_today, size: 14, color: AppColors.neutral500),
+                  const SizedBox(width: 6),
+                  Text(
+                    date,
+                    style: const TextStyle(
+                      fontSize: 12.5,
+                      color: AppColors.neutral500,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: 10),
+              const SizedBox(height: 8),
 
-            // Footer
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: const [
-                    CircleAvatar(
-                      radius: 14,
-                      backgroundImage: NetworkImage("https://picsum.photos/200"),
-                    ),
-                    SizedBox(width: 6),
-                    Text(
-                      "27 People Assigned",
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.black,
-                      ),
-                    ),
-                  ],
+              // Description
+              Text(
+                description,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 13.5,
+                  color: AppColors.neutral800,
+                  height: 1.45,
+                  fontWeight: FontWeight.w500,
                 ),
-                InkWell(
-                  onTap: () {
-                    // 🔹 Navigasi ke halaman detail
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const DetailAssignmentPage(),
+              ),
+              const SizedBox(height: 10),
+
+              // Footer: avatar + "People Assigned" + View
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      const CircleAvatar(
+                        radius: 14,
+                        backgroundColor: AppColors.neutral100,
+                        backgroundImage: NetworkImage('https://picsum.photos/200'),
                       ),
-                    );
-                  },
-                  borderRadius: BorderRadius.circular(20),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: AppColors.vibrantOrange.shade50,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: AppColors.primaryYellow),
-                    ),
-                    child: const Text(
-                      "View",
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.primaryYellow,
+                      const SizedBox(width: 8),
+                      Text(
+                        '$peopleCount People Assigned',
+                        style: const TextStyle(
+                          fontSize: 12.5,
+                          color: AppColors.neutral500,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  InkWell(
+                    borderRadius: BorderRadius.circular(20),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const DetailAssignmentPage()),
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryYellow.withOpacity(.12),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: AppColors.primaryYellow),
+                      ),
+                      child: const Text(
+                        'View',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primaryYellow,
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
-            ),
-          ],
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-extension on Color {
-  Color? get shade50 => null;
+class _StatusChip extends StatelessWidget {
+  final String text;
+  final Color color;
+  const _StatusChip({required this.text, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(.12),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(.35)),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: color,
+          fontWeight: FontWeight.w800,
+          fontSize: 11.5,
+        ),
+      ),
+    );
+  }
 }
