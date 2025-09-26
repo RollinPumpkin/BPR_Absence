@@ -36,7 +36,3 @@ jobs:
         with:
           name: app-ipa
           path: frontend/build/ios/iphoneos/app.ipa
-        uses: actions/upload-artifact@v4
-        with:
-          name: ios-app
-          path: build/ios/iphoneos/app.ipa
