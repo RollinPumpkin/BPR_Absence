@@ -17,6 +17,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.9.0'
+          architecture: x64
       - name: Install dependencies
         run: flutter pub get
         working-directory: frontend
