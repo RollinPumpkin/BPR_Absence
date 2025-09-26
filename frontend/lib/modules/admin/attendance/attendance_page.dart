@@ -259,7 +259,7 @@ class _StatItem {
 }
 
 Future<void> _exportAttendanceExcel(BuildContext context) async {
-  // TODO: ganti dengan data asli (mis. dari provider/repository)
+  // TODO: ambil dari data asli (provider/repo). Ini contoh dummy:
   final data = <Map<String, String>>[
     {
       'Name': 'Haidar Mahapatih',
@@ -289,34 +289,39 @@ Future<void> _exportAttendanceExcel(BuildContext context) async {
 
   try {
     final excel = Excel.createExcel();
-    final Sheet sheet = excel['Attendance'];
+    final sheet = excel['Attendance'];
     excel.setDefaultSheet('Attendance');
 
-    // Header
-    final headers = ['Name', 'Division', 'Status', 'Clock In', 'Clock Out', 'Date'];
-    sheet.appendRow(headers);
+    // ===== Header (row 0) =====
+    const headers = ['Name', 'Division', 'Status', 'Clock In', 'Clock Out', 'Date'];
+    for (var c = 0; c < headers.length; c++) {
+      final cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: c, rowIndex: 0));
+      cell.value = TextCellValue(headers[c]);        // ← v4: pakai TextCellValue
+      cell.cellStyle = CellStyle(bold: true);
+    }
 
-    // Rows
-    for (final row in data) {
-      sheet.appendRow([
+    // ===== Data rows (mulai rowIndex = 1) =====
+    for (var r = 0; r < data.length; r++) {
+      final row = data[r];
+      final values = [
         row['Name'] ?? '',
         row['Division'] ?? '',
         row['Status'] ?? '',
         row['Clock In'] ?? '',
         row['Clock Out'] ?? '',
         row['Date'] ?? '',
-      ]);
+      ];
+      for (var c = 0; c < values.length; c++) {
+        sheet
+            .cell(CellIndex.indexByColumnRow(columnIndex: c, rowIndex: r + 1))
+            .value = TextCellValue(values[c]);       // ← v4: pakai TextCellValue
+      }
     }
 
-    // Bold header (kompatibel lintas versi)
-    for (var c = 0; c < headers.length; c++) {
-      final cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: c, rowIndex: 0));
-      final style = cell.cellStyle ?? CellStyle();
-      style.isBold = true;
-      cell.cellStyle = style;
-    }
-
-    final bytes = Uint8List.fromList(excel.save()!);
+    // Simpan
+    final saved = excel.save();                      // List<int>?
+    if (saved == null) throw 'Failed to generate file bytes';
+    final bytes = Uint8List.fromList(saved);
     final filename = 'attendance_${DateTime.now().millisecondsSinceEpoch}.xlsx';
 
     await FileSaver.instance.saveFile(

@@ -1,4 +1,8 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:frontend/core/constants/colors.dart';
 
 class AttendanceEditPage extends StatefulWidget {
@@ -38,6 +42,8 @@ class AttendanceEditPage extends StatefulWidget {
 }
 
 class _AttendanceEditPageState extends State<AttendanceEditPage> {
+  final _formKey = GlobalKey<FormState>();
+
   late TextEditingController _employeeController;
   late TextEditingController _positionController;
   late TextEditingController _dateController;
@@ -52,6 +58,11 @@ class _AttendanceEditPageState extends State<AttendanceEditPage> {
 
   String? _attendanceType;
   String? _location;
+
+  // ===== Image state (bytes-only → aman untuk web & mobile) =====
+  final ImagePicker _picker = ImagePicker();
+  Uint8List? _proofImageBytes;
+  String? _proofImageName;
 
   @override
   void initState() {
@@ -88,183 +99,413 @@ class _AttendanceEditPageState extends State<AttendanceEditPage> {
     super.dispose();
   }
 
+  // ===== Helpers UI =====
+  static const _gap12 = SizedBox(height: 12);
+  static const _gap16 = SizedBox(height: 16);
+  static const _gap10w = SizedBox(width: 10);
+
+  InputDecoration _dec(String label, {Widget? suffixIcon, String? hint}) {
+    return InputDecoration(
+      labelText: label,
+      hintText: hint,
+      labelStyle: const TextStyle(
+        color: AppColors.neutral500,
+        fontWeight: FontWeight.w700,
+      ),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppColors.dividerGray),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppColors.dividerGray),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppColors.accentBlue, width: 1.5),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      suffixIcon: suffixIcon,
+    );
+  }
+
+  Widget _sectionCard({required String title, required List<Widget> children}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.pureWhite,
+        borderRadius: BorderRadius.circular(12),
+        border: const Border.fromBorderSide(BorderSide(color: AppColors.dividerGray)),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.shadowColor,
+            blurRadius: 12,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              color: AppColors.neutral800,
+              fontWeight: FontWeight.w800,
+              fontSize: 14.5,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Divider(color: AppColors.dividerGray, height: 1),
+          const SizedBox(height: 12),
+          ...children,
+        ],
+      ),
+    );
+  }
+
+  Future<void> _pickDate() async {
+    final now = DateTime.now();
+    final parts = _dateController.text.split('/');
+    DateTime? initialDate;
+    if (parts.length == 3) {
+      final d = int.tryParse(parts[0]);
+      final m = int.tryParse(parts[1]);
+      final y = int.tryParse(parts[2]);
+      if (d != null && m != null && y != null) initialDate = DateTime(y, m, d);
+    }
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initialDate ?? now,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+      helpText: 'Select Date',
+    );
+    if (picked != null) {
+      _dateController.text =
+          '${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}';
+      setState(() {});
+    }
+  }
+
+  Future<void> _pickTime(TextEditingController ctrl) async {
+    final now = TimeOfDay.now();
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: now,
+      helpText: 'Select Time',
+    );
+    if (picked != null) {
+      ctrl.text =
+          '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
+      setState(() {});
+    }
+  }
+
+  // ===== Pick image cross-platform (web/mobile) =====
+  Future<void> _pickImageFromGallery() async {
+    try {
+      if (kIsWeb) {
+        // WEB → pakai file_picker
+        final res = await FilePicker.platform.pickFiles(
+          type: FileType.image,
+          withData: true,
+        );
+        if (res != null && res.files.isNotEmpty) {
+          final f = res.files.single;
+          setState(() {
+            _proofImageBytes = f.bytes!;
+            _proofImageName = f.name;
+            _proofFileController.text = f.name;
+          });
+        }
+      } else {
+        // ANDROID/iOS → pakai image_picker
+        final XFile? x = await _picker.pickImage(
+          source: ImageSource.gallery,
+          imageQuality: 85,
+        );
+        if (x != null) {
+          final bytes = await x.readAsBytes();
+          setState(() {
+            _proofImageBytes = bytes;
+            _proofImageName = x.name;
+            _proofFileController.text = x.name;
+          });
+        }
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to pick image: $e'),
+          backgroundColor: AppColors.primaryRed,
+        ),
+      );
+    }
+  }
+
+  void _clearPickedImage() {
+    setState(() {
+      _proofImageBytes = null;
+      _proofImageName = null;
+      _proofFileController.clear();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.backgroundGray,
       appBar: AppBar(
-        title: const Text("Edit Attendance"),
+        backgroundColor: AppColors.pureWhite,
+        elevation: 0,
+        foregroundColor: AppColors.neutral800,
+        title: const Text(
+          'Edit Attendance',
+          style: TextStyle(
+            color: AppColors.neutral800,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            TextFormField(
-              controller: _employeeController,
-              decoration: const InputDecoration(
-                labelText: "Employee Name",
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 12),
 
-            TextFormField(
-              controller: _positionController,
-              decoration: const InputDecoration(
-                labelText: "Position",
-                border: OutlineInputBorder(),
+      body: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+          child: Column(
+            children: [
+              // ===== Section: Employee =====
+              _sectionCard(
+                title: 'Employee',
+                children: [
+                  TextFormField(
+                    controller: _employeeController,
+                    decoration: _dec('Employee Name'),
+                  ),
+                  _gap12,
+                  TextFormField(
+                    controller: _positionController,
+                    decoration: _dec('Position'),
+                  ),
+                  _gap12,
+                  DropdownButtonFormField<String>(
+                    value: _attendanceType,
+                    items: const [
+                      'Check In',
+                      'Check Out',
+                      'Absent',
+                      'Annual Leave',
+                      'Sick Leave'
+                    ].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                    onChanged: (val) => setState(() => _attendanceType = val),
+                    decoration: _dec('Attendance Type'),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: 12),
 
-            DropdownButtonFormField<String>(
-              value: _attendanceType,
-              items: ["Check In", "Check Out", "Absent", "Annual Leave", "Sick Leave"]
-                  .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                  .toList(),
-              onChanged: (val) => setState(() => _attendanceType = val),
-              decoration: const InputDecoration(
-                labelText: "Attendance Type",
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 12),
+              _gap16,
 
-            TextFormField(
-              controller: _dateController,
-              decoration: const InputDecoration(
-                labelText: "Date",
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _checkInController,
-                    decoration: const InputDecoration(
-                      labelText: "Check In",
-                      border: OutlineInputBorder(),
+              // ===== Section: Schedule =====
+              _sectionCard(
+                title: 'Schedule',
+                children: [
+                  TextFormField(
+                    controller: _dateController,
+                    readOnly: true,
+                    decoration: _dec(
+                      'Date',
+                      suffixIcon: IconButton(
+                        onPressed: _pickDate,
+                        icon: const Icon(Icons.date_range, color: AppColors.neutral500),
+                      ),
                     ),
+                    onTap: _pickDate,
                   ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: TextFormField(
-                    controller: _checkOutController,
-                    decoration: const InputDecoration(
-                      labelText: "Check Out",
-                      border: OutlineInputBorder(),
+                  _gap12,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _checkInController,
+                          readOnly: true,
+                          decoration: _dec(
+                            'Check In',
+                            suffixIcon: IconButton(
+                              onPressed: () => _pickTime(_checkInController),
+                              icon: const Icon(Icons.access_time, color: AppColors.neutral500),
+                            ),
+                          ),
+                          onTap: () => _pickTime(_checkInController),
+                        ),
+                      ),
+                      _gap10w,
+                      Expanded(
+                        child: TextFormField(
+                          controller: _checkOutController,
+                          readOnly: true,
+                          decoration: _dec(
+                            'Check Out',
+                            suffixIcon: IconButton(
+                              onPressed: () => _pickTime(_checkOutController),
+                              icon: const Icon(Icons.access_time, color: AppColors.neutral500),
+                            ),
+                          ),
+                          onTap: () => _pickTime(_checkOutController),
+                        ),
+                      ),
+                    ],
+                  ),
+                  _gap12,
+                  TextFormField(
+                    controller: _statusController,
+                    decoration: _dec('Status', hint: 'Present / Sick / Late / Leave'),
+                  ),
+                  _gap12,
+                  TextFormField(
+                    controller: _workHoursController,
+                    decoration: _dec('Work Hours', hint: 'e.g. 8 Hours'),
+                  ),
+                ],
+              ),
+
+              _gap16,
+
+              // ===== Section: Location =====
+              _sectionCard(
+                title: 'Location',
+                children: [
+                  DropdownButtonFormField<String>(
+                    value: _location,
+                    items: const ['Office', 'Home', 'Other']
+                        .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                        .toList(),
+                    onChanged: (val) => setState(() => _location = val),
+                    decoration: _dec('Location'),
+                  ),
+                  _gap12,
+                  TextFormField(
+                    controller: _detailAddressController,
+                    decoration: _dec('Detail Address'),
+                  ),
+                  _gap12,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _latController,
+                          decoration: _dec('Latitude'),
+                          keyboardType:
+                              const TextInputType.numberWithOptions(decimal: true, signed: true),
+                        ),
+                      ),
+                      _gap10w,
+                      Expanded(
+                        child: TextFormField(
+                          controller: _longController,
+                          decoration: _dec('Longitude'),
+                          keyboardType:
+                              const TextInputType.numberWithOptions(decimal: true, signed: true),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+
+              _gap16,
+
+              // ===== Section: Proof =====
+              _sectionCard(
+                title: 'Proof',
+                children: [
+                  TextFormField(
+                    controller: _proofFileController,
+                    readOnly: true,
+                    decoration: _dec(
+                      'Proof Image',
+                      hint: 'Select image from gallery',
+                      suffixIcon: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (_proofImageBytes != null)
+                            IconButton(
+                              tooltip: 'Clear',
+                              onPressed: _clearPickedImage,
+                              icon: const Icon(Icons.clear, color: AppColors.neutral500),
+                            ),
+                          IconButton(
+                            tooltip: 'Pick from gallery',
+                            onPressed: _pickImageFromGallery,
+                            icon: const Icon(Icons.attach_file, color: AppColors.neutral500),
+                          ),
+                        ],
+                      ),
                     ),
+                    onTap: _pickImageFromGallery,
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-
-            TextFormField(
-              controller: _statusController,
-              decoration: const InputDecoration(
-                labelText: "Status",
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            TextFormField(
-              controller: _workHoursController,
-              decoration: const InputDecoration(
-                labelText: "Work Hours",
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            DropdownButtonFormField<String>(
-              value: _location,
-              items: ["Office", "Home", "Other"]
-                  .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                  .toList(),
-              onChanged: (val) => setState(() => _location = val),
-              decoration: const InputDecoration(
-                labelText: "Location",
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            TextFormField(
-              controller: _detailAddressController,
-              decoration: const InputDecoration(
-                labelText: "Detail Address",
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _latController,
-                    decoration: const InputDecoration(
-                      labelText: "Latitude",
-                      border: OutlineInputBorder(),
+                  if (_proofImageBytes != null) ...[
+                    const SizedBox(height: 10),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: Image.memory(
+                        _proofImageBytes!,
+                        height: 160,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      ),
                     ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: TextFormField(
-                    controller: _longController,
-                    decoration: const InputDecoration(
-                      labelText: "Longitude",
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-
-            TextFormField(
-              controller: _proofFileController,
-              decoration: const InputDecoration(
-                labelText: "Proof File",
-                border: OutlineInputBorder(),
+                  ],
+                ],
               ),
-            ),
-            const SizedBox(height: 24),
 
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                OutlinedButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text("Cancel"),
-                ),
-                const SizedBox(width: 10),
-                ElevatedButton(
-                  onPressed: () {
-                    // TODO: Save logic
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Attendance Updated Successfully")),
-                    );
-                    Navigator.pop(context);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryGreen,
+              const SizedBox(height: 24),
+
+              // Actions
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  OutlinedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.neutral800,
+                      side: const BorderSide(color: AppColors.dividerGray),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                    ),
+                    child: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.w700)),
                   ),
-                  child: const Text("Save", style: TextStyle(color: AppColors.pureWhite)),
-                ),
-              ],
-            ),
-          ],
+                  const SizedBox(width: 10),
+                  ElevatedButton(
+                    onPressed: () {
+                      // TODO: Save logic — kirim _proofImageBytes & _proofImageName kalau perlu
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Attendance Updated Successfully'),
+                          backgroundColor: AppColors.primaryGreen,
+                        ),
+                      );
+                      Navigator.pop(context);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryGreen,
+                      foregroundColor: AppColors.pureWhite,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+                      elevation: 0,
+                    ),
+                    child: const Text('Save', style: TextStyle(fontWeight: FontWeight.w800)),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
