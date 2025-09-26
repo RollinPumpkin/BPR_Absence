@@ -13,26 +13,29 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Flutter
+      - name: Install Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.19.0' # or your Flutter version
-
+          flutter-version: '3.9.0'
       - name: Install dependencies
         run: flutter pub get
-
+        working-directory: frontend
       - name: Build iOS
         run: flutter build ios --release --no-codesign
-
+        working-directory: frontend
       - name: Archive .ipa
         run: |
           cd build/ios/iphoneos
           mkdir Payload
           cp -r Runner.app Payload/
           zip -r app.ipa Payload
-        shell: bash
-
+        if: success()
+        working-directory: frontend
       - name: Upload .ipa artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: app-ipa
+          path: frontend/build/ios/iphoneos/app.ipa
         uses: actions/upload-artifact@v4
         with:
           name: ios-app
