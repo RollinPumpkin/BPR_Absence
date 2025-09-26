@@ -32,7 +32,7 @@ jobs:
         if: success()
         working-directory: frontend
       - name: Upload .ipa artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: app-ipa
           path: frontend/build/ios/iphoneos/app.ipa
