@@ -20,7 +20,7 @@ class _MonthlyAssignmentUIState extends State<MonthlyAssignmentUI> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 🔹 Calendar
+        // Calendar
         TableCalendar(
           firstDay: DateTime.utc(2000, 1, 1),
           lastDay: DateTime.utc(2100, 12, 31),
@@ -55,7 +55,7 @@ class _MonthlyAssignmentUIState extends State<MonthlyAssignmentUI> {
 
         const SizedBox(height: 12),
 
-        // 🔹 Add Data button
+        // Add Data button
         SizedBox(
           width: double.infinity,
           child: ElevatedButton.icon(
@@ -78,7 +78,7 @@ class _MonthlyAssignmentUIState extends State<MonthlyAssignmentUI> {
         ),
         const SizedBox(height: 16),
 
-        // 🔹 List Assignment
+        // List Assignment
         const Text(
           "Assignments",
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
