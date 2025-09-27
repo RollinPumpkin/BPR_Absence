@@ -1,0 +1,50 @@
+name: Build iOS App
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.35.4'
+          architecture: x64
+      - name: Print Flutter & Dart version
+        run: |
+          flutter --version
+          dart --version
+        working-directory: frontend
+      - name: Install dependencies
+        run: flutter pub get
+        working-directory: frontend
+      - name: Check for Generated.xcconfig
+        run: ls -l ios/Flutter/
+        working-directory: frontend
+      - name: Run flutter pub get again (if needed)
+        run: flutter pub get
+        working-directory: frontend
+      - name: Build iOS
+        run: flutter build ios --release --no-codesign
+        working-directory: frontend
+      - name: Archive .ipa
+        run: |
+          cd build/ios/iphoneos
+          mkdir Payload
+          cp -r Runner.app Payload/
+          zip -r app.ipa Payload
+        if: success()
+        working-directory: frontend
+      - name: Upload .ipa artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-ipa
+          path: frontend/build/ios/iphoneos/app.ipa
