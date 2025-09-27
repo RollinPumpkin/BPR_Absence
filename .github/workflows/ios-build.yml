@@ -29,8 +29,6 @@ jobs:
       - name: Check for Generated.xcconfig
         run: ls -l ios/Flutter/
         working-directory: frontend
-        - name: Install tree utility
-          run: brew install tree
       - name: Print directory tree
         run: tree
         working-directory: frontend
@@ -43,8 +41,6 @@ jobs:
       - name: Archive .ipa
         run: |
           cd build/ios/iphoneos
-                - name: Install tree utility
-                  run: brew install tree
           mkdir Payload
           cp -r Runner.app Payload/
           zip -r app.ipa Payload
