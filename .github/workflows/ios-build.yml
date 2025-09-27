@@ -29,9 +29,6 @@ jobs:
       - name: Check for Generated.xcconfig
         run: ls -l ios/Flutter/
         working-directory: frontend
-      - name: Print directory tree
-        run: tree
-        working-directory: frontend
       - name: Run flutter pub get again (if needed)
         run: flutter pub get
         working-directory: frontend
