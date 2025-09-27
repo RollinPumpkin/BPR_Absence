@@ -9,23 +9,40 @@ class EmployeeStatSection extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
+        color: AppColors.pureWhite,
         borderRadius: BorderRadius.circular(16),
-        color: Colors.grey,
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.shadowColor,
+            blurRadius: 12,
+            offset: Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Dropdown Year - Month
-          Row(
+          // Tahun & Bulan (responsif pakai Wrap biar nggak kepotong di layar kecil)
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               _RoundedDropdown(
                 value: "2025",
                 items: const ["2025", "2024"],
                 onChanged: (val) {},
               ),
-              const SizedBox(width: 8),
-              const Text("-", style: TextStyle(fontWeight: FontWeight.w600)),
-              const SizedBox(width: 8),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 4),
+                child: Text(
+                  "-",
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.neutral100,
+                  ),
+                ),
+              ),
               _RoundedDropdown(
                 value: "Januari",
                 items: const ["Januari", "Februari", "Maret", "April"],
@@ -33,11 +50,11 @@ class EmployeeStatSection extends StatelessWidget {
               ),
             ],
           ),
+
           const SizedBox(height: 16),
 
-          // Statistik dengan garis pembatas
+          // Statistik (3 kolom) dengan divider tipis
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: const [
               Expanded(
                 child: StatBox(
@@ -82,23 +99,31 @@ class _RoundedDropdown extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      height: 38,
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
         color: AppColors.pureWhite,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: AppColors.dividerGray),
       ),
-      child: DropdownButton<String>(
-        value: value,
-        underline: const SizedBox(),
-        borderRadius: BorderRadius.circular(12),
-        items: items
-            .map((e) => DropdownMenuItem(
-                  value: e,
-                  child: Text(e),
-                ))
-            .toList(),
-        onChanged: onChanged,
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: value,
+          isDense: true,
+          borderRadius: BorderRadius.circular(12),
+          icon: const Icon(Icons.expand_more, color: AppColors.neutral800),
+          style: const TextStyle(
+            color: AppColors.neutral800,
+            fontWeight: FontWeight.w600,
+          ),
+          items: items
+              .map((e) => DropdownMenuItem<String>(
+                    value: e,
+                    child: Text(e),
+                  ))
+              .toList(),
+          onChanged: onChanged,
+        ),
       ),
     );
   }
@@ -127,29 +152,32 @@ class StatBox extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.grey[700],
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 12.5,
+                  color: AppColors.neutral500,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 6),
               Text(
                 value,
                 style: const TextStyle(
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w800,
                   fontSize: 20,
-                  color: AppColors.darkGray,
+                  color: AppColors.neutral800,
                 ),
               ),
             ],
           ),
         ),
-        // Divider vertical
+        // Divider kanan (optional)
         if (showDivider)
           Container(
-            height: 40,
+            height: 42,
             width: 1,
-            color: Colors.grey.shade400,
+            margin: const EdgeInsets.symmetric(horizontal: 8),
+            color: AppColors.dividerGray,
           ),
       ],
     );
