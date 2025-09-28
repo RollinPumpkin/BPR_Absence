@@ -16,8 +16,6 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
   DateTime? endDate;
   String selectedLocation = 'Choose Location';
   String detailAddress = 'Malang City, East Java';
-  String latLocation = '';
-  String longLocation = '';
 
   final List<String> absentTypes = [
     'Clock In',
@@ -452,77 +450,6 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                   const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
                 ],
               ),
-            ),
-            
-            const SizedBox(height: 20),
-            
-            // Lat Long Section
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Lat',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.black87,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: AppColors.pureWhite,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.grey.shade300),
-                        ),
-                        child: const Text(
-                          'Lat lokasi',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Long Lokasi',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.black87,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: AppColors.pureWhite,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.grey.shade300),
-                        ),
-                        child: const Text(
-                          'Long lokasi',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
             ),
             
             const SizedBox(height: 30),

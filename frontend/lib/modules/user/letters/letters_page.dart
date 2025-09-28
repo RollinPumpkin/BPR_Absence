@@ -303,9 +303,9 @@ class _UserLettersPageState extends State<UserLettersPage> {
       ),
       child: Text(
         type,
-        style: TextStyle(
+        style: const TextStyle(
           fontSize: 10,
-          color: AppColors.primaryBlue,
+          color: AppColors.pureWhite,
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -331,14 +331,14 @@ class _UserLettersPageState extends State<UserLettersPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: statusColor.withOpacity(0.1),
+        color: statusColor,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
         status,
-        style: TextStyle(
+        style: const TextStyle(
           fontSize: 12,
-          color: statusColor,
+          color: AppColors.pureWhite,
           fontWeight: FontWeight.w600,
         ),
       ),
