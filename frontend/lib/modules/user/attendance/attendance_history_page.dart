@@ -30,18 +30,25 @@ class _AttendanceHistoryPageState extends State<AttendanceHistoryPage> {
         children: [
           // Filter Section
           Container(
+            width: double.infinity,
             color: AppColors.pureWhite,
             padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                _buildFilterChip('Filter', Icons.filter_list, isFilter: true),
-                const SizedBox(width: 12),
-                _buildFilterChip('All', null, isSelected: selectedFilter == 'All'),
-                const SizedBox(width: 12),
-                _buildFilterChip('Late', null, isSelected: selectedFilter == 'Late'),
-                const SizedBox(width: 12),
-                _buildFilterChip('Leave', null, isSelected: selectedFilter == 'Leave'),
-              ],
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  _buildFilterChip('All', null, isSelected: selectedFilter == 'All'),
+                  const SizedBox(width: 12),
+                  _buildFilterChip('On Time', null, isSelected: selectedFilter == 'On Time'),
+                  const SizedBox(width: 12),
+                  _buildFilterChip('Late', null, isSelected: selectedFilter == 'Late'),
+                  const SizedBox(width: 12),
+                  _buildFilterChip('Leave', null, isSelected: selectedFilter == 'Leave'),
+                  const SizedBox(width: 12),
+                  _buildFilterChip('Sick', null, isSelected: selectedFilter == 'Sick'),
+                ],
+              ),
             ),
           ),
           
@@ -67,7 +74,7 @@ class _AttendanceHistoryPageState extends State<AttendanceHistoryPage> {
       {'status': 'On Time', 'date': '27 Aug', 'time': '07:45:32 - 16:06:44', 'duration': '10 hr 15 mins', 'color': AppColors.primaryGreen, 'category': 'on_time'},
       {'status': 'Late', 'date': '26 Aug', 'time': '08:45:32 - 16:06:44', 'duration': '08 hr 15 mins', 'color': AppColors.errorRed, 'category': 'late'},
       {'status': 'Annual Leave', 'date': '25 Aug', 'time': 'Weekend Annual', 'duration': 'Thu weekend', 'color': Colors.grey, 'category': 'leave'},
-      {'status': 'Sick', 'date': '24 Aug', 'time': '07:45:32', 'duration': '', 'color': AppColors.vibrantOrange, 'category': 'leave'},
+      {'status': 'Sick', 'date': '24 Aug', 'time': '07:45:32', 'duration': '', 'color': AppColors.vibrantOrange, 'category': 'sick'},
       {'status': 'Late', 'date': '23 Aug', 'time': '08:45:32 - 16:06:44', 'duration': '08 hr 15 mins', 'color': AppColors.errorRed, 'category': 'late'},
       {'status': 'On Time', 'date': '22 Aug', 'time': '07:45:32 - 16:06:44', 'duration': '10 hr 15 mins', 'color': AppColors.primaryGreen, 'category': 'on_time'},
       {'status': 'On Time', 'date': '21 Aug', 'time': '07:45:32 - 16:06:44', 'duration': '10 hr 15 mins', 'color': AppColors.primaryGreen, 'category': 'on_time'},
@@ -79,9 +86,13 @@ class _AttendanceHistoryPageState extends State<AttendanceHistoryPage> {
       
       if (selectedFilter == 'All') {
         shouldShow = true;
+      } else if (selectedFilter == 'On Time' && item['category'] == 'on_time') {
+        shouldShow = true;
       } else if (selectedFilter == 'Late' && item['category'] == 'late') {
         shouldShow = true;
       } else if (selectedFilter == 'Leave' && item['category'] == 'leave') {
+        shouldShow = true;
+      } else if (selectedFilter == 'Sick' && item['category'] == 'sick') {
         shouldShow = true;
       }
       
@@ -159,10 +170,8 @@ class _AttendanceHistoryPageState extends State<AttendanceHistoryPage> {
             checkIn: time.contains('-') ? time.split(' - ')[0] : time,
             checkOut: time.contains('-') ? time.split(' - ')[1] : '16:00',
             workHours: duration.isNotEmpty ? duration : '8 Hours',
-            location: 'Office',
+            location: 'Main Office',
             address: 'Jln. Soekarno Hatta No. 8, Jatimulyo, Lowokwaru, Kota Malang',
-            lat: '-7.9417200116',
-            long: '112.6119',
           ),
         );
       },

@@ -74,8 +74,8 @@ class SimpleNavStyle {
     this.activeIconTop = 2,
 
     // anim
-    this.duration = const Duration(milliseconds: 220),
-    this.curve = Curves.easeOutCubic,
+    this.duration = Duration.zero,
+    this.curve = Curves.linear,
   });
 
   SimpleNavStyle copyWith({

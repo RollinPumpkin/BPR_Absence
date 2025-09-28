@@ -52,31 +52,52 @@ class MyApp extends StatelessWidget {
       title: 'BPR Absence',
       theme: ThemeData(useMaterial3: true, fontFamily: 'Roboto'),
       initialRoute: '/', // Splash pertama
-      routes: {
-        // General
-        '/': (_) => const SplashPage(),
-        '/login': (_) => const LoginPage(),
-        // '/register': (_) => const RegisterPage(),
-        '/forgot-password': (_) => const ForgotPassPage(),
-        '/forgot-password/email': (_) => const EmailPage(),
-        '/forgot-password/email/Expired-link': (_) => const LinkExpiredPage(),
-        '/forgot-password/reset-password': (_) => const ResetPasswordPage(),
+      onGenerateRoute: (settings) {
+        final routeMap = {
+          // General
+          '/': (_) => const SplashPage(),
+          '/login': (_) => const LoginPage(),
+          // '/register': (_) => const RegisterPage(),
+          '/forgot-password': (_) => const ForgotPassPage(),
+          '/forgot-password/email': (_) => const EmailPage(),
+          '/forgot-password/email/Expired-link': (_) => const LinkExpiredPage(),
+          '/forgot-password/reset-password': (_) => const ResetPasswordPage(),
 
-        // Admin routes
-        '/admin/dashboard': (_) => const AdminDashboardPage(),
-        '/admin/employees': (_) => const EmployeePage(),
-        '/admin/attendance': (_) => const AttendancePage(),
-        '/admin/assignment': (_) => const AssignmentPage(),
-        '/admin/letter': (_) => const LetterPage(),
-        '/admin/profile': (_) => const ProfilePage(),
+          // Admin routes
+          '/admin/dashboard': (_) => const AdminDashboardPage(),
+          '/admin/employees': (_) => const EmployeePage(),
+          '/admin/attendance': (_) => const AttendancePage(),
+          '/admin/assignment': (_) => const AssignmentPage(),
+          '/admin/letter': (_) => const LetterPage(),
+          '/admin/profile': (_) => const ProfilePage(),
 
-        // User routes
-        '/user/dashboard': (_) => const UserDashboardPage(),
-        '/user/attendance': (_) => const UserAttendancePage(),
-        '/user/attendance/form': (_) => const UserAttendanceFormPage(),
-        '/user/assignment': (_) => const UserAssignmentPage(),
-        '/user/letter': (_) => const UserLettersPage(),
-        '/user/profile': (_) => const UserProfilePage(),
+          // User routes
+          '/user/dashboard': (_) => const UserDashboardPage(),
+          '/user/attendance': (_) => const UserAttendancePage(),
+          '/user/attendance/form': (_) => const UserAttendanceFormPage(),
+          '/user/assignment': (_) => const UserAssignmentPage(),
+          '/user/letter': (_) => const UserLettersPage(),
+          '/user/profile': (_) => const UserProfilePage(),
+        };
+
+        final builder = routeMap[settings.name];
+        if (builder != null) {
+          // For user pages, use zero transition
+          if (settings.name?.startsWith('/user/') ?? false) {
+            return PageRouteBuilder(
+              settings: settings,
+              pageBuilder: (context, animation, secondaryAnimation) => builder(context),
+              transitionDuration: Duration.zero,
+              reverseTransitionDuration: Duration.zero,
+            );
+          }
+          // For other pages, use default MaterialPageRoute
+          return MaterialPageRoute(
+            settings: settings,
+            builder: builder,
+          );
+        }
+        return null;
       },
     );
   }
