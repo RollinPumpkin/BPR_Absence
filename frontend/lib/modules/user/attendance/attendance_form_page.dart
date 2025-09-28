@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:frontend/core/constants/colors.dart';
 import 'package:intl/intl.dart';
@@ -10,8 +11,8 @@ class AttendanceFormPage extends StatefulWidget {
 }
 
 class _AttendanceFormPageState extends State<AttendanceFormPage> {
+  Timer? _timer;
   String selectedAbsentType = 'Clock In';
-  DateTime? startDate;
   DateTime? endDate;
   String selectedLocation = 'Choose Location';
   String detailAddress = 'Malang City, East Java';
@@ -25,6 +26,24 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
     'Annual Leave',
     'Sick Leave',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (mounted) {
+        setState(() {
+          // Trigger rebuild to update time display
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -150,30 +169,27 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      GestureDetector(
-                        onTap: () => _selectDate(context, true),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                          decoration: BoxDecoration(
-                            color: AppColors.pureWhite,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.grey.shade300),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.calendar_today, size: 20, color: Colors.grey),
-                              const SizedBox(width: 8),
-                              Text(
-                                startDate != null 
-                                    ? DateFormat('dd/MM/yyyy').format(startDate!)
-                                    : 'dd/mm/yyyy',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: startDate != null ? AppColors.black87 : Colors.grey,
-                                ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100, // Disabled appearance
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.calendar_today, size: 20, color: Colors.grey),
+                            const SizedBox(width: 8),
+                            Text(
+                              DateFormat('dd/MM/yyyy').format(DateTime.now()), // Always shows current date
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: AppColors.black87,
                               ),
-                            ],
-                          ),
+                            ),
+                            const Spacer(),
+                            const Icon(Icons.lock, size: 16, color: Colors.grey), // Lock icon to indicate read-only
+                          ],
                         ),
                       ),
                     ],
@@ -575,6 +591,9 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
   }
   
   Future<void> _selectDate(BuildContext context, bool isStartDate) async {
+    // Start date is now read-only, only allow end date selection
+    if (isStartDate) return;
+    
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
@@ -584,11 +603,7 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
     
     if (picked != null) {
       setState(() {
-        if (isStartDate) {
-          startDate = picked;
-        } else {
-          endDate = picked;
-        }
+        endDate = picked;
       });
     }
   }

@@ -124,7 +124,7 @@ class _AssignmentDetailPageState extends State<AssignmentDetailPage> {
                       category,
                       style: TextStyle(
                         fontSize: 12,
-                        color: isSelected ? AppColors.primaryBlue : Colors.grey.shade700,
+                        color: isSelected ? AppColors.pureWhite : Colors.grey.shade700,
                         fontWeight: isSelected ? FontWeight.w500 : FontWeight.w400,
                       ),
                     ),
@@ -432,7 +432,7 @@ class _AssignmentDetailPageState extends State<AssignmentDetailPage> {
                       "Active",
                       style: TextStyle(
                         fontSize: 12,
-                        color: AppColors.primaryGreen,
+                        color: AppColors.pureWhite,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
