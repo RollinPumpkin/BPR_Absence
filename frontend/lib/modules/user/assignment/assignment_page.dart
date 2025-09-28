@@ -352,11 +352,13 @@ class _UserAssignmentPageState extends State<UserAssignmentPage> {
     ).day;
     int startingWeekday = firstDay.weekday % 7; // Sunday = 0
 
-    List<Widget> dayWidgets = [];
+    // Calculate total cells needed (6 rows * 7 days = 42 cells)
+    int totalCells = 42;
+    List<Widget> allCells = [];
 
     // Add empty cells for days before the first day of the month
     for (int i = 0; i < startingWeekday; i++) {
-      dayWidgets.add(Expanded(child: Container()));
+      allCells.add(Expanded(child: Container()));
     }
 
     // Add days of the month
@@ -372,7 +374,7 @@ class _UserAssignmentPageState extends State<UserAssignmentPage> {
           currentDay.year == selectedDate.year;
       bool hasAssignment = _hasAssignmentOnDate(currentDay);
 
-      dayWidgets.add(
+      allCells.add(
         Expanded(
           child: GestureDetector(
             onTap: () {
@@ -401,7 +403,7 @@ class _UserAssignmentPageState extends State<UserAssignmentPage> {
                     color: isSelected
                         ? AppColors.pureWhite
                         : hasAssignment
-                        ? AppColors.errorRed
+                        ? AppColors.pureWhite
                         : AppColors.black87,
                     fontWeight: isSelected || hasAssignment
                         ? FontWeight.bold
@@ -414,21 +416,17 @@ class _UserAssignmentPageState extends State<UserAssignmentPage> {
           ),
         ),
       );
-
-      // Create new row every 7 days
-      if (dayWidgets.length == 7) {
-        rows.add(Row(children: dayWidgets));
-        dayWidgets = [];
-      }
     }
 
-    // Fill remaining cells in the last row
-    while (dayWidgets.length < 7 && dayWidgets.isNotEmpty) {
-      dayWidgets.add(Expanded(child: Container()));
+    // Fill remaining cells after the last day of the month up to 42 cells
+    while (allCells.length < totalCells) {
+      allCells.add(Expanded(child: Container()));
     }
 
-    if (dayWidgets.isNotEmpty) {
-      rows.add(Row(children: dayWidgets));
+    // Create rows of 7 cells each
+    for (int i = 0; i < totalCells; i += 7) {
+      List<Widget> rowCells = allCells.sublist(i, i + 7);
+      rows.add(Row(children: rowCells));
     }
 
     return rows;
@@ -526,13 +524,9 @@ class _UserAssignmentPageState extends State<UserAssignmentPage> {
                   ),
                   child: Text(
                     assignment['priority'],
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 12,
-                      color: assignment['priority'] == 'High'
-                          ? AppColors.errorRed
-                          : assignment['priority'] == 'Medium'
-                          ? AppColors.vibrantOrange
-                          : AppColors.primaryGreen,
+                      color: AppColors.pureWhite,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -577,9 +571,9 @@ class _UserAssignmentPageState extends State<UserAssignmentPage> {
                         color: AppColors.primaryBlue,
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Icon(
+                      child: const Icon(
                         Icons.people,
-                        color: AppColors.primaryBlue,
+                        color: AppColors.pureWhite,
                         size: 20,
                       ),
                     ),

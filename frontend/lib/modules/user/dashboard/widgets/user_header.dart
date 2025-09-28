@@ -1,15 +1,39 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:frontend/core/constants/colors.dart';
 import 'package:intl/intl.dart';
 import '../../attendance/attendance_form_page.dart';
 import '../../profile/profile_page.dart';
 
-class UserHeader extends StatelessWidget {
+class UserHeader extends StatefulWidget {
   const UserHeader({super.key});
 
   @override
+  State<UserHeader> createState() => _UserHeaderState();
+}
+
+class _UserHeaderState extends State<UserHeader> {
+  late Timer _timer;
+  DateTime _currentTime = DateTime.now();
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      setState(() {
+        _currentTime = DateTime.now();
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final now = DateTime.now();
     final dateFormatter = DateFormat('EEEE, dd MMMM yyyy', 'id_ID');
     final timeFormatter = DateFormat('HH:mm:ss');
     
@@ -41,7 +65,7 @@ class UserHeader extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    '${dateFormatter.format(now)}\n${timeFormatter.format(now)}',
+                    '${dateFormatter.format(_currentTime)}\n${timeFormatter.format(_currentTime)}',
                     style: const TextStyle(
                       color: AppColors.pureWhite,
                       fontSize: 12,
@@ -155,9 +179,9 @@ class UserHeader extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(height: 8),
-                              const Text(
-                                '07:88:55',
-                                style: TextStyle(
+                              Text(
+                                timeFormatter.format(_currentTime),
+                                style: const TextStyle(
                                   fontSize: 24,
                                   fontWeight: FontWeight.bold,
                                   color: AppColors.black,
