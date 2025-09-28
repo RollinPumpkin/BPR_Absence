@@ -153,58 +153,54 @@ class _UserAssignmentPageState extends State<UserAssignmentPage> {
     return Column(
       children: [
         Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Date and Day Column
-            Container(
-              width: 80,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    dayData['date'],
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: isActiveDay
-                          ? AppColors.errorRed
-                          : Colors.grey.shade400,
+            // Timeline section with date above the line
+            Column(
+              children: [
+                // Date and Day above the timeline
+                Column(
+                  children: [
+                    Text(
+                      dayData['date'],
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: isActiveDay
+                            ? AppColors.errorRed
+                            : Colors.grey.shade400,
+                      ),
                     ),
-                  ),
-                  Text(
-                    dayData['day'],
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: isActiveDay
-                          ? AppColors.errorRed
-                          : Colors.grey.shade400,
-                      fontWeight: FontWeight.w500,
+                    Text(
+                      dayData['day'],
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isActiveDay
+                            ? AppColors.errorRed
+                            : Colors.grey.shade400,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
+                  ],
+                ),
+                // Almost no gap between date and line
+                // Vertical Timeline Line
+                Container(
+                  width: 4,
+                  height: assignmentCount > 1
+                      ? (assignmentCount * 80.0) + 20 // Much shorter dynamic height
+                      : 60, // Reduced from 150 to 60
+                  decoration: BoxDecoration(
+                    color: isActiveDay
+                        ? AppColors.errorRed
+                        : Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
 
-            // Vertical Timeline Line
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                children: [
-                  Container(
-                    width: 4,
-                    height: assignmentCount > 1
-                        ? (assignmentCount * 180.0) -
-                              30 // Dynamic height based on assignments
-                        : 150,
-                    decoration: BoxDecoration(
-                      color: isActiveDay
-                          ? AppColors.errorRed
-                          : Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            const SizedBox(width: 20), // Space between timeline and assignments
 
             /// Assignment Cards for this day
             Expanded(
@@ -216,7 +212,7 @@ class _UserAssignmentPageState extends State<UserAssignmentPage> {
             ),
           ],
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 2),
       ],
     );
   }

@@ -13,18 +13,12 @@ class _LetterFormPageState extends State<LetterFormPage> {
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _validUntilController = TextEditingController();
   
-  String? selectedEmployee;
   String? selectedLetterType;
   String selectedLetterStatus = 'Active';
   DateTime? validUntilDate;
   
-  final List<String> employees = [
-    'John Doe - Credit Analyst',
-    'Jane Smith - Teller',
-    'Robert Johnson - Branch Manager',
-    'Maria Garcia - Customer Service',
-    'Ahmad Rahman - Loan Officer',
-  ];
+  // Fixed employee name for current user - would normally come from auth/profile
+  final String currentUserName = 'Nindy - Bank Teller';
   
   final List<String> letterTypes = [
     'Medical Certificate',
@@ -101,30 +95,27 @@ class _LetterFormPageState extends State<LetterFormPage> {
         ),
         const SizedBox(height: 8),
         Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: AppColors.pureWhite,
+            color: Colors.grey.shade100, // Read-only appearance
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: Colors.grey.shade300),
           ),
-          child: DropdownButtonFormField<String>(
-            value: selectedEmployee,
-            decoration: const InputDecoration(
-              hintText: "-Choose Employee-",
-              border: InputBorder.none,
-              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            ),
-            icon: Icon(Icons.keyboard_arrow_down, color: Colors.grey.shade600),
-            items: employees.map((String employee) {
-              return DropdownMenuItem<String>(
-                value: employee,
-                child: Text(employee),
-              );
-            }).toList(),
-            onChanged: (String? newValue) {
-              setState(() {
-                selectedEmployee = newValue;
-              });
-            },
+          child: Row(
+            children: [
+              const Icon(Icons.person, color: Colors.grey, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                currentUserName,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppColors.black87,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const Spacer(),
+              const Icon(Icons.lock, size: 16, color: Colors.grey), // Indicates read-only
+            ],
           ),
         ),
       ],
@@ -489,15 +480,7 @@ class _LetterFormPageState extends State<LetterFormPage> {
       return;
     }
     
-    if (selectedEmployee == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select an employee'),
-          backgroundColor: AppColors.errorRed,
-        ),
-      );
-      return;
-    }
+    // Employee is automatically set to current user - no validation needed
     
     if (selectedLetterType == null) {
       ScaffoldMessenger.of(context).showSnackBar(
