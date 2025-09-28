@@ -9,8 +9,6 @@ class AttendanceDetailDialog extends StatelessWidget {
   final String workHours;
   final String location;
   final String address;
-  final String lat;
-  final String long;
 
   const AttendanceDetailDialog({
     super.key,
@@ -21,8 +19,6 @@ class AttendanceDetailDialog extends StatelessWidget {
     required this.workHours,
     required this.location,
     required this.address,
-    required this.lat,
-    required this.long,
   });
 
   @override
@@ -100,11 +96,11 @@ class AttendanceDetailDialog extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 16),
-                        Expanded(
+                        const Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
+                              Text(
                                 'Nama Lengkap',
                                 style: TextStyle(
                                   fontSize: 16,
@@ -112,39 +108,12 @@ class AttendanceDetailDialog extends StatelessWidget {
                                   color: AppColors.black87,
                                 ),
                               ),
-                              const SizedBox(height: 4),
-                              const Text(
-                                'Jabatan',
+                              SizedBox(height: 4),
+                              Text(
+                                'Employee',
                                 style: TextStyle(
                                   fontSize: 14,
                                   color: Colors.grey,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: AppColors.primaryGreen,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.primaryGreen),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.check_circle,
-                                size: 14,
-                                color: AppColors.primaryGreen
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                'Status Approve',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: AppColors.primaryGreen,
-                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
                             ],
@@ -186,65 +155,13 @@ class AttendanceDetailDialog extends StatelessWidget {
                   
                   // Location Information
                   _buildInfoCard(
-                    title: 'Location Information',
+                    title: 'Location',
                     child: Column(
                       children: [
-                        Row(
-                          children: [
-                            Expanded(child: _buildDetailRow('Location', location)),
-                            const SizedBox(width: 16),
-                            Expanded(child: _buildDetailRow('Detail Address', address)),
-                          ],
-                        ),
+                        _buildDetailRow('Office Location', location),
                         const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Expanded(child: _buildDetailRow('Lat', lat)),
-                            const SizedBox(width: 16),
-                            Expanded(child: _buildDetailRow('Long', long)),
-                          ],
-                        ),
+                        _buildDetailRow('Address', address),
                       ],
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 16),
-                  
-                  // Proof of Attendance
-                  _buildInfoCard(
-                    title: 'Proof of Attendance',
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade50,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.grey.shade200),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              'Wa003198373738.img',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey.shade700,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Icon(
-                            Icons.visibility,
-                            size: 20,
-                            color: Colors.grey.shade600,
-                          ),
-                          const SizedBox(width: 8),
-                          Icon(
-                            Icons.download,
-                            size: 20,
-                            color: Colors.grey.shade600,
-                          ),
-                        ],
-                      ),
                     ),
                   ),
                 ],

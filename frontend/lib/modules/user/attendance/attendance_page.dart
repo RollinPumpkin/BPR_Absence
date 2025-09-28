@@ -103,8 +103,6 @@ class UserAttendancePage extends StatelessWidget {
                                 workHours: index == 0 ? "-" : "8h 30m",
                                 location: "Main Office",
                                 address: "123 Business District, City Center",
-                                lat: "40.7128",
-                                long: "-74.0060",
                               ),
                             );
                           },
