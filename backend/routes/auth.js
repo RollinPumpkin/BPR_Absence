@@ -17,14 +17,13 @@ router.post('/register', validateRegister, async (req, res) => {
       password,
       department,
       position,
-      phone
+      phone,
+      role // allow custom role
     } = req.body;
 
-    // Check if user already exists
     const usersRef = db.collection('users');
     const emailQuery = await usersRef.where('email', '==', email).get();
     const employeeIdQuery = await usersRef.where('employee_id', '==', employee_id).get();
-
     if (!emailQuery.empty || !employeeIdQuery.empty) {
       return res.status(400).json({
         success: false,
@@ -32,26 +31,52 @@ router.post('/register', validateRegister, async (req, res) => {
       });
     }
 
-    // Hash password
+    // Allowed roles
+    const allowedRoles = ['employee', 'account_officer', 'security', 'office_boy'];
+    let userRole = role;
+    if (!allowedRoles.includes(userRole)) {
+      userRole = 'employee'; // default
+    }
+
+    // Create user in Firebase Auth
+    const { getAuth } = require('../config/database');
+    const auth = getAuth();
+    let firebaseUser;
+    try {
+      firebaseUser = await auth.createUser({
+        email,
+        password,
+        displayName: full_name,
+        disabled: false
+      });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        message: 'Failed to create user in Firebase Auth',
+        error: err.message
+      });
+    }
+
+    // Hash password for Firestore (optional, for legacy reasons)
     const saltRounds = 12;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-    // Create new user document
+    // Create new user document in Firestore
     const userDoc = {
       employee_id,
       full_name,
       email,
       password: hashedPassword,
-      role: 'employee', // Default role
+      role: userRole,
       department: department || '',
       position: position || '',
       phone: phone || '',
-      profile_image: '',
+      profile_image: '', // nullable
       is_active: true,
       created_at: getServerTimestamp(),
-      updated_at: getServerTimestamp()
+      updated_at: getServerTimestamp(),
+      firebase_uid: firebaseUser.uid
     };
-
     const userRef = await usersRef.add(userDoc);
 
     res.status(201).json({
@@ -64,15 +89,16 @@ router.post('/register', validateRegister, async (req, res) => {
         email,
         department,
         position,
-        role: 'employee'
+        role: userDoc.role,
+        firebase_uid: firebaseUser.uid
       }
     });
-
   } catch (error) {
     console.error('Registration error:', error);
     res.status(500).json({
       success: false,
-      message: 'Registration failed'
+      message: 'Registration failed',
+      error: error.message
     });
   }
 });
@@ -81,18 +107,18 @@ router.post('/register', validateRegister, async (req, res) => {
 router.post('/login', validateLogin, async (req, res) => {
   try {
     const { email, password } = req.body;
+    const { getAuth } = require('../config/database');
+    const auth = getAuth();
 
-    // Find user by email
+    // Find user in Firestore
     const usersRef = db.collection('users');
     const userQuery = await usersRef.where('email', '==', email).get();
-
     if (userQuery.empty) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid credentials'
+        message: 'Invalid credentials (user not found)'
       });
     }
-
     const userDoc = userQuery.docs[0];
     const user = { id: userDoc.id, ...userDoc.data() };
 
@@ -104,21 +130,37 @@ router.post('/login', validateLogin, async (req, res) => {
       });
     }
 
-    // Verify password
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
+    // Verify password using Firebase Auth REST API
+    // See: https://firebase.google.com/docs/reference/rest/auth#section-sign-in-email-password
+    const fetch = require('node-fetch');
+    const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY;
+    if (!FIREBASE_API_KEY) {
+      return res.status(500).json({
+        success: false,
+        message: 'Missing FIREBASE_API_KEY in environment variables'
+      });
+    }
+    const url = `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${FIREBASE_API_KEY}`;
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password, returnSecureToken: true })
+    });
+    const result = await resp.json();
+    if (!result.idToken) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid credentials'
+        message: 'Invalid credentials (Firebase Auth failed)',
+        error: result.error
       });
     }
 
-    // Generate JWT token
+    // Generate JWT token for your app
     const token = jwt.sign(
-      { 
+      {
         userId: user.id,
         employeeId: user.employee_id,
-        role: user.role 
+        role: user.role
       },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
@@ -132,15 +174,16 @@ router.post('/login', validateLogin, async (req, res) => {
       message: 'Login successful',
       data: {
         user,
-        token
+        token,
+        firebaseIdToken: result.idToken
       }
     });
-
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({
       success: false,
-      message: 'Login failed'
+      message: 'Login failed',
+      error: error.message
     });
   }
 });

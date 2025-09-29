@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:frontend/core/constants/colors.dart';
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -289,15 +290,28 @@ class _LoginPageState extends State<LoginPage>
                             decoration: TextDecoration.underline,
                           ),
                           recognizer: TapGestureRecognizer()
-                            ..onTap = () {
-                              // TODO: request akun
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    "Request from Data Team clicked",
+                            ..onTap = () async {
+                              // Open WhatsApp chat with admin
+                              const adminPhone = '6285250600020';
+                                final waMessage = Uri.encodeComponent(
+                                  'Halo Admin, saya ingin request akun BPR Absence.\n\n'
+                                  'Nama Lengkap:\n'
+                                  'Email:\n'
+                                  'Role: Employee, AO, Security, OB (Pilih salah satu)\n'
+                                  'Departemen:\n'
+                                  'Posisi:\n'
+                                  'No. Tlp.:'
+                                );
+                                final url = 'https://wa.me/$adminPhone?text=$waMessage';
+                                if (await canLaunch(url)) {
+                                  await launch(url);
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text("Could not open WhatsApp. Please contact admin manually (Pak Agus)."),
                                   ),
-                                ),
-                              );
+                                );
+                              }
                             },
                         ),
                       ],
