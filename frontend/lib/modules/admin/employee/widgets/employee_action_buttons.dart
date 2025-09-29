@@ -134,12 +134,12 @@ Future<void> _exportEmployeesExcel(BuildContext context) async {
     final bytes = Uint8List.fromList(excel.save()!);
     final filename = 'employees_${DateTime.now().millisecondsSinceEpoch}.xlsx';
 
-    await FileSaver.instance.saveFile(
-      name: filename,
-      bytes: bytes,
-      ext: 'xlsx',
-      mimeType: MimeType.microsoftExcel,
-    );
+      await FileSaver.instance.saveFile(
+        name: filename,
+        bytes: bytes,
+        fileExtension: 'xlsx',
+        mimeType: MimeType.microsoftExcel,
+      );
 
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
