@@ -1,7 +1,9 @@
+
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
 import 'package:frontend/core/constants/colors.dart';
+  final TextEditingController emailController = TextEditingController();
 
 class AddEmployeePage extends StatefulWidget {
   const AddEmployeePage({super.key});
@@ -12,8 +14,8 @@ class AddEmployeePage extends StatefulWidget {
 
 class _AddEmployeePageState extends State<AddEmployeePage> {
   // Controllers
-  final TextEditingController firstNameController = TextEditingController();
-  final TextEditingController lastNameController = TextEditingController();
+  final TextEditingController fullnameController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
   final TextEditingController mobileController = TextEditingController();
   final TextEditingController placeOfBirthController = TextEditingController();
   final TextEditingController positionController = TextEditingController();
@@ -35,8 +37,9 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
 
   @override
   void dispose() {
-    firstNameController.dispose();
-    lastNameController.dispose();
+  emailController.dispose();
+  fullnameController.dispose();
+  passwordController.dispose();
     mobileController.dispose();
     placeOfBirthController.dispose();
     positionController.dispose();
@@ -154,16 +157,23 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
 
               _field(
                 child: TextField(
-                  controller: firstNameController,
+                  controller: fullnameController,
                   keyboardType: TextInputType.name,
-                  decoration: _inputDec('First Name', 'Enter the First Name'),
+                  decoration: _inputDec('Full Name', 'Enter the Full Name'),
                 ),
               ),
               _field(
                 child: TextField(
-                  controller: lastNameController,
-                  keyboardType: TextInputType.name,
-                  decoration: _inputDec('Last Name', 'Enter the Last Name'),
+                  controller: emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: _inputDec('Email', 'Enter the Email', prefixIcon: const Icon(Icons.email, size: 18)),
+                ),
+              ),
+              _field(
+                child: TextField(
+                  controller: passwordController,
+                  obscureText: true,
+                  decoration: _inputDec('Password', 'Enter the Password', prefixIcon: const Icon(Icons.lock, size: 18)),
                 ),
               ),
               _field(
