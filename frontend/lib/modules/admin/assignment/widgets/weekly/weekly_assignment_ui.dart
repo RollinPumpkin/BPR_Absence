@@ -13,7 +13,7 @@ class WeeklyAssignmentUI extends StatelessWidget {
         return TimelineCard(
           date: dates[index].toString(),
           isFirst: index == 0,
-          isLast: index == dates.length - 1,
+          isLast: index == dates.length - 1, // terakhir → rail merah
         );
       }),
     );

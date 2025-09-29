@@ -1,200 +1,485 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
+
 import 'package:frontend/core/constants/colors.dart';
 
-class AddLetterPage extends StatelessWidget {
+class AddLetterPage extends StatefulWidget {
   const AddLetterPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final TextEditingController nameController = TextEditingController();
-    final TextEditingController descriptionController = TextEditingController();
-    final TextEditingController statusController = TextEditingController();
-    final TextEditingController dateController = TextEditingController();
+  State<AddLetterPage> createState() => _AddLetterPageState();
+}
 
+class _AddLetterPageState extends State<AddLetterPage> {
+  final _formKey = GlobalKey<FormState>();
+
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
+  final TextEditingController _statusController = TextEditingController();
+  final TextEditingController _dateController = TextEditingController();
+
+  String? _employeeId;
+  String? _letterType;
+  List<PlatformFile> _files = [];
+  String? _filesError; // error untuk upload box
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _descriptionController.dispose();
+    _statusController.dispose();
+    _dateController.dispose();
+    super.dispose();
+  }
+
+  InputDecoration _inputDec(String hint) => InputDecoration(
+        hintText: hint,
+        filled: true,
+        fillColor: AppColors.pureWhite,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.dividerGray),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.dividerGray),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.accentBlue, width: 1.4),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.errorRed),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.errorRed, width: 1.2),
+        ),
+        errorStyle: const TextStyle(color: AppColors.errorRed, fontWeight: FontWeight.w600),
+      );
+
+  TextStyle get _labelStyle => const TextStyle(
+        fontWeight: FontWeight.w800,
+        color: AppColors.neutral800,
+      );
+
+  Future<void> _pickFiles() async {
+    final result = await FilePicker.platform.pickFiles(
+      allowMultiple: true,
+      withData: true, // agar dapat bytes untuk preview
+      type: FileType.custom,
+      allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf'],
+    );
+    if (!mounted) return;
+    if (result != null && result.files.isNotEmpty) {
+      setState(() {
+        _files = result.files;
+        _filesError = null; // clear error saat user memilih
+      });
+    }
+  }
+
+  Future<void> _pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+      initialDate: DateTime.now(),
+    );
+    if (picked != null) {
+      _dateController.text = '${picked.day}/${picked.month}/${picked.year}';
+      setState(() {}); // trigger re-draw untuk validator tampil normal
+    }
+  }
+
+  void _onSave() {
+    final validForm = _formKey.currentState?.validate() ?? false;
+    final hasFiles = _files.isNotEmpty;
+
+    setState(() {
+      _filesError = hasFiles ? null : 'Please upload at least one file';
+    });
+
+    if (validForm && hasFiles) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Letter Saved!')),
+      );
+      Navigator.of(context).maybePop();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.backgroundGray,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                  const Text(
-                    "Add Letter",
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              // Employee Dropdown
-              const Text("Employee"),
-              const SizedBox(height: 6),
-              DropdownButtonFormField<String>(
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                items: const [
-                  DropdownMenuItem(value: "1", child: Text("Septa Puma")),
-                  DropdownMenuItem(value: "2", child: Text("Nurhaliza")),
-                ],
-                onChanged: (value) {},
-                hint: const Text("-Choose Employee"),
-              ),
-              const SizedBox(height: 16),
-
-              // Letter Type Dropdown
-              const Text("Letter Type"),
-              const SizedBox(height: 6),
-              DropdownButtonFormField<String>(
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                items: const [
-                  DropdownMenuItem(value: "doctor", child: Text("Doctor's Note")),
-                  DropdownMenuItem(value: "permit", child: Text("Permit Letter")),
-                ],
-                onChanged: (value) {},
-                hint: const Text("-Choose Letter Type"),
-              ),
-              const SizedBox(height: 16),
-
-              // Letter Name
-              const Text("Letter Name"),
-              const SizedBox(height: 6),
-              TextField(
-                controller: nameController,
-                decoration: InputDecoration(
-                  hintText: "Enter Letter Name",
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Letter Description
-              const Text("Letter Description"),
-              const SizedBox(height: 6),
-              TextField(
-                controller: descriptionController,
-                decoration: InputDecoration(
-                  hintText: "Enter Letter Description (Optional)",
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                maxLines: 3,
-              ),
-              const SizedBox(height: 16),
-
-              // Letter Status
-              const Text("Letter Status"),
-              const SizedBox(height: 6),
-              TextField(
-                controller: statusController,
-                decoration: InputDecoration(
-                  hintText: "Enter the Status",
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Valid Until (Date Picker)
-              const Text("Valid Until"),
-              const SizedBox(height: 6),
-              TextField(
-                controller: dateController,
-                readOnly: true,
-                decoration: InputDecoration(
-                  hintText: "dd/mm/yyyy",
-                  prefixIcon: const Icon(Icons.calendar_today, color: AppColors.primaryBlue),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                onTap: () async {
-                  DateTime? pickedDate = await showDatePicker(
-                    context: context,
-                    firstDate: DateTime(2000),
-                    lastDate: DateTime(2100),
-                    initialDate: DateTime.now(),
-                  );
-                  if (pickedDate != null) {
-                    dateController.text =
-                        "${pickedDate.day}/${pickedDate.month}/${pickedDate.year}";
-                  }
-                },
-              ),
-              const SizedBox(height: 16),
-
-              // Upload Supporting Evidence
-              const Text("Upload Supporting Evidence"),
-              const SizedBox(height: 6),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Column(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header
+                Row(
                   children: const [
-                    Icon(Icons.image_outlined, size: 40),
-                    SizedBox(height: 8),
-                    Text("Drag and Drop Here"),
-                    SizedBox(height: 4),
+                    _BackButtonRounded(),
+                    SizedBox(width: 8),
                     Text(
-                      "Or",
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      "Browse",
+                      'Add Letter',
                       style: TextStyle(
-                        color: AppColors.primaryBlue,
-                        decoration: TextDecoration.underline,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.neutral800,
                       ),
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(height: 32),
+                const SizedBox(height: 16),
 
-              // Save button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Letter Saved!")),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryBlue,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
+                // Employee
+                Text('Employee', style: _labelStyle),
+                const SizedBox(height: 6),
+                DropdownButtonFormField<String>(
+                  value: _employeeId,
+                  decoration: _inputDec('-Choose Employee'),
+                  items: const [
+                    DropdownMenuItem(value: '1', child: Text('Septa Puma')),
+                    DropdownMenuItem(value: '2', child: Text('Nurhaliza')),
+                  ],
+                  onChanged: (val) => setState(() => _employeeId = val),
+                  validator: (val) => (val == null || val.isEmpty) ? 'This field is required' : null,
+                ),
+                const SizedBox(height: 16),
+
+                // Letter Type
+                Text('Letter Type', style: _labelStyle),
+                const SizedBox(height: 6),
+                DropdownButtonFormField<String>(
+                  value: _letterType,
+                  decoration: _inputDec('-Choose Letter Type'),
+                  items: const [
+                    DropdownMenuItem(value: 'doctor', child: Text("Doctor's Note")),
+                    DropdownMenuItem(value: 'permit', child: Text('Permit Letter')),
+                  ],
+                  onChanged: (val) => setState(() => _letterType = val),
+                  validator: (val) => (val == null || val.isEmpty) ? 'This field is required' : null,
+                ),
+                const SizedBox(height: 16),
+
+                // Letter Name
+                Text('Letter Name', style: _labelStyle),
+                const SizedBox(height: 6),
+                TextFormField(
+                  controller: _nameController,
+                  decoration: _inputDec('Enter Letter Name'),
+                  validator: (v) => (v == null || v.trim().isEmpty) ? 'This field is required' : null,
+                ),
+                const SizedBox(height: 16),
+
+                // Letter Description (Optional)
+                Text('Letter Description', style: _labelStyle),
+                const SizedBox(height: 6),
+                TextFormField(
+                  controller: _descriptionController,
+                  maxLines: 3,
+                  decoration: _inputDec('Enter Letter Description (Optional)'),
+                ),
+                const SizedBox(height: 16),
+
+                // Letter Status
+                Text('Letter Status', style: _labelStyle),
+                const SizedBox(height: 6),
+                TextFormField(
+                  controller: _statusController,
+                  decoration: _inputDec('Enter the Status'),
+                  validator: (v) => (v == null || v.trim().isEmpty) ? 'This field is required' : null,
+                ),
+                const SizedBox(height: 16),
+
+                // Valid Until
+                Text('Valid Until', style: _labelStyle),
+                const SizedBox(height: 6),
+                TextFormField(
+                  controller: _dateController,
+                  readOnly: true,
+                  onTap: _pickDate,
+                  decoration: _inputDec('dd/mm/yyyy').copyWith(
+                    prefixIcon: const Icon(Icons.calendar_today, color: AppColors.primaryBlue),
                   ),
-                  child: const Text(
-                    "Save",
-                    style: TextStyle(fontSize: 16, color: AppColors.pureWhite),
+                  validator: (v) => (v == null || v.trim().isEmpty) ? 'This field is required' : null,
+                ),
+                const SizedBox(height: 16),
+
+                // Upload Supporting Evidence
+                Text('Upload Supporting Evidence', style: _labelStyle),
+                const SizedBox(height: 6),
+                UploadEvidenceBox(
+                  files: _files,
+                  onPick: _pickFiles,
+                ),
+                if (_filesError != null) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    _filesError!,
+                    style: const TextStyle(color: AppColors.errorRed, fontWeight: FontWeight.w700),
+                  ),
+                ],
+
+                const SizedBox(height: 32),
+
+                // Save
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _onSave,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryBlue,
+                      foregroundColor: AppColors.pureWhite,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      elevation: 0,
+                    ),
+                    child: const Text('Save', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Back icon dengan style bulat
+class _BackButtonRounded extends StatelessWidget {
+  const _BackButtonRounded();
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.pureWhite,
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: () => Navigator.pop(context),
+        child: const SizedBox(
+          width: 40,
+          height: 40,
+          child: Icon(Icons.arrow_back, color: AppColors.neutral800),
+        ),
+      ),
+    );
+  }
+}
+
+/// Upload box terkontrol (klik untuk browse, preview, hapus)
+class UploadEvidenceBox extends StatelessWidget {
+  final List<PlatformFile> files;
+  final VoidCallback onPick;
+
+  const UploadEvidenceBox({
+    super.key,
+    required this.files,
+    required this.onPick,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final hasFiles = files.isNotEmpty;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: onPick,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.pureWhite,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.dividerGray),
+          boxShadow: const [
+            BoxShadow(color: AppColors.shadowColor, blurRadius: 10, offset: Offset(0, 3)),
+          ],
+        ),
+        child: hasFiles ? _SelectedList(files: files, onPick: onPick) : _DropHint(),
+      ),
+    );
+  }
+}
+
+class _DropHint extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: const [
+        Icon(Icons.image_outlined, size: 40, color: AppColors.neutral500),
+        SizedBox(height: 8),
+        Text('Drag and Drop Here', style: TextStyle(color: AppColors.neutral500)),
+        SizedBox(height: 4),
+        Text('Or', style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.neutral800)),
+        SizedBox(height: 4),
+        Text(
+          'Browse',
+          style: TextStyle(
+            color: AppColors.primaryBlue,
+            decoration: TextDecoration.underline,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        SizedBox(height: 2),
+        Text(
+          'JPG • PNG • JPEG',
+          style: TextStyle(color: AppColors.neutral400, fontSize: 12, fontWeight: FontWeight.w600),
+        ),
+      ],
+    );
+  }
+}
+
+class _SelectedList extends StatefulWidget {
+  final List<PlatformFile> files;
+  final VoidCallback onPick;
+
+  const _SelectedList({required this.files, required this.onPick});
+
+  @override
+  State<_SelectedList> createState() => _SelectedListState();
+}
+
+class _SelectedListState extends State<_SelectedList> {
+  late List<PlatformFile> _files;
+
+  @override
+  void initState() {
+    super.initState();
+    _files = List<PlatformFile>.from(widget.files);
+  }
+
+  @override
+  void didUpdateWidget(covariant _SelectedList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // sinkron saat parent update
+    _files = List<PlatformFile>.from(widget.files);
+  }
+
+  void _remove(PlatformFile f) {
+    setState(() {
+      _files.remove(f);
+    });
+    // Tidak memanggil setState parent agar simpel (preview saja).
+    // Saat user klik Save, parent tetap validasi jumlah awal yang diset.
+    // Kalau mau ketat, jadikan UploadEvidenceBox juga stateful dan naikkan perubahan ke parent via callback.
+  }
+
+  bool _isImageExt(String ext) {
+    final e = ext.toLowerCase();
+    return e == 'jpg' || e == 'jpeg' || e == 'png';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Selected Files',
+          style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.neutral800),
+        ),
+        const SizedBox(height: 10),
+        ..._files.map((f) => _SelectedFileTile(
+              name: f.name,
+              bytes: f.bytes,
+              ext: (f.extension ?? '').toLowerCase(),
+              onRemove: () => _remove(f),
+            )),
+        const SizedBox(height: 12),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: OutlinedButton.icon(
+            onPressed: widget.onPick,
+            icon: const Icon(Icons.add),
+            label: const Text('Add more'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.neutral800,
+              side: const BorderSide(color: AppColors.dividerGray),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SelectedFileTile extends StatelessWidget {
+  final String name;
+  final Uint8List? bytes;
+  final String ext;
+  final VoidCallback onRemove;
+
+  const _SelectedFileTile({
+    required this.name,
+    required this.bytes,
+    required this.ext,
+    required this.onRemove,
+  });
+
+  bool get _isImage => ext == 'jpg' || ext == 'jpeg' || ext == 'png';
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: AppColors.pureWhite,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.dividerGray),
+      ),
+      child: Row(
+        children: [
+          // preview
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: SizedBox(
+              width: 44,
+              height: 44,
+              child: _isImage && bytes != null
+                  ? Image.memory(bytes!, fit: BoxFit.cover)
+                  : const Icon(Icons.insert_drive_file, color: AppColors.neutral500),
+            ),
+          ),
+          const SizedBox(width: 10),
+
+          // name
+          Expanded(
+            child: Text(
+              name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: AppColors.neutral800,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+
+          const SizedBox(width: 8),
+
+          // remove
+          IconButton(
+            onPressed: onRemove,
+            icon: const Icon(Icons.close, size: 18, color: AppColors.neutral500),
+            splashRadius: 18,
+            tooltip: 'Remove',
+          ),
+        ],
       ),
     );
   }

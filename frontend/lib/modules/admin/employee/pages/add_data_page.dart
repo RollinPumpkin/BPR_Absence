@@ -21,6 +21,7 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
   final TextEditingController accountHolderController = TextEditingController();
   final TextEditingController accountNumberController = TextEditingController();
   final TextEditingController divisionController = TextEditingController();
+  final TextEditingController _dobController = TextEditingController();
 
   // Dropdown values
   String? selectedGender;
@@ -33,190 +34,347 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
   DateTime? selectedDate;
 
   @override
+  void dispose() {
+    firstNameController.dispose();
+    lastNameController.dispose();
+    mobileController.dispose();
+    placeOfBirthController.dispose();
+    positionController.dispose();
+    nikController.dispose();
+    accountHolderController.dispose();
+    accountNumberController.dispose();
+    divisionController.dispose();
+    _dobController.dispose();
+    super.dispose();
+  }
+
+  InputDecoration _inputDec(String label, String hint, {Widget? prefixIcon, Widget? suffixIcon}) {
+    return InputDecoration(
+      labelText: label,
+      hintText: hint,
+      filled: true,
+      fillColor: AppColors.pureWhite,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppColors.dividerGray),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppColors.dividerGray),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppColors.accentBlue, width: 1.4),
+      ),
+      prefixIcon: prefixIcon,
+      suffixIcon: suffixIcon,
+    );
+  }
+
+  TextStyle get _labelStyle => const TextStyle(
+        fontWeight: FontWeight.w800,
+        color: AppColors.neutral800,
+      );
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.backgroundGray,
+
       appBar: AppBar(
-        title: const Text("Add New Employee"),
+        backgroundColor: AppColors.pureWhite,
+        elevation: 0,
+        centerTitle: false,
+        title: const Text(
+          'Add New Employee',
+          style: TextStyle(
+            color: AppColors.neutral800,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back, color: AppColors.neutral800),
           onPressed: () => Navigator.pop(context),
         ),
       ),
+
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            // Upload Foto
-            Row(
-              children: [
-                Container(
-                  width: 90,
-                  height: 90,
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryBlueGrey[900],
-                    borderRadius: BorderRadius.circular(8),
+        child: Container(
+          decoration: BoxDecoration(
+            color: AppColors.pureWhite,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: const [
+              BoxShadow(
+                color: AppColors.shadowColor,
+                blurRadius: 12,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Upload foto
+              Text('Photo', style: _labelStyle),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Container(
+                    width: 88,
+                    height: 88,
+                    decoration: BoxDecoration(
+                      color: AppColors.neutral100,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.person, color: AppColors.neutral500, size: 40),
                   ),
-                  child: const Icon(Icons.person, color: AppColors.pureWhite, size: 40),
-                ),
-                const SizedBox(width: 16),
-                ElevatedButton.icon(
-                  onPressed: () {},
-                  icon: const Icon(Icons.add, color: AppColors.pureWhite),
-                  label: const Text("Upload Foto"),
-                  style: ElevatedButton.styleFrom(
-                    foregroundColor: AppColors.pureWhite,
-                    backgroundColor: AppColors.primaryBlue,
+                  const SizedBox(width: 12),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      // TODO: implement upload image (pakai image_picker/file_picker bila diperlukan)
+                    },
+                    icon: const Icon(Icons.upload, size: 18),
+                    label: const Text('Upload Photo'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryBlue,
+                      foregroundColor: AppColors.pureWhite,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    ),
                   ),
+                ],
+              ),
+
+              const SizedBox(height: 16),
+              const _SectionDivider(title: 'Personal Information'),
+
+              _field(
+                child: TextField(
+                  controller: firstNameController,
+                  keyboardType: TextInputType.name,
+                  decoration: _inputDec('First Name', 'Enter the First Name'),
                 ),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            // First Name
-            _buildTextField("First Name", "Enter the First Name", firstNameController),
-
-            // Mobile Number
-            _buildTextField("Mobile Number", "Enter the Mobile Number", mobileController, keyboard: TextInputType.phone),
-
-            // Gender
-            _buildDropdown("Gender", ["Male", "Female"], selectedGender, (value) {
-              setState(() => selectedGender = value);
-            }),
-
-            // Place of Birth
-            _buildTextField("Place of Birth", "Enter the Place of Birth", placeOfBirthController),
-
-            // Position
-            _buildTextField("Position", "Enter the Position", positionController),
-
-            // Contract Type
-            _buildDropdown("Contract Type", ["3 Months", "6 Months", "1 Year"], selectedContractType, (value) {
-              setState(() => selectedContractType = value);
-            }),
-
-            // Bank
-            _buildDropdown("Bank", ["BCA", "BRI", "Mandiri", "BNI"], selectedBank, (value) {
-              setState(() => selectedBank = value);
-            }),
-
-            // Account Holder’s Name
-            _buildTextField("Account Holder’s Name", "Bank Number Account Holder Name", accountHolderController),
-
-            // Last Name
-            _buildTextField("Last Name", "Enter the Last Name", lastNameController),
-
-            // NIK
-            _buildTextField("NIK", "Enter the NIK", nikController, keyboard: TextInputType.number),
-
-            // Last Education
-            _buildDropdown("Last Education", ["High School", "Diploma", "Bachelor", "Master"], selectedEducation, (value) {
-              setState(() => selectedEducation = value);
-            }),
-
-            // Date of Birth
-            _buildDatePicker(),
-
-            // Division
-            _buildTextField("Devision", "Enter the Devision", divisionController),
-
-            // Account Number
-            _buildTextField("Account Number", "Enter the Account Number", accountNumberController, keyboard: TextInputType.number),
-
-            // Warning Letter Type
-            _buildDropdown("Warning Letter Type", ["SP1", "SP2", "SP3"], selectedWarningLetter, (value) {
-              setState(() => selectedWarningLetter = value);
-            }),
-
-            const SizedBox(height: 24),
-
-            // Buttons
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryRed,
-                  ),
-                  child: const Text("Cancel", style: TextStyle(color: AppColors.pureWhite)),
+              ),
+              _field(
+                child: TextField(
+                  controller: lastNameController,
+                  keyboardType: TextInputType.name,
+                  decoration: _inputDec('Last Name', 'Enter the Last Name'),
                 ),
-                const SizedBox(width: 16),
-                ElevatedButton(
-                  onPressed: () {
-                    // TODO: Save logic
+              ),
+              _field(
+                child: TextField(
+                  controller: mobileController,
+                  keyboardType: TextInputType.phone,
+                  decoration: _inputDec('Mobile Number', 'Enter the Mobile Number', prefixIcon: const Icon(Icons.phone, size: 18)),
+                ),
+              ),
+              _field(
+                child: _dropdown(
+                  label: 'Gender',
+                  value: selectedGender,
+                  items: const ['Male', 'Female'],
+                  onChanged: (v) => setState(() => selectedGender = v),
+                ),
+              ),
+              _field(
+                child: TextField(
+                  controller: placeOfBirthController,
+                  decoration: _inputDec('Place of Birth', 'Enter the Place of Birth'),
+                ),
+              ),
+              _field(
+                child: TextFormField(
+                  readOnly: true,
+                  controller: _dobController,
+                  decoration: _inputDec('Date of Birth', 'dd/mm/yyyy',
+                      suffixIcon: const Icon(Icons.calendar_today, color: AppColors.neutral500)),
+                  onTap: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: selectedDate ?? DateTime(2000),
+                      firstDate: DateTime(1950),
+                      lastDate: DateTime.now(),
+                    );
+                    if (picked != null) {
+                      setState(() {
+                        selectedDate = picked;
+                        _dobController.text = '${picked.day}/${picked.month}/${picked.year}';
+                      });
+                    }
                   },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryGreen,
-                  ),
-                  child: const Text("Save", style: TextStyle(color: AppColors.pureWhite)),
                 ),
-              ],
+              ),
+
+              const SizedBox(height: 8),
+              const _SectionDivider(title: 'Employment'),
+
+              _field(
+                child: TextField(
+                  controller: positionController,
+                  decoration: _inputDec('Position', 'Enter the Position'),
+                ),
+              ),
+              _field(
+                child: _dropdown(
+                  label: 'Contract Type',
+                  value: selectedContractType,
+                  items: const ['3 Months', '6 Months', '1 Year'],
+                  onChanged: (v) => setState(() => selectedContractType = v),
+                ),
+              ),
+              _field(
+                child: TextField(
+                  controller: divisionController,
+                  decoration: _inputDec('Division', 'Enter the Division'),
+                ),
+              ),
+              _field(
+                child: _dropdown(
+                  label: 'Last Education',
+                  value: selectedEducation,
+                  items: const ['High School', 'Diploma', 'Bachelor', 'Master'],
+                  onChanged: (v) => setState(() => selectedEducation = v),
+                ),
+              ),
+              _field(
+                child: TextField(
+                  controller: nikController,
+                  keyboardType: TextInputType.number,
+                  decoration: _inputDec('NIK', 'Enter the NIK', prefixIcon: const Icon(Icons.badge_outlined, size: 18)),
+                ),
+              ),
+
+              const SizedBox(height: 8),
+              const _SectionDivider(title: 'Banking'),
+
+              _field(
+                child: _dropdown(
+                  label: 'Bank',
+                  value: selectedBank,
+                  items: const ['BCA', 'BRI', 'Mandiri', 'BNI'],
+                  onChanged: (v) => setState(() => selectedBank = v),
+                ),
+              ),
+              _field(
+                child: TextField(
+                  controller: accountHolderController,
+                  decoration: _inputDec("Account Holder’s Name", 'Bank Number Account Holder Name'),
+                ),
+              ),
+              _field(
+                child: TextField(
+                  controller: accountNumberController,
+                  keyboardType: TextInputType.number,
+                  decoration: _inputDec('Account Number', 'Enter the Account Number'),
+                ),
+              ),
+
+              const SizedBox(height: 8),
+              const _SectionDivider(title: 'Other'),
+
+              _field(
+                child: _dropdown(
+                  label: 'Warning Letter Type',
+                  value: selectedWarningLetter,
+                  items: const ['SP1', 'SP2', 'SP3'],
+                  onChanged: (v) => setState(() => selectedWarningLetter = v),
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  OutlinedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.neutral800,
+                      side: const BorderSide(color: AppColors.dividerGray),
+                      backgroundColor: AppColors.pureWhite,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    ),
+                    child: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.w700)),
+                  ),
+                  const SizedBox(width: 10),
+                  ElevatedButton(
+                    onPressed: () {
+                      // TODO: Save logic
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Employee saved'),
+                          backgroundColor: AppColors.primaryGreen,
+                        ),
+                      );
+                      Navigator.pop(context);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryGreen,
+                      foregroundColor: AppColors.pureWhite,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      elevation: 0,
+                    ),
+                    child: const Text('Save', style: TextStyle(fontWeight: FontWeight.w800)),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ===== Helpers =====
+  Widget _field({required Widget child}) => Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: child,
+      );
+
+  Widget _dropdown({
+    required String label,
+    required List<String> items,
+    required String? value,
+    required ValueChanged<String?> onChanged,
+  }) {
+    return DropdownButtonFormField<String>(
+      value: value,
+      items: items.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+      onChanged: onChanged,
+      decoration: _inputDec(label, '-Choose $label'),
+      borderRadius: BorderRadius.circular(12),
+    );
+  }
+}
+
+class _SectionDivider extends StatelessWidget {
+  final String title;
+  const _SectionDivider({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12, top: 6),
+      child: Row(
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              color: AppColors.neutral800,
+              fontWeight: FontWeight.w800,
+              fontSize: 14,
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTextField(String label, String hint, TextEditingController controller, {TextInputType keyboard = TextInputType.text}) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: TextField(
-        controller: controller,
-        keyboardType: keyboard,
-        decoration: InputDecoration(
-          labelText: label,
-          hintText: hint,
-          border: const OutlineInputBorder(),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDropdown(String label, List<String> items, String? value, Function(String?) onChanged) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: DropdownButtonFormField<String>(
-        value: value,
-        decoration: InputDecoration(
-          labelText: label,
-          border: const OutlineInputBorder(),
-        ),
-        items: items.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-        onChanged: onChanged,
-      ),
-    );
-  }
-
-  Widget _buildDatePicker() {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: TextFormField(
-        readOnly: true,
-        decoration: InputDecoration(
-          labelText: "Date of Birth",
-          hintText: "dd/mm/yyyy",
-          border: const OutlineInputBorder(),
-          suffixIcon: const Icon(Icons.calendar_today),
-        ),
-        onTap: () async {
-          DateTime? pickedDate = await showDatePicker(
-            context: context,
-            initialDate: DateTime(2000),
-            firstDate: DateTime(1950),
-            lastDate: DateTime.now(),
-          );
-          if (pickedDate != null) {
-            setState(() {
-              selectedDate = pickedDate;
-            });
-          }
-        },
-        controller: TextEditingController(
-          text: selectedDate != null
-              ? "${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}"
-              : "",
-        ),
+          ),
+          const SizedBox(width: 10),
+          const Expanded(child: Divider(color: AppColors.dividerGray, height: 1)),
+        ],
       ),
     );
   }

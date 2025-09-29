@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../widgets/settings_page.dart';
+import '../pages/settings_page.dart';
 import 'package:frontend/core/constants/colors.dart';
 
 class ProfileHeader extends StatelessWidget {
@@ -9,74 +9,82 @@ class ProfileHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Title and Setting Icon
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              "Profile",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            IconButton(
-              icon: const Icon(Icons.settings),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const SettingsPage()),
-                );
-              },
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-
-        // Profile Card
+        // Profile card (tetap, hanya tambah shadow halus)
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: AppColors.primaryRed,
             borderRadius: BorderRadius.circular(12),
+            boxShadow: const [
+              BoxShadow(
+                color: AppColors.shadowColor,
+                blurRadius: 12,
+                offset: Offset(0, 4),
+              ),
+            ],
           ),
           child: Row(
             children: [
               Stack(
+                clipBehavior: Clip.none,
                 children: [
                   const CircleAvatar(radius: 30, backgroundColor: Colors.grey),
                   Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: Container(
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: AppColors.pureWhite,
+                    bottom: -2,
+                    right: -2,
+                    child: Material(
+                      color: AppColors.pureWhite,
+                      shape: const CircleBorder(),
+                      child: InkWell(
+                        customBorder: const CircleBorder(),
+                        onTap: () {}, // TODO: action edit avatar
+                        child: const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: Icon(Icons.edit, size: 14, color: AppColors.neutral800),
+                        ),
                       ),
-                      child: const Icon(Icons.edit, size: 16),
                     ),
                   ),
                 ],
               ),
               const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Text(
-                    "Anindya Nurhaliza Putri",
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: AppColors.pureWhite,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    "Last update 1 day ago",
-                    style: TextStyle(fontSize: 12, color: AppColors.pureWhite),
-                  ),
-                ],
+              const Expanded(
+                child: _NameSubtitle(),
               ),
             ],
           ),
+        ),
+      ],
+    );
+  }
+}
+
+class _NameSubtitle extends StatelessWidget {
+  const _NameSubtitle();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: const [
+        Text(
+          'Anindya Nurhaliza Putri',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 16,
+            color: AppColors.pureWhite,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        SizedBox(height: 4),
+        Text(
+          'Last update 1 day ago',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(fontSize: 12, color: AppColors.pureWhite),
         ),
       ],
     );

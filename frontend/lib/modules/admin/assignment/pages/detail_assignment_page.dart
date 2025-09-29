@@ -7,99 +7,106 @@ class DetailAssignmentPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.backgroundGray,
       appBar: AppBar(
-        title: const Text("Detail Assignment"),
+        backgroundColor: AppColors.pureWhite,
+        elevation: 0,
+        foregroundColor: AppColors.neutral800,
+        title: const Text(
+          'Detail Assignment',
+          style: TextStyle(
+            fontWeight: FontWeight.w800,
+            color: AppColors.neutral800,
+          ),
+        ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
       ),
 
-      // 🔹 Body
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 🔹 Nama Kegiatan
-            const Text(
-              "Nama Kegiatan",
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
+            _sectionTitle('Nama Kegiatan'),
             const SizedBox(height: 6),
-            _buildReadonlyBox("Muncak Rinjani Ikut Lorenzo"),
+            _buildReadonlyBox(
+              'Muncak Rinjani Ikut Lorenzo',
+              maxLines: 2,
+            ),
             const SizedBox(height: 16),
 
-            // 🔹 Tags
+            _sectionTitle('Tags'),
+            const SizedBox(height: 6),
             Wrap(
               spacing: 8,
-              children: [
-                _buildTag("Tugas Buku"),
-                _buildTag("Report"),
-                _buildTag("Seminar"),
-                _buildTag("Pelaporan OJK"),
-                _buildTag("Audit"),
-                _buildTag("Training / Pelatihan"),
-                _buildTag("Monitoring & Pengkajian"),
+              runSpacing: 8,
+              children: const [
+                _TagChip('Tugas Buku'),
+                _TagChip('Report'),
+                _TagChip('Seminar'),
+                _TagChip('Pelaporan OJK'),
+                _TagChip('Audit'),
+                _TagChip('Training / Pelatihan'),
+                _TagChip('Monitoring & Pengkajian'),
               ],
             ),
             const SizedBox(height: 16),
 
-            // 🔹 Description
-            const Text(
-              "Description",
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
+            _sectionTitle('Description'),
             const SizedBox(height: 6),
             _buildReadonlyBox(
-              "Muncak bersama bunga agam dan lorenzo membawa 3 ayam 2 bebek ...",
+              'Muncak bersama bunga agam dan lorenzo membawa 3 ayam 2 bebek ...',
               maxLines: 4,
             ),
             const SizedBox(height: 16),
 
-            // 🔹 Start & End Date
             Row(
               children: [
                 Expanded(
-                  child: _buildReadonlyBox("27/08/2025", label: "Start Date"),
+                  child: _buildReadonlyBox(
+                    '27/08/2025',
+                    label: 'Start Date',
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: _buildReadonlyBox("End Date", label: "End Date"),
+                  child: _buildReadonlyBox(
+                    'End Date',
+                    label: 'End Date',
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 16),
 
-            // 🔹 Jam
-            const Text(
-              "Jam",
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
+            _sectionTitle('Jam'),
             const SizedBox(height: 6),
-            _buildReadonlyBox("17:45:00"),
+            _buildReadonlyBox('17:45:00'),
             const SizedBox(height: 16),
 
-            // 🔹 Link
-            const Text(
-              "Link (Optional)",
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
+            _sectionTitle('Link (Optional)'),
             const SizedBox(height: 6),
-            _buildReadonlyBox("https://wordpress.anjay"),
+            _buildReadonlyBox('https://wordpress.anjay'),
             const SizedBox(height: 16),
 
-            // 🔹 Employee Assignment
-            const Text(
-              "Employee Assignment",
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
+            _sectionTitle('Employee Assignment'),
             const SizedBox(height: 6),
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey.shade300),
-                borderRadius: BorderRadius.circular(8),
+                color: AppColors.pureWhite,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.dividerGray),
+                boxShadow: const [
+                  BoxShadow(
+                    color: AppColors.shadowColor,
+                    blurRadius: 12,
+                    offset: Offset(0, 4),
+                  ),
+                ],
               ),
               child: Row(
                 children: [
@@ -108,21 +115,14 @@ class DetailAssignmentPage extends StatelessWidget {
                     child: Icon(Icons.person, color: AppColors.pureWhite),
                   ),
                   const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text(
-                        "Septa Puma",
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      Text("Manager"),
-                    ],
+                  const Expanded(
+                    child: _KV(
+                      label: 'Septa Puma',
+                      value: 'Manager',
+                      boldLabel: true,
+                    ),
                   ),
-                  const Spacer(),
-                  const Text(
-                    "Active",
-                    style: TextStyle(color: AppColors.primaryGreen),
-                  ),
+                  const _StatusPill(text: 'Active', color: AppColors.primaryGreen),
                 ],
               ),
             ),
@@ -132,30 +132,156 @@ class DetailAssignmentPage extends StatelessWidget {
     );
   }
 
-  // 🔹 Custom Tag Widget
-  Widget _buildTag(String text) {
-    return Chip(
-      label: Text(
-        text,
-        style: const TextStyle(fontSize: 12),
-      ),
-      backgroundColor: Colors.grey.shade200,
-    );
-  }
+  // ---------- Helpers (kecil & reusable) ----------
 
-  // 🔹 Read-only box widget
-  Widget _buildReadonlyBox(String value, {int maxLines = 1, String? label}) {
-    return Container(
+  Widget _sectionTitle(String text) {
+    return Text(
+      text,
+      style: const TextStyle(
+        fontWeight: FontWeight.w800,
+        fontSize: 14.5,
+        color: AppColors.neutral800,
+      ),
+    );
+    }
+
+  /// Read-only box. Kalau [label] diisi, label ditampilkan di atas box.
+  Widget _buildReadonlyBox(
+    String value, {
+    int maxLines = 1,
+    String? label,
+  }) {
+    final box = Container(
+      width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300),
-        borderRadius: BorderRadius.circular(8),
+        color: AppColors.pureWhite,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.dividerGray),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.shadowColor,
+            blurRadius: 10,
+            offset: Offset(0, 3),
+          ),
+        ],
       ),
       child: Text(
         value,
         maxLines: maxLines,
         overflow: TextOverflow.ellipsis,
-        style: const TextStyle(fontSize: 14, color: AppColors.black87),
+        style: const TextStyle(
+          fontSize: 14,
+          color: AppColors.neutral800,
+          fontWeight: FontWeight.w600,
+          height: 1.4,
+        ),
+      ),
+    );
+
+    if (label == null) return box;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            color: AppColors.neutral500,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 6),
+        box,
+      ],
+    );
+  }
+}
+
+// ---------- Tiny widgets ----------
+
+class _TagChip extends StatelessWidget {
+  final String text;
+  const _TagChip(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.neutral100,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.dividerGray),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontSize: 12,
+          color: AppColors.neutral800,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+}
+
+class _KV extends StatelessWidget {
+  final String label;
+  final String value;
+  final bool boldLabel;
+  const _KV({required this.label, required this.value, this.boldLabel = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 14,
+            color: AppColors.neutral800,
+            fontWeight: boldLabel ? FontWeight.w800 : FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          value,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            fontSize: 12,
+            color: AppColors.neutral500,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _StatusPill extends StatelessWidget {
+  final String text;
+  final Color color;
+  const _StatusPill({required this.text, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(.12),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(.35)),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: color,
+          fontWeight: FontWeight.w800,
+          fontSize: 12,
+        ),
       ),
     );
   }

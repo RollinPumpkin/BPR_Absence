@@ -16,13 +16,16 @@ class TimelineCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        TimelineDate(date: date, isFirst: isFirst, isLast: isLast),
-        const SizedBox(width: 12),
-        const Expanded(child: AssignmentCard()),
-      ],
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          TimelineDate(date: date, isFirst: isFirst, isLast: isLast),
+          const SizedBox(width: 12),
+          const Expanded(child: AssignmentCard()),
+        ],
+      ),
     );
   }
+
 }
