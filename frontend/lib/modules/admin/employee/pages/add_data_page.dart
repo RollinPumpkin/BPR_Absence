@@ -3,7 +3,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:frontend/core/constants/colors.dart';
-  final TextEditingController emailController = TextEditingController();
 
 class AddEmployeePage extends StatefulWidget {
   const AddEmployeePage({super.key});
@@ -14,6 +13,7 @@ class AddEmployeePage extends StatefulWidget {
 
 class _AddEmployeePageState extends State<AddEmployeePage> {
   // Controllers
+  final TextEditingController emailController = TextEditingController();
   final TextEditingController fullnameController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController mobileController = TextEditingController();
@@ -31,6 +31,8 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
   String? selectedBank;
   String? selectedEducation;
   String? selectedWarningLetter;
+  String? selectedRole;
+  final List<String> roleOptions = ['Employee', 'Account Officer', 'Security', 'Office Boy'];
 
   // Date of Birth
   DateTime? selectedDate;
@@ -174,6 +176,14 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
                   controller: passwordController,
                   obscureText: true,
                   decoration: _inputDec('Password', 'Enter the Password', prefixIcon: const Icon(Icons.lock, size: 18)),
+                ),
+              ),
+              _field(
+                child: _dropdown(
+                  label: 'Role',
+                  value: selectedRole,
+                  items: roleOptions,
+                  onChanged: (v) => setState(() => selectedRole = v),
                 ),
               ),
               _field(
