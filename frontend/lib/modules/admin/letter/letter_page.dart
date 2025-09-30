@@ -271,7 +271,7 @@ Future<void> _exportLettersExcel(BuildContext context) async {
     await FileSaver.instance.saveFile(
       name: filename,
       bytes: bytes,
-      fileExtension: 'xlsx',
+      ext: 'xlsx',
       mimeType: MimeType.microsoftExcel,
     );
 
