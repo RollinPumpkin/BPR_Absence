@@ -129,9 +129,6 @@ class UserAttendancePage extends StatelessWidget {
       bottomNavigationBar: CustomBottomNavRouter(
         currentIndex: 1,
         items: UserNavItems.items,
-        style: SimpleNavStyle.preset().copyWith(
-          indicatorColor: AppColors.primaryRed,
-        ),
       ),
     );
   }

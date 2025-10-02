@@ -51,9 +51,6 @@ class _UserAssignmentPageState extends State<UserAssignmentPage> {
       bottomNavigationBar: CustomBottomNavRouter(
         currentIndex: 2,
         items: UserNavItems.items,
-        style: SimpleNavStyle.preset().copyWith(
-          indicatorColor: AppColors.primaryRed,
-        ),
       ),
     );
   }
