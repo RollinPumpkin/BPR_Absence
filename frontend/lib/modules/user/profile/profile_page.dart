@@ -249,9 +249,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
       bottomNavigationBar: CustomBottomNavRouter(
         currentIndex: 4,
         items: UserNavItems.items,
-        style: SimpleNavStyle.preset().copyWith(
-          indicatorColor: AppColors.primaryRed,
-        ),
       ),
     );
   }

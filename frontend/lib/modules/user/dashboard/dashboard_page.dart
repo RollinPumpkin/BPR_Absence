@@ -41,9 +41,6 @@ class UserDashboardPage extends StatelessWidget {
       bottomNavigationBar: CustomBottomNavRouter(
         currentIndex: 0,
         items: UserNavItems.items,
-        style: SimpleNavStyle.preset().copyWith(
-          indicatorColor: AppColors.primaryRed,
-        ),
       ),
     );
   }

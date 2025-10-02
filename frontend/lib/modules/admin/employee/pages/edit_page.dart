@@ -1,52 +1,144 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/core/constants/colors.dart';
+import 'package:frontend/modules/admin/employee/models/employee.dart';
 
 class EditPage extends StatefulWidget {
-  const EditPage({super.key});
+  final Employee? employee; // ⬅️ optional prefill
+  const EditPage({super.key, this.employee});
 
   @override
   State<EditPage> createState() => _EditPageState();
 }
 
 class _EditPageState extends State<EditPage> {
-  // Dropdown states
-  String? _gender;
-  String? _contract;
-  String? _bank;
-  String? _education;
-  String? _warning;
+  // Controllers
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController fullnameController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+  final TextEditingController mobileController = TextEditingController();
+  final TextEditingController placeOfBirthController = TextEditingController();
+  final TextEditingController positionController = TextEditingController();
+  final TextEditingController nikController = TextEditingController();
+  final TextEditingController accountHolderController = TextEditingController();
+  final TextEditingController accountNumberController = TextEditingController();
+  final TextEditingController divisionController = TextEditingController();
+  final TextEditingController _dobController = TextEditingController();
 
-  // Date of birth
-  final _dobCtrl = TextEditingController();
+  // Dropdown values
+  String? selectedGender;
+  String? selectedContractType;
+  String? selectedBank;
+  String? selectedEducation;
+  String? selectedWarningLetter;
+  String? selectedRole;
 
-  InputDecoration _dec(String hint) => InputDecoration(
-        hintText: hint,
-        filled: true,
-        fillColor: AppColors.pureWhite,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.dividerGray),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.dividerGray),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.accentBlue, width: 1.4),
-        ),
-      );
+  final List<String> roleOptions = [
+    'Employee',
+    'Account Officer',
+    'Security',
+    'Office Boy',
+  ];
+
+  DateTime? selectedDate;
+
+  @override
+  void initState() {
+    super.initState();
+    // Prefill dari employee bila ada
+    final emp = widget.employee;
+    if (emp != null) {
+      fullnameController.text = emp.fullName ?? '';
+      emailController.text = emp.email ?? '';
+      // password: jangan diprefill (keamanan), biarkan kosong
+      mobileController.text = emp.mobileNumber ?? '';
+      placeOfBirthController.text = emp.placeOfBirth ?? '';
+      positionController.text = emp.position ?? '';
+      nikController.text = emp.nik ?? '';
+      accountHolderController.text = emp.accountHolderName ?? '';
+      accountNumberController.text = emp.accountNumber ?? '';
+      divisionController.text = emp.division ?? '';
+
+      selectedGender = emp.gender;
+      selectedContractType = emp.contractType;
+      selectedBank = emp.bank;
+      selectedEducation = emp.lastEducation;
+      selectedWarningLetter = emp.warningLetterType;
+      selectedRole = emp.role;
+
+      if (emp.dateOfBirth != null) {
+        selectedDate = emp.dateOfBirth;
+        _dobController.text =
+            '${emp.dateOfBirth!.day}/${emp.dateOfBirth!.month}/${emp.dateOfBirth!.year}';
+      }
+    }
+  }
+
+  // Helpers
+  InputDecoration _inputDec(
+    String label,
+    String hint, {
+    Widget? prefixIcon,
+    Widget? suffixIcon,
+  }) {
+    return InputDecoration(
+      labelText: label,
+      hintText: hint,
+      filled: true,
+      fillColor: AppColors.pureWhite,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppColors.dividerGray),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppColors.dividerGray),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppColors.accentBlue, width: 1.4),
+      ),
+      prefixIcon: prefixIcon,
+      suffixIcon: suffixIcon,
+    );
+  }
 
   TextStyle get _labelStyle => const TextStyle(
-        fontSize: 13,
         fontWeight: FontWeight.w800,
         color: AppColors.neutral800,
       );
 
+  Widget _field({required Widget child}) =>
+      Padding(padding: const EdgeInsets.only(bottom: 12), child: child);
+
+  Widget _dropdown({
+    required String label,
+    required List<String> items,
+    required String? value,
+    required ValueChanged<String?> onChanged,
+  }) {
+    return DropdownButtonFormField<String>(
+      value: value,
+      items: items.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+      onChanged: onChanged,
+      decoration: _inputDec(label, '-Choose $label'),
+      borderRadius: BorderRadius.circular(12),
+    );
+  }
+
   @override
   void dispose() {
-    _dobCtrl.dispose();
+    emailController.dispose();
+    fullnameController.dispose();
+    passwordController.dispose();
+    mobileController.dispose();
+    placeOfBirthController.dispose();
+    positionController.dispose();
+    nikController.dispose();
+    accountHolderController.dispose();
+    accountNumberController.dispose();
+    divisionController.dispose();
+    _dobController.dispose();
     super.dispose();
   }
 
@@ -71,7 +163,6 @@ class _EditPageState extends State<EditPage> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -145,155 +236,164 @@ class _EditPageState extends State<EditPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // First Name
-                  Text('First Name', style: _labelStyle),
-                  const SizedBox(height: 6),
-                  TextField(decoration: _dec('Enter the First Name')),
-                  const SizedBox(height: 16),
+                  // Personal
+                  const _SectionDivider(title: 'Personal Information'),
 
-                  // Mobile Number
-                  Text('Mobile Number', style: _labelStyle),
-                  const SizedBox(height: 6),
-                  TextField(
-                    keyboardType: TextInputType.phone,
-                    decoration: _dec('Enter the Mobile Number'),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Gender
-                  Text('Gender', style: _labelStyle),
-                  const SizedBox(height: 6),
-                  DropdownButtonFormField<String>(
-                    value: _gender,
-                    decoration: _dec('-Choose Gender'),
-                    items: const ['Male', 'Female']
-                        .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                        .toList(),
-                    onChanged: (v) => setState(() => _gender = v),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Place of Birth
-                  Text('Place of Birth', style: _labelStyle),
-                  const SizedBox(height: 6),
-                  TextField(decoration: _dec('Enter the Place of Birth')),
-                  const SizedBox(height: 16),
-
-                  // Position
-                  Text('Position', style: _labelStyle),
-                  const SizedBox(height: 6),
-                  TextField(decoration: _dec('Enter the Position')),
-                  const SizedBox(height: 16),
-
-                  // Contract Type
-                  Text('Contract Type', style: _labelStyle),
-                  const SizedBox(height: 6),
-                  DropdownButtonFormField<String>(
-                    value: _contract,
-                    decoration: _dec('-Choose Type'),
-                    items: const ['Full Time', 'Part Time', 'Internship']
-                        .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                        .toList(),
-                    onChanged: (v) => setState(() => _contract = v),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Bank
-                  Text('Bank', style: _labelStyle),
-                  const SizedBox(height: 6),
-                  DropdownButtonFormField<String>(
-                    value: _bank,
-                    decoration: _dec('-Choose Bank'),
-                    items: const ['BCA', 'BRI', 'Mandiri', 'BNI']
-                        .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                        .toList(),
-                    onChanged: (v) => setState(() => _bank = v),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Account Holder’s Name
-                  Text('Account Holder’s Name', style: _labelStyle),
-                  const SizedBox(height: 6),
-                  TextField(decoration: _dec('Bank Number Account Holder Name')),
-                  const SizedBox(height: 16),
-
-                  // Last Name
-                  Text('Last Name', style: _labelStyle),
-                  const SizedBox(height: 6),
-                  TextField(decoration: _dec('Enter the Last Name')),
-                  const SizedBox(height: 16),
-
-                  // NIK
-                  Text('NIK', style: _labelStyle),
-                  const SizedBox(height: 6),
-                  TextField(
-                    keyboardType: TextInputType.number,
-                    decoration: _dec('Enter the NIK'),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Last Education
-                  Text('Last Education', style: _labelStyle),
-                  const SizedBox(height: 6),
-                  DropdownButtonFormField<String>(
-                    value: _education,
-                    decoration: _dec('-Choose Education'),
-                    items: const ['SMA', 'D3', 'S1', 'S2']
-                        .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                        .toList(),
-                    onChanged: (v) => setState(() => _education = v),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Date of Birth
-                  Text('Date of Birth', style: _labelStyle),
-                  const SizedBox(height: 6),
-                  TextField(
-                    controller: _dobCtrl,
-                    readOnly: true,
-                    decoration: _dec('dd/mm/yyyy').copyWith(
-                      prefixIcon: const Icon(Icons.calendar_today, color: AppColors.accentBlue),
+                  _field(
+                    child: TextField(
+                      controller: fullnameController,
+                      keyboardType: TextInputType.name,
+                      decoration: _inputDec('Full Name', 'Enter the Full Name'),
                     ),
-                    onTap: () async {
-                      final picked = await showDatePicker(
-                        context: context,
-                        firstDate: DateTime(1950),
-                        lastDate: DateTime.now(),
-                        initialDate: DateTime(2000),
-                      );
-                      if (picked != null) {
-                        _dobCtrl.text = '${picked.day}/${picked.month}/${picked.year}';
-                      }
-                    },
                   ),
-                  const SizedBox(height: 16),
-
-                  // Devision
-                  Text('Devision', style: _labelStyle),
-                  const SizedBox(height: 6),
-                  TextField(decoration: _dec('Enter the Devision')),
-                  const SizedBox(height: 16),
-
-                  // Account Number
-                  Text('Account Number', style: _labelStyle),
-                  const SizedBox(height: 6),
-                  TextField(
-                    keyboardType: TextInputType.number,
-                    decoration: _dec('Enter the Account Number'),
+                  _field(
+                    child: TextField(
+                      controller: emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      decoration: _inputDec('Email', 'Enter the Email',
+                          prefixIcon: const Icon(Icons.email, size: 18)),
+                    ),
                   ),
-                  const SizedBox(height: 16),
-
-                  // Warning Letter Type
-                  Text('Warning Letter Type', style: _labelStyle),
-                  const SizedBox(height: 6),
-                  DropdownButtonFormField<String>(
-                    value: _warning,
-                    decoration: _dec('-Choose Type'),
-                    items: const ['SP1', 'SP2', 'SP3']
-                        .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                        .toList(),
-                    onChanged: (v) => setState(() => _warning = v),
+                  _field(
+                    child: TextField(
+                      controller: passwordController,
+                      obscureText: true,
+                      decoration: _inputDec('Password', 'Enter the Password',
+                          prefixIcon: const Icon(Icons.lock, size: 18)),
+                    ),
                   ),
+                  _field(
+                    child: _dropdown(
+                      label: 'Role',
+                      value: selectedRole,
+                      items: roleOptions,
+                      onChanged: (v) => setState(() => selectedRole = v),
+                    ),
+                  ),
+                  _field(
+                    child: TextField(
+                      controller: mobileController,
+                      keyboardType: TextInputType.phone,
+                      decoration: _inputDec('Mobile Number', 'Enter the Mobile Number',
+                          prefixIcon: const Icon(Icons.phone, size: 18)),
+                    ),
+                  ),
+                  _field(
+                    child: _dropdown(
+                      label: 'Gender',
+                      value: selectedGender,
+                      items: const ['Male', 'Female'],
+                      onChanged: (v) => setState(() => selectedGender = v),
+                    ),
+                  ),
+                  _field(
+                    child: TextField(
+                      controller: placeOfBirthController,
+                      decoration: _inputDec('Place of Birth', 'Enter the Place of Birth'),
+                    ),
+                  ),
+                  _field(
+                    child: TextFormField(
+                      readOnly: true,
+                      controller: _dobController,
+                      decoration: _inputDec('Date of Birth', 'dd/mm/yyyy',
+                          suffixIcon: const Icon(Icons.calendar_today, color: AppColors.neutral500)),
+                      onTap: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: selectedDate ?? DateTime(2000),
+                          firstDate: DateTime(1950),
+                          lastDate: DateTime.now(),
+                        );
+                        if (picked != null) {
+                          setState(() {
+                            selectedDate = picked;
+                            _dobController.text =
+                                '${picked.day}/${picked.month}/${picked.year}';
+                          });
+                        }
+                      },
+                    ),
+                  ),
+
+                  const SizedBox(height: 8),
+                  const _SectionDivider(title: 'Employment'),
+
+                  _field(
+                    child: TextField(
+                      controller: positionController,
+                      decoration: _inputDec('Position', 'Enter the Position'),
+                    ),
+                  ),
+                  _field(
+                    child: _dropdown(
+                      label: 'Contract Type',
+                      value: selectedContractType,
+                      items: const ['3 Months', '6 Months', '1 Year'],
+                      onChanged: (v) => setState(() => selectedContractType = v),
+                    ),
+                  ),
+                  _field(
+                    child: TextField(
+                      controller: divisionController,
+                      decoration: _inputDec('Division', 'Enter the Division'),
+                    ),
+                  ),
+                  _field(
+                    child: _dropdown(
+                      label: 'Last Education',
+                      value: selectedEducation,
+                      items: const ['High School', 'Diploma', 'Bachelor', 'Master'],
+                      onChanged: (v) => setState(() => selectedEducation = v),
+                    ),
+                  ),
+                  _field(
+                    child: TextField(
+                      controller: nikController,
+                      keyboardType: TextInputType.number,
+                      decoration: _inputDec('NIK', 'Enter the NIK',
+                          prefixIcon: const Icon(Icons.badge_outlined, size: 18)),
+                    ),
+                  ),
+
+                  const SizedBox(height: 8),
+                  const _SectionDivider(title: 'Banking'),
+
+                  _field(
+                    child: _dropdown(
+                      label: 'Bank',
+                      value: selectedBank,
+                      items: const ['BCA', 'BRI', 'Mandiri', 'BNI'],
+                      onChanged: (v) => setState(() => selectedBank = v),
+                    ),
+                  ),
+                  _field(
+                    child: TextField(
+                      controller: accountHolderController,
+                      decoration: _inputDec("Account Holder’s Name", 'Bank Number Account Holder Name'),
+                    ),
+                  ),
+                  _field(
+                    child: TextField(
+                      controller: accountNumberController,
+                      keyboardType: TextInputType.number,
+                      decoration: _inputDec('Account Number', 'Enter the Account Number'),
+                    ),
+                  ),
+
+                  const SizedBox(height: 8),
+                  const _SectionDivider(title: 'Other'),
+
+                  _field(
+                    child: _dropdown(
+                      label: 'Warning Letter Type',
+                      value: selectedWarningLetter,
+                      items: const ['SP1', 'SP2', 'SP3'],
+                      onChanged: (v) => setState(() => selectedWarningLetter = v),
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
                 ],
               ),
             ),
@@ -304,28 +404,21 @@ class _EditPageState extends State<EditPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryRed,
-                    foregroundColor: AppColors.pureWhite,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
+                OutlinedButton(
                   onPressed: () => Navigator.pop(context),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.neutral800,
+                    side: const BorderSide(color: AppColors.dividerGray),
+                    backgroundColor: AppColors.pureWhite,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  ),
                   child: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.w700)),
                 ),
                 const SizedBox(width: 10),
                 ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryGreen,
-                    foregroundColor: AppColors.pureWhite,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
                   onPressed: () {
-                    // TODO: save logic
+                    // TODO: implement save logic
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Profile updated'),
@@ -334,12 +427,46 @@ class _EditPageState extends State<EditPage> {
                     );
                     Navigator.pop(context);
                   },
-                  child: const Text('Save', style: TextStyle(fontWeight: FontWeight.w700)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryGreen,
+                    foregroundColor: AppColors.pureWhite,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    elevation: 0,
+                  ),
+                  child: const Text('Save', style: TextStyle(fontWeight: FontWeight.w800)),
                 ),
               ],
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// Divider section (konsisten)
+class _SectionDivider extends StatelessWidget {
+  final String title;
+  const _SectionDivider({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12, top: 6),
+      child: Row(
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              color: AppColors.neutral800,
+              fontWeight: FontWeight.w800,
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(width: 10),
+          const Expanded(child: Divider(color: AppColors.dividerGray, height: 1)),
+        ],
       ),
     );
   }
