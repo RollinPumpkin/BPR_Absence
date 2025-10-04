@@ -152,30 +152,19 @@ router.post('/login', validateLogin, async (req, res) => {
       });
     }
 
-    // Verify password using Firebase Auth REST API
-    // See: https://firebase.google.com/docs/reference/rest/auth#section-sign-in-email-password
-    const fetch = require('node-fetch');
-    const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY;
-    if (!FIREBASE_API_KEY) {
-      return res.status(500).json({
-        success: false,
-        message: 'Missing FIREBASE_API_KEY in environment variables'
-      });
-    }
-    const url = `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${FIREBASE_API_KEY}`;
-    const resp = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: userEmail, password, returnSecureToken: true })
-    });
-    const result = await resp.json();
-    if (!result.idToken) {
+    // For development/testing: verify password directly with bcrypt
+    // TODO: Replace with Firebase Auth in production
+    const bcrypt = require('bcryptjs');
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    
+    if (!isValidPassword) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid credentials (Firebase Auth failed)',
-        error: result.error
+        message: 'Invalid credentials (password incorrect)'
       });
     }
+
+    console.log(`✅ Login successful for: ${userEmail}`);
 
     // Generate JWT token for your app
     const token = jwt.sign(
@@ -196,8 +185,7 @@ router.post('/login', validateLogin, async (req, res) => {
       message: 'Login successful',
       data: {
         user,
-        token,
-        firebaseIdToken: result.idToken
+        token
       }
     });
   } catch (error) {

@@ -1,9 +1,26 @@
-const { initializeFirebase, getFirestore, getServerTimestamp } = require('../config/database');
+const { initializeFirebase, getFirestore, getServerTimestamp, getAuth } = require('../config/database');
 const bcrypt = require('bcryptjs');
 
 // Initialize Firebase
 initializeFirebase();
 const db = getFirestore();
+const auth = getAuth();
+
+const createFirebaseUser = async (email, password, displayName) => {
+  try {
+    const userRecord = await auth.createUser({
+      email: email,
+      password: password,
+      displayName: displayName,
+      disabled: false
+    });
+    console.log(`✅ Firebase Auth user created: ${email}`);
+    return userRecord.uid;
+  } catch (error) {
+    console.log(`⚠️ Firebase Auth user might already exist: ${email}`);
+    return null;
+  }
+};
 
 const seedData = async () => {
   try {
@@ -12,6 +29,9 @@ const seedData = async () => {
     // Create admin user
     console.log('👤 Creating admin user...');
     const adminPassword = await bcrypt.hash('admin123456', 12);
+    
+    // Create in Firebase Auth first
+    const adminUid = await createFirebaseUser('admin@bpr.com', 'admin123456', 'Administrator BPR');
     
     const adminData = {
       employee_id: 'ADMIN001',
@@ -24,12 +44,13 @@ const seedData = async () => {
       phone: '081234567890',
       profile_image: '',
       is_active: true,
+      firebase_uid: adminUid,
       created_at: getServerTimestamp(),
       updated_at: getServerTimestamp()
     };
 
     await db.collection('users').add(adminData);
-    console.log('✅ Admin user created');
+    console.log('✅ Admin user created in Firestore');
 
     // Create sample employees
     console.log('👥 Creating sample employees...');
@@ -70,19 +91,24 @@ const seedData = async () => {
 
     for (const employee of employees) {
       const employeePassword = await bcrypt.hash('password123', 12);
+      
+      // Create in Firebase Auth first
+      const employeeUid = await createFirebaseUser(employee.email, 'password123', employee.full_name);
+      
       const employeeData = {
         ...employee,
         password: employeePassword,
         role: 'employee',
         profile_image: '',
         is_active: true,
+        firebase_uid: employeeUid,
         created_at: getServerTimestamp(),
         updated_at: getServerTimestamp()
       };
       
       await db.collection('users').add(employeeData);
     }
-    console.log('✅ Sample employees created');
+    console.log('✅ Sample employees created in Firestore');
 
     // Create QR codes for locations
     console.log('📱 Creating QR codes...');
