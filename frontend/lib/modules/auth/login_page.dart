@@ -66,53 +66,21 @@ class _LoginPageState extends State<LoginPage>
     });
 
     try {
-      // For demo purposes, let's simulate different user types based on email
-      final email = _emailController.text.toLowerCase();
+      final identifier = _emailController.text.trim();
       final password = _passwordController.text;
 
-      // Simulate API call delay
-      await Future.delayed(const Duration(seconds: 1));
-
-      // Demo logic: route based on email
-      if (email.contains('admin')) {
-        // Save user data
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('user_role', 'admin');
-        await prefs.setString('user_email', email);
-        await prefs.setBool('is_logged_in', true);
-
-        if (mounted) {
-          Navigator.pushReplacementNamed(context, '/admin/dashboard');
-        }
-      } else {
-        // Save user data
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('user_role', 'employee');
-        await prefs.setString('user_email', email);
-        await prefs.setBool('is_logged_in', true);
-
-        if (mounted) {
-          Navigator.pushReplacementNamed(context, '/user/dashboard');
-        }
-      }
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Login successful!'),
-            backgroundColor: AppColors.primaryGreen,
-          ),
-        );
-      }
-
-      /* 
-      // TODO: Replace with actual API call when backend is connected
+      // Call backend authentication
       final response = await _dio.post(
         'http://localhost:3000/api/auth/login',
         data: {
-          'email': email,
+          'email': identifier, // Backend expects 'email' field but accepts email/phone/employee_id
           'password': password,
         },
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        ),
       );
 
       if (response.statusCode == 200) {
@@ -123,23 +91,48 @@ class _LoginPageState extends State<LoginPage>
         // Save user data and token
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('token', token);
+        await prefs.setString('user_id', user['id']);
         await prefs.setString('user_role', user['role']);
         await prefs.setString('user_email', user['email']);
+        await prefs.setString('user_name', user['full_name']);
+        await prefs.setString('employee_id', user['employee_id']);
         await prefs.setBool('is_logged_in', true);
 
-        // Route based on user role
-        if (user['role'] == 'admin') {
-          Navigator.pushReplacementNamed(context, '/admin/dashboard');
-        } else {
-          Navigator.pushReplacementNamed(context, '/user/dashboard');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Login successful!'),
+              backgroundColor: AppColors.primaryGreen,
+            ),
+          );
+
+          // Route based on user role
+          if (user['role'] == 'admin' || user['role'] == 'account_officer') {
+            Navigator.pushReplacementNamed(context, '/admin/dashboard');
+          } else {
+            Navigator.pushReplacementNamed(context, '/user/dashboard');
+          }
         }
       }
-      */
     } catch (e) {
       if (mounted) {
+        String errorMessage = 'Login failed';
+        
+        if (e is DioException) {
+          if (e.response?.statusCode == 401) {
+            errorMessage = 'Invalid email or password';
+          } else if (e.response?.statusCode == 500) {
+            errorMessage = 'Server error. Please try again later.';
+          } else if (e.response?.data != null && e.response?.data['message'] != null) {
+            errorMessage = e.response?.data['message'];
+          }
+        } else {
+          errorMessage = 'Network error. Please check your connection.';
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Login failed: ${e.toString()}'),
+            content: Text(errorMessage),
             backgroundColor: AppColors.errorRed,
           ),
         );
