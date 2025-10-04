@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/core/constants/colors.dart';
+import 'package:frontend/core/services/location_service.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:geolocator/geolocator.dart';
 
 class AttendanceFormPage extends StatefulWidget {
   const AttendanceFormPage({super.key});
@@ -14,9 +18,12 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
   DateTime? startDate;
   DateTime? endDate;
   String selectedLocation = 'Choose Location';
-  String detailAddress = 'Malang City, East Java';
-  String latLocation = '';
-  String longLocation = '';
+  String detailAddress = 'Getting location...';
+  double? latitude;
+  double? longitude;
+  bool isLoadingLocation = false;
+  Position? currentPosition;
+  final MapController mapController = MapController();
 
   final List<String> absentTypes = [
     'Clock In',
@@ -25,6 +32,63 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
     'Annual Leave',
     'Sick Leave',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _getCurrentLocation();
+  }
+
+  Future<void> _getCurrentLocation() async {
+    setState(() {
+      isLoadingLocation = true;
+      detailAddress = 'Getting location...';
+    });
+
+    try {
+      Position? position = await LocationService.getCurrentLocation();
+      if (position != null) {
+        setState(() {
+          currentPosition = position;
+          latitude = position.latitude;
+          longitude = position.longitude;
+        });
+
+        // Get address from coordinates
+        String? address = await LocationService.getAddressFromCoordinates(
+          position.latitude, 
+          position.longitude
+        );
+        
+        setState(() {
+          detailAddress = address ?? 'Unknown location';
+          isLoadingLocation = false;
+        });
+
+        // Move map to current location
+        if (mapController != null) {
+          mapController.move(
+            LatLng(position.latitude, position.longitude), 
+            15.0
+          );
+        }
+      } else {
+        setState(() {
+          detailAddress = 'Failed to get location';
+          isLoadingLocation = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        detailAddress = 'Error getting location: $e';
+        isLoadingLocation = false;
+      });
+    }
+  }
+
+  void _refreshLocation() {
+    _getCurrentLocation();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -359,7 +423,7 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
             
             const SizedBox(height: 16),
             
-            // Map Placeholder
+            // Map dengan Leaflet (Flutter Map)
             Container(
               width: double.infinity,
               height: 200,
@@ -370,36 +434,120 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: Stack(
-                  children: [
-                    // Map placeholder - you can replace this with actual map widget
-                    Container(
-                      width: double.infinity,
-                      height: double.infinity,
-                      color: AppColors.primaryGreen,
-                      child: const Center(
-                        child: Text(
-                          'Map View\n(Malang City Area)',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: AppColors.black54,
+                child: currentPosition != null
+                    ? FlutterMap(
+                        mapController: mapController,
+                        options: MapOptions(
+                          initialCenter: LatLng(currentPosition!.latitude, currentPosition!.longitude),
+                          initialZoom: 15.0,
+                          minZoom: 5.0,
+                          maxZoom: 18.0,
+                          interactionOptions: const InteractionOptions(
+                            flags: InteractiveFlag.all,
+                          ),
+                        ),
+                        children: [
+                          // OpenStreetMap Tile Layer
+                          TileLayer(
+                            urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                            userAgentPackageName: 'com.example.frontend',
+                            maxZoom: 18,
+                            minZoom: 5,
+                          ),
+                          // Marker Layer
+                          MarkerLayer(
+                            markers: [
+                              Marker(
+                                point: LatLng(currentPosition!.latitude, currentPosition!.longitude),
+                                width: 40,
+                                height: 40,
+                                child: const Icon(
+                                  Icons.location_on,
+                                  color: AppColors.errorRed,
+                                  size: 40,
+                                ),
+                              ),
+                            ],
+                          ),
+                          // Refresh button overlay
+                          Positioned(
+                            right: 10,
+                            top: 10,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: AppColors.pureWhite,
+                                borderRadius: BorderRadius.circular(20),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.2),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: IconButton(
+                                icon: isLoadingLocation 
+                                    ? const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(strokeWidth: 2),
+                                      )
+                                    : const Icon(Icons.my_location, color: AppColors.primaryBlue),
+                                onPressed: isLoadingLocation ? null : _refreshLocation,
+                                tooltip: 'Refresh Location',
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                    : Container(
+                        width: double.infinity,
+                        height: double.infinity,
+                        color: Colors.grey.shade300,
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              if (isLoadingLocation) ...[
+                                const CircularProgressIndicator(),
+                                const SizedBox(height: 16),
+                                const Text(
+                                  'Getting your location...',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: AppColors.black54,
+                                  ),
+                                ),
+                              ] else ...[
+                                const Icon(
+                                  Icons.location_off,
+                                  color: AppColors.black54,
+                                  size: 40,
+                                ),
+                                const SizedBox(height: 8),
+                                const Text(
+                                  'Location not available',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: AppColors.black54,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                ElevatedButton.icon(
+                                  onPressed: _refreshLocation,
+                                  icon: const Icon(Icons.refresh, size: 18),
+                                  label: const Text('Retry'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.primaryBlue,
+                                    foregroundColor: AppColors.pureWhite,
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
                         ),
                       ),
-                    ),
-                    // Location marker
-                    const Positioned(
-                      right: 20,
-                      top: 20,
-                      child: Icon(
-                        Icons.location_on,
-                        color: AppColors.errorRed,
-                        size: 30,
-                      ),
-                    ),
-                  ],
-                ),
               ),
             ),
             
@@ -424,16 +572,30 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                 border: Border.all(color: Colors.grey.shade300),
               ),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    detailAddress,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      color: AppColors.black87,
+                  Expanded(
+                    child: Text(
+                      detailAddress,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: isLoadingLocation ? Colors.grey : AppColors.black87,
+                      ),
                     ),
                   ),
-                  const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
+                  if (isLoadingLocation)
+                    const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  else
+                    IconButton(
+                      icon: const Icon(Icons.refresh, color: AppColors.primaryBlue),
+                      onPressed: _refreshLocation,
+                      tooltip: 'Refresh Address',
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
                 ],
               ),
             ),
@@ -448,7 +610,7 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'Lat',
+                        'Latitude',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
@@ -463,11 +625,11 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(color: Colors.grey.shade300),
                         ),
-                        child: const Text(
-                          'Lat lokasi',
+                        child: Text(
+                          latitude != null ? latitude!.toStringAsFixed(6) : '-',
                           style: TextStyle(
                             fontSize: 14,
-                            color: Colors.grey,
+                            color: latitude != null ? AppColors.black87 : Colors.grey,
                           ),
                         ),
                       ),
@@ -480,7 +642,7 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'Long Lokasi',
+                        'Longitude',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
@@ -495,11 +657,11 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(color: Colors.grey.shade300),
                         ),
-                        child: const Text(
-                          'Long lokasi',
+                        child: Text(
+                          longitude != null ? longitude!.toStringAsFixed(6) : '-',
                           style: TextStyle(
                             fontSize: 14,
-                            color: Colors.grey,
+                            color: longitude != null ? AppColors.black87 : Colors.grey,
                           ),
                         ),
                       ),
@@ -538,11 +700,25 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () {
-                      // Handle save functionality
+                      // Validate location data
+                      if (latitude == null || longitude == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Please wait for location to be obtained first'),
+                            backgroundColor: AppColors.errorRed,
+                          ),
+                        );
+                        return;
+                      }
+
+                      // Handle save functionality with location data
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Attendance saved successfully!'),
+                        SnackBar(
+                          content: Text(
+                            'Attendance saved!\nLocation: ${latitude!.toStringAsFixed(6)}, ${longitude!.toStringAsFixed(6)}\nAddress: $detailAddress'
+                          ),
                           backgroundColor: AppColors.primaryGreen,
+                          duration: const Duration(seconds: 3),
                         ),
                       );
                       Navigator.pop(context);
