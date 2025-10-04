@@ -106,19 +106,41 @@ router.post('/register', validateRegister, async (req, res) => {
 // Login user
 router.post('/login', validateLogin, async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password } = req.body; // email field can contain email, phone, or employee_id
     const { getAuth } = require('../config/database');
     const auth = getAuth();
 
-    // Find user in Firestore
+    // Find user in Firestore by email, phone, or employee_id
     const usersRef = db.collection('users');
-    const userQuery = await usersRef.where('email', '==', email).get();
+    let userQuery;
+    let userEmail = email; // Store the actual email for Firebase Auth
+    
+    // Try to find user by email first
+    userQuery = await usersRef.where('email', '==', email).get();
+    
+    // If not found by email, try by phone
+    if (userQuery.empty) {
+      userQuery = await usersRef.where('phone', '==', email).get();
+      if (!userQuery.empty) {
+        userEmail = userQuery.docs[0].data().email; // Get actual email for Firebase Auth
+      }
+    }
+    
+    // If not found by phone, try by employee_id
+    if (userQuery.empty) {
+      userQuery = await usersRef.where('employee_id', '==', email).get();
+      if (!userQuery.empty) {
+        userEmail = userQuery.docs[0].data().email; // Get actual email for Firebase Auth
+      }
+    }
+    
     if (userQuery.empty) {
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials (user not found)'
       });
     }
+    
     const userDoc = userQuery.docs[0];
     const user = { id: userDoc.id, ...userDoc.data() };
 
@@ -144,7 +166,7 @@ router.post('/login', validateLogin, async (req, res) => {
     const resp = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, returnSecureToken: true })
+      body: JSON.stringify({ email: userEmail, password, returnSecureToken: true })
     });
     const result = await resp.json();
     if (!result.idToken) {
