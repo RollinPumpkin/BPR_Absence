@@ -45,6 +45,9 @@ dependencies:
   fl_chart:
   geolocator:
   geocoding:
+  permission_handler:
+  flutter_map:
+  latlong2:
   google_maps_flutter:
   table_calendar:
   excel:
