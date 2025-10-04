@@ -37,6 +37,39 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
   void initState() {
     super.initState();
     _getCurrentLocation();
+    _setDefaultDates(); // Set tanggal default
+  }
+
+  void _setDefaultDates() {
+    final now = DateTime.now();
+    setState(() {
+      switch (selectedAbsentType) {
+        case 'Clock In':
+        case 'Clock Out':
+          // Untuk clock in/out, hanya hari ini
+          startDate = now;
+          endDate = now;
+          break;
+        case 'Absent':
+          // Untuk absent, biasanya hari ini
+          startDate = now;
+          endDate = now;
+          break;
+        case 'Annual Leave':
+          // Annual leave default 3 hari
+          startDate = now;
+          endDate = now.add(const Duration(days: 2));
+          break;
+        case 'Sick Leave':
+          // Sick leave default 2 hari
+          startDate = now;
+          endDate = now.add(const Duration(days: 1));
+          break;
+        default:
+          startDate = now;
+          endDate = now;
+      }
+    });
   }
 
   Future<void> _getCurrentLocation() async {
@@ -84,6 +117,38 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
         isLoadingLocation = false;
       });
     }
+  }
+
+  void _updateDatesBasedOnType(String absentType) {
+    final now = DateTime.now();
+    setState(() {
+      switch (absentType) {
+        case 'Clock In':
+        case 'Clock Out':
+          // Clock in/out selalu hari ini
+          startDate = now;
+          endDate = now;
+          break;
+        case 'Absent':
+          // Absent biasanya hari ini, tapi bisa diubah manual
+          startDate = now;
+          endDate = now;
+          break;
+        case 'Annual Leave':
+          // Annual leave default 3 hari (hari ini + 2 hari ke depan)
+          startDate = now;
+          endDate = now.add(const Duration(days: 2));
+          break;
+        case 'Sick Leave':
+          // Sick leave default 2 hari (hari ini + besok)
+          startDate = now;
+          endDate = now.add(const Duration(days: 1));
+          break;
+        default:
+          startDate = now;
+          endDate = now;
+      }
+    });
   }
 
   void _refreshLocation() {
@@ -191,6 +256,7 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                     setState(() {
                       selectedAbsentType = newValue!;
                     });
+                    _updateDatesBasedOnType(newValue!); // Update tanggal otomatis
                   },
                 ),
               ),
@@ -215,17 +281,27 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                       ),
                       const SizedBox(height: 8),
                       GestureDetector(
-                        onTap: () => _selectDate(context, true),
+                        onTap: (selectedAbsentType == 'Clock In' || selectedAbsentType == 'Clock Out') 
+                            ? null // Disable untuk clock in/out
+                            : () => _selectDate(context, true),
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                           decoration: BoxDecoration(
-                            color: AppColors.pureWhite,
+                            color: (selectedAbsentType == 'Clock In' || selectedAbsentType == 'Clock Out')
+                                ? Colors.grey.shade100 // Gray background jika disabled
+                                : AppColors.pureWhite,
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(color: Colors.grey.shade300),
                           ),
                           child: Row(
                             children: [
-                              const Icon(Icons.calendar_today, size: 20, color: Colors.grey),
+                              Icon(
+                                Icons.calendar_today, 
+                                size: 20, 
+                                color: (selectedAbsentType == 'Clock In' || selectedAbsentType == 'Clock Out')
+                                    ? Colors.grey.shade400
+                                    : Colors.grey
+                              ),
                               const SizedBox(width: 8),
                               Text(
                                 startDate != null 
@@ -236,6 +312,15 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                                   color: startDate != null ? AppColors.black87 : Colors.grey,
                                 ),
                               ),
+                              if (selectedAbsentType == 'Clock In' || selectedAbsentType == 'Clock Out')
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 8),
+                                  child: Icon(
+                                    Icons.lock,
+                                    size: 14,
+                                    color: Colors.grey.shade400,
+                                  ),
+                                ),
                             ],
                           ),
                         ),
@@ -258,17 +343,27 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                       ),
                       const SizedBox(height: 8),
                       GestureDetector(
-                        onTap: () => _selectDate(context, false),
+                        onTap: (selectedAbsentType == 'Clock In' || selectedAbsentType == 'Clock Out') 
+                            ? null // Disable untuk clock in/out
+                            : () => _selectDate(context, false),
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                           decoration: BoxDecoration(
-                            color: AppColors.pureWhite,
+                            color: (selectedAbsentType == 'Clock In' || selectedAbsentType == 'Clock Out')
+                                ? Colors.grey.shade100 // Gray background jika disabled
+                                : AppColors.pureWhite,
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(color: Colors.grey.shade300),
                           ),
                           child: Row(
                             children: [
-                              const Icon(Icons.calendar_today, size: 20, color: Colors.grey),
+                              Icon(
+                                Icons.calendar_today, 
+                                size: 20, 
+                                color: (selectedAbsentType == 'Clock In' || selectedAbsentType == 'Clock Out')
+                                    ? Colors.grey.shade400
+                                    : Colors.grey
+                              ),
                               const SizedBox(width: 8),
                               Text(
                                 endDate != null 
@@ -279,6 +374,15 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                                   color: endDate != null ? AppColors.black87 : Colors.grey,
                                 ),
                               ),
+                              if (selectedAbsentType == 'Clock In' || selectedAbsentType == 'Clock Out')
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 8),
+                                  child: Icon(
+                                    Icons.lock,
+                                    size: 14,
+                                    color: Colors.grey.shade400,
+                                  ),
+                                ),
                             ],
                           ),
                         ),
@@ -288,6 +392,37 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                 ),
               ],
             ),
+            
+            // Duration indicator untuk cuti
+            if (startDate != null && endDate != null && 
+                (selectedAbsentType == 'Annual Leave' || selectedAbsentType == 'Sick Leave' || selectedAbsentType == 'Absent'))
+              Container(
+                margin: const EdgeInsets.only(top: 12),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryBlue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.primaryBlue.withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.info_outline,
+                      size: 16,
+                      color: AppColors.primaryBlue,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      _getDurationText(),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.primaryBlue,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             
             const SizedBox(height: 30),
             
@@ -750,18 +885,49 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
     );
   }
   
+  String _getDurationText() {
+    if (startDate == null || endDate == null) return '';
+    
+    final difference = endDate!.difference(startDate!).inDays + 1;
+    
+    if (difference == 1) {
+      return 'Duration: 1 day';
+    } else {
+      return 'Duration: $difference days';
+    }
+  }
+
   Future<void> _selectDate(BuildContext context, bool isStartDate) async {
+    // Jangan jalankan jika Clock In/Out
+    if (selectedAbsentType == 'Clock In' || selectedAbsentType == 'Clock Out') {
+      return;
+    }
+
+    DateTime initialDate = DateTime.now();
+    DateTime firstDate = DateTime(2020);
+    DateTime lastDate = DateTime(2030);
+
+    // Jika memilih end date, pastikan tidak lebih kecil dari start date
+    if (!isStartDate && startDate != null) {
+      initialDate = endDate ?? startDate!;
+      firstDate = startDate!; // End date tidak boleh sebelum start date
+    }
+
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2030),
+      initialDate: initialDate,
+      firstDate: firstDate,
+      lastDate: lastDate,
     );
     
     if (picked != null) {
       setState(() {
         if (isStartDate) {
           startDate = picked;
+          // Jika start date diubah dan lebih besar dari end date, update end date
+          if (endDate != null && picked.isAfter(endDate!)) {
+            endDate = picked;
+          }
         } else {
           endDate = picked;
         }
