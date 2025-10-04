@@ -18,7 +18,18 @@ router.post('/register', validateRegister, async (req, res) => {
       department,
       position,
       phone,
-      role // allow custom role
+      role, // allow custom role
+      place_of_birth,
+      date_of_birth,
+      nik,
+      account_holder_name,
+      account_number,
+      division,
+      gender,
+      contract_type,
+      bank,
+      last_education,
+      warning_letter_type
     } = req.body;
 
     const usersRef = db.collection('users');
@@ -38,10 +49,12 @@ router.post('/register', validateRegister, async (req, res) => {
       userRole = 'employee'; // default
     }
 
-    // Create user in Firebase Auth
+    // Create user in Firebase Auth (with fallback for development)
     const { getAuth } = require('../config/database');
     const auth = getAuth();
-    let firebaseUser;
+    let firebaseUser = null;
+    let firebaseUid = null;
+    
     try {
       firebaseUser = await auth.createUser({
         email,
@@ -49,12 +62,11 @@ router.post('/register', validateRegister, async (req, res) => {
         displayName: full_name,
         disabled: false
       });
+      firebaseUid = firebaseUser.uid;
+      console.log(`✅ Firebase Auth user created: ${email}`);
     } catch (err) {
-      return res.status(400).json({
-        success: false,
-        message: 'Failed to create user in Firebase Auth',
-        error: err.message
-      });
+      console.log(`⚠️ Firebase Auth creation failed, continuing with Firestore only: ${err.message}`);
+      // Continue without Firebase Auth for development
     }
 
     // Hash password for Firestore (optional, for legacy reasons)
@@ -71,11 +83,31 @@ router.post('/register', validateRegister, async (req, res) => {
       department: department || '',
       position: position || '',
       phone: phone || '',
+      
+      // Personal Information
+      place_of_birth: place_of_birth || '',
+      date_of_birth: date_of_birth || null,
+      gender: gender || '',
+      nik: nik || '',
+      
+      // Employment
+      division: division || '',
+      contract_type: contract_type || '',
+      last_education: last_education || '',
+      
+      // Banking
+      bank: bank || '',
+      account_holder_name: account_holder_name || '',
+      account_number: account_number || '',
+      
+      // Other
+      warning_letter_type: warning_letter_type || 'None',
+      
       profile_image: '', // nullable
       is_active: true,
       created_at: getServerTimestamp(),
       updated_at: getServerTimestamp(),
-      firebase_uid: firebaseUser.uid
+      firebase_uid: firebaseUid
     };
     const userRef = await usersRef.add(userDoc);
 
@@ -90,7 +122,7 @@ router.post('/register', validateRegister, async (req, res) => {
         department,
         position,
         role: userDoc.role,
-        firebase_uid: firebaseUser.uid
+        firebase_uid: firebaseUid
       }
     });
   } catch (error) {

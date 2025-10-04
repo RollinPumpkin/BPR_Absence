@@ -15,6 +15,7 @@ class Employee {
   final String? position;
   final String? contractType; // '3 Months' | '6 Months' | '1 Year'
   final String? division;
+  final String? department;
   final String? lastEducation; // 'High School' | 'Diploma' | 'Bachelor' | 'Master'
   final String? nik;
 
@@ -38,6 +39,7 @@ class Employee {
     this.position,
     this.contractType,
     this.division,
+    this.department,
     this.lastEducation,
     this.nik,
     this.bank,
@@ -58,6 +60,7 @@ class Employee {
     String? position,
     String? contractType,
     String? division,
+    String? department,
     String? lastEducation,
     String? nik,
     String? bank,
@@ -77,6 +80,7 @@ class Employee {
       position: position ?? this.position,
       contractType: contractType ?? this.contractType,
       division: division ?? this.division,
+      department: department ?? this.department,
       lastEducation: lastEducation ?? this.lastEducation,
       nik: nik ?? this.nik,
       bank: bank ?? this.bank,
