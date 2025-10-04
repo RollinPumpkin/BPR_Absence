@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/core/constants/colors.dart';
 import 'package:frontend/core/services/location_service.dart';
+import 'package:frontend/core/services/camera_service.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
+import 'dart:io';
 
 class AttendanceFormPage extends StatefulWidget {
   const AttendanceFormPage({super.key});
@@ -24,6 +26,8 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
   bool isLoadingLocation = false;
   Position? currentPosition;
   final MapController mapController = MapController();
+  File? capturedImage;
+  bool isCapturingImage = false;
 
   final List<String> absentTypes = [
     'Clock In',
@@ -153,6 +157,53 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
 
   void _refreshLocation() {
     _getCurrentLocation();
+  }
+
+  Future<void> _capturePhoto() async {
+    setState(() {
+      isCapturingImage = true;
+    });
+
+    try {
+      final File? photo = await CameraService.captureAttendancePhoto();
+
+      if (photo != null) {
+        // Check file size
+        double fileSizeMB = CameraService.getFileSizeInMB(photo);
+        
+        setState(() {
+          capturedImage = photo;
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Photo captured successfully! (${fileSizeMB.toStringAsFixed(1)} MB)'
+            ),
+            backgroundColor: AppColors.primaryGreen,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to capture photo: $e'),
+          backgroundColor: AppColors.errorRed,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    } finally {
+      setState(() {
+        isCapturingImage = false;
+      });
+    }
+  }
+
+  void _removePhoto() {
+    setState(() {
+      capturedImage = null;
+    });
   }
 
   @override
@@ -426,9 +477,9 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
             
             const SizedBox(height: 30),
             
-            // Upload Supporting Evidence
+            // Take Photo Evidence
             const Text(
-              'Upload Supporting Evidence',
+              'Take Photo Evidence',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
@@ -436,88 +487,191 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
               ),
             ),
             const SizedBox(height: 12),
+            
+            // Photo Container
             Container(
               width: double.infinity,
-              height: 110,
+              height: capturedImage != null ? 200 : 110,
               decoration: BoxDecoration(
                 color: AppColors.pureWhite,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey.shade300, style: BorderStyle.solid),
+                border: Border.all(color: Colors.grey.shade300),
               ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey.shade400),
-                      borderRadius: BorderRadius.circular(4),
+              child: capturedImage != null
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Stack(
+                        children: [
+                          // Display captured photo
+                          Image.file(
+                            capturedImage!,
+                            width: double.infinity,
+                            height: 200,
+                            fit: BoxFit.cover,
+                          ),
+                          // Remove photo button
+                          Positioned(
+                            top: 8,
+                            right: 8,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: AppColors.errorRed,
+                                borderRadius: BorderRadius.circular(15),
+                              ),
+                              child: IconButton(
+                                icon: const Icon(
+                                  Icons.close,
+                                  color: AppColors.pureWhite,
+                                  size: 18,
+                                ),
+                                onPressed: _removePhoto,
+                                padding: const EdgeInsets.all(4),
+                                constraints: const BoxConstraints(),
+                              ),
+                            ),
+                          ),
+                          // Retake photo button
+                          Positioned(
+                            bottom: 8,
+                            right: 8,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: AppColors.primaryBlue,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: IconButton(
+                                icon: const Icon(
+                                  Icons.camera_alt,
+                                  color: AppColors.pureWhite,
+                                  size: 18,
+                                ),
+                                onPressed: isCapturingImage ? null : _capturePhoto,
+                                padding: const EdgeInsets.all(8),
+                                constraints: const BoxConstraints(),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryBlue.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(50),
+                          ),
+                          child: Icon(
+                            Icons.camera_alt,
+                            size: 30,
+                            color: AppColors.primaryBlue,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Take Photo with Camera',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: AppColors.black87,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        const Text(
+                          'Required for attendance verification',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        ElevatedButton.icon(
+                          onPressed: isCapturingImage ? null : _capturePhoto,
+                          icon: isCapturingImage 
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.pureWhite),
+                                  ),
+                                )
+                              : const Icon(Icons.camera_alt, size: 18),
+                          label: Text(isCapturingImage ? 'Opening Camera...' : 'Open Camera'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primaryBlue,
+                            foregroundColor: AppColors.pureWhite,
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    child: Icon(
-                      Icons.image_outlined,
+            ),
+            
+            // Show photo requirement status
+            if (capturedImage == null)
+              Container(
+                margin: const EdgeInsets.only(top: 16),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryYellow.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.primaryYellow.withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.warning_amber_rounded,
+                      color: AppColors.primaryYellow,
                       size: 20,
-                      color: Colors.grey.shade600,
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'Drag and Drop Here',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.black87,
-                    ),
-                  ),
-                  const Text(
-                    'Or',
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: Colors.grey,
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () {},
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      minimumSize: const Size(0, 0),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                    child: const Text(
-                      'Browse',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.primaryBlue,
-                        fontWeight: FontWeight.w500,
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: Text(
+                        'Photo evidence is required for attendance verification',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.black87,
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-            
-            const SizedBox(height: 16),
-            
-            // Save Pictures Button
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {},
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.errorRed,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
+                  ],
                 ),
-                child: const Text(
-                  'Save Pictures',
-                  style: TextStyle(
-                    color: AppColors.pureWhite,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
+              )
+            else
+              Container(
+                margin: const EdgeInsets.only(top: 16),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryGreen.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.primaryGreen.withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.check_circle,
+                      color: AppColors.primaryGreen,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: Text(
+                        'Photo evidence captured successfully',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.black87,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
             
             const SizedBox(height: 30),
             
@@ -846,14 +1000,29 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                         return;
                       }
 
-                      // Handle save functionality with location data
+                      // Validate photo evidence
+                      if (capturedImage == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Please take a photo for attendance verification'),
+                            backgroundColor: AppColors.errorRed,
+                          ),
+                        );
+                        return;
+                      }
+
+                      // Handle save functionality with location and photo data
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
-                            'Attendance saved!\nLocation: ${latitude!.toStringAsFixed(6)}, ${longitude!.toStringAsFixed(6)}\nAddress: $detailAddress'
+                            'Attendance saved successfully!\n'
+                            'Type: $selectedAbsentType\n'
+                            'Location: ${latitude!.toStringAsFixed(6)}, ${longitude!.toStringAsFixed(6)}\n'
+                            'Address: $detailAddress\n'
+                            'Photo: Captured'
                           ),
                           backgroundColor: AppColors.primaryGreen,
-                          duration: const Duration(seconds: 3),
+                          duration: const Duration(seconds: 4),
                         ),
                       );
                       Navigator.pop(context);
