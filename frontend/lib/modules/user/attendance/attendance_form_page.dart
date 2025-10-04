@@ -684,6 +684,14 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                 color: AppColors.black87,
               ),
             ),
+            const SizedBox(height: 4),
+            const Text(
+              'Your location is automatically detected and cannot be moved. You can zoom in/out for better view.',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey,
+              ),
+            ),
             const SizedBox(height: 12),
             
             // Location Dropdown
@@ -732,7 +740,7 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                           minZoom: 5.0,
                           maxZoom: 18.0,
                           interactionOptions: const InteractionOptions(
-                            flags: InteractiveFlag.all,
+                            flags: InteractiveFlag.pinchZoom | InteractiveFlag.doubleTapZoom,
                           ),
                         ),
                         children: [
