@@ -33,10 +33,11 @@ dependencies:
   provider:
   get:
   dio:
+  http:
   shared_preferences:
   intl:
   google_fonts:
-  fluttertoast:
+  fluttertoast: ^8.2.8
   image_picker:
   path_provider:
   file_picker:
@@ -55,6 +56,8 @@ dependencies:
   open_file:
   cupertino_icons:
   url_launcher: ^6.2.5
+  google_sign_in: ^6.2.1
+  firebase_auth: ^4.19.4
 
 dev_dependencies:
   flutter_test:

@@ -1,7 +1,10 @@
 const admin = require('firebase-admin');
 const path = require('path');
 
-// Initialize Firebase Admin SDK
+let firestore = null;
+let auth = null;
+
+// Initialize Firebase Admin SDK with optimized settings
 const initializeFirebase = () => {
   try {
     // Use service account key file
@@ -13,6 +16,16 @@ const initializeFirebase = () => {
       projectId: serviceAccount.project_id
     });
 
+    // Initialize Firestore with performance settings
+    firestore = admin.firestore();
+    firestore.settings({
+      ignoreUndefinedProperties: true,
+      merge: true
+    });
+
+    // Initialize Auth
+    auth = admin.auth();
+
     console.log('✅ Firebase Admin SDK initialized successfully');
     return true;
   } catch (error) {
@@ -21,14 +34,20 @@ const initializeFirebase = () => {
   }
 };
 
-// Get Firestore instance
+// Get Firestore instance with singleton pattern
 const getFirestore = () => {
-  return admin.firestore();
+  if (!firestore) {
+    throw new Error('Firestore not initialized. Call initializeFirebase() first.');
+  }
+  return firestore;
 };
 
-// Get Firebase Auth instance
+// Get Firebase Auth instance with singleton pattern
 const getAuth = () => {
-  return admin.auth();
+  if (!auth) {
+    throw new Error('Firebase Auth not initialized. Call initializeFirebase() first.');
+  }
+  return auth;
 };
 
 // Test Firebase connection
