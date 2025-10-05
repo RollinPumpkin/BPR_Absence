@@ -20,7 +20,7 @@ class UserDashboardPage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             /// Header with integrated clock card
-            const UserHeader(),
+            UserHeader(),
 
             const SizedBox(height: 20),
 

@@ -1,4 +1,5 @@
 import '../models/api_response.dart';
+import '../models/activity_summary.dart';
 import '../constants/api_constants.dart';
 import 'api_service.dart';
 
@@ -30,10 +31,23 @@ class DashboardService {
   }
 
   // Get dashboard summary
-  Future<ApiResponse<Map<String, dynamic>>> getDashboardSummary() async {
-    return await _apiService.get<Map<String, dynamic>>(
+  Future<ApiResponse<DashboardSummary>> getDashboardSummary() async {
+    return await _apiService.get<DashboardSummary>(
       ApiConstants.dashboard.summary,
-      fromJson: (json) => json as Map<String, dynamic>,
+      fromJson: (json) => DashboardSummary.fromJson(json),
+    );
+  }
+
+  // Get activity summary specifically
+  Future<ApiResponse<ActivitySummary>> getActivitySummary({String period = 'week'}) async {
+    final queryParams = <String, dynamic>{
+      'period': period,
+    };
+
+    return await _apiService.get<ActivitySummary>(
+      ApiConstants.dashboard.userActivity,
+      queryParameters: queryParams,
+      fromJson: (json) => ActivitySummary.fromJson(json),
     );
   }
 }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'core/no_animations.dart';
 
 import 'data/providers/auth_provider.dart';
@@ -24,11 +26,41 @@ import 'modules/admin/profile/profile_page.dart';
 
 import 'modules/user/dashboard/dashboard_page.dart' as user_dash;
 import 'modules/user/attendance/attendance_page.dart' as user_att;
-import 'modules/user/attendance/user_attendance_form_page.dart';
+import 'modules/user/attendance/attendance_form_page.dart';
+// import 'modules/user/attendance/user_attendance_form_page.dart'; // Disabled - using attendance_form_page.dart instead
 import 'modules/user/assignment/assignment_page.dart' as user_assign;
 import 'modules/user/letters/letters_page.dart' as user_letters;
 import 'modules/user/profile/profile_page.dart' as user_profile;
 import 'data/services/api_service.dart';
+
+Future<void> requestCameraPermissionOnStartup() async {
+  if (!kIsWeb) {
+    try {
+      final permission = await Permission.camera.status;
+      print('📷 App Startup - Camera permission status: $permission');
+      
+      if (permission.isDenied || permission.isLimited) {
+        print('📷 App Startup - Requesting camera permission...');
+        final result = await Permission.camera.request();
+        print('📷 App Startup - Camera permission result: $result');
+        
+        if (result.isGranted) {
+          print('📷 App Startup - Camera permission granted successfully');
+        } else if (result.isPermanentlyDenied) {
+          print('📷 App Startup - Camera permission permanently denied');
+        } else {
+          print('📷 App Startup - Camera permission denied');
+        }
+      } else if (permission.isGranted) {
+        print('📷 App Startup - Camera permission already granted');
+      }
+    } catch (e) {
+      print('📷 App Startup - Error checking camera permission: $e');
+    }
+  } else {
+    print('📷 App Startup - Web platform, camera permission handled by browser');
+  }
+}
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -38,6 +70,9 @@ Future<void> main() async {
   
   // Initialize API service and load stored token
   await ApiService.instance.initializeToken();
+  
+  // Request camera permission on app startup (for mobile platforms)
+  await requestCameraPermissionOnStartup();
   
   runApp(const MyApp());
 }
@@ -92,7 +127,7 @@ class MyApp extends StatelessWidget {
 
         '/user/dashboard': (_) => const user_dash.UserDashboardPage(),
         '/user/attendance': (_) => const user_att.UserAttendancePage(),
-        '/user/attendance/form': (_) => const UserAttendanceFormPage(),
+        '/user/attendance/form': (_) => const AttendanceFormPage(),
         '/user/assignment': (_) => const user_assign.UserAssignmentPage(),
         '/user/letter': (_) => const user_letters.UserLettersPage(),
         '/user/profile': (_) => const user_profile.UserProfilePage(),

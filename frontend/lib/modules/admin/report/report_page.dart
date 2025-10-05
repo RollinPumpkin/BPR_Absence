@@ -4,14 +4,28 @@ import 'widgets/report_filters_bar.dart';
 import 'widgets/section_header.dart';
 import 'widgets/division_chart_card.dart';
 import 'widgets/stat_card.dart';
-import 'data/mock_reports.dart';
+import '../../../data/dummy/dummy_data.dart';
+import 'models/division_report.dart';
 
 class ReportPage extends StatelessWidget {
   const ReportPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final reports = mockDivisionReports; // ganti ke data API kamu nanti
+    // Menggunakan data admin dashboard stats sebagai pengganti
+    final adminStats = DummyData.adminDashboardStats;
+    
+    // Convert dummy data ke DivisionReport objects
+    final reports = DummyData.divisionReports.map((data) => DivisionReport(
+      divisionName: data['divisionName'],
+      points: List<double>.from(data['points']),
+      labels: List<String>.from(data['labels']),
+      minY: data['minY'],
+      maxY: data['maxY'],
+      yInterval: data['yInterval'],
+      highlightStart: data['highlightStart'],
+      highlightEnd: data['highlightEnd'],
+    )).toList();
 
     return Scaffold(
       backgroundColor: AppColors.backgroundGray,
