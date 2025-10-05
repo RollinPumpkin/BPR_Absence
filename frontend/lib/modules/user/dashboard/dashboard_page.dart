@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:frontend/core/constants/colors.dart';
 import 'package:frontend/core/widgets/custom_bottom_nav_router.dart';
 import 'package:frontend/modules/user/shared/user_nav_items.dart';
 

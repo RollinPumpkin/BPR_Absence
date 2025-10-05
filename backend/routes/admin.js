@@ -176,6 +176,68 @@ router.get('/attendance-reports', auth, adminAuth, async (req, res) => {
 });
 
 // Get dashboard statistics
+router.get('/dashboard', auth, adminAuth, async (req, res) => {
+  try {
+    const today = formatDate();
+    const startOfMonth = moment().startOf('month').format('YYYY-MM-DD');
+    const endOfMonth = moment().endOf('month').format('YYYY-MM-DD');
+
+    // Get total users
+    const usersSnapshot = await db.collection('users').get();
+    const totalUsers = usersSnapshot.size;
+
+    // Get today's attendance
+    const todayAttendanceSnapshot = await db.collection('attendance')
+      .where('date', '==', today)
+      .get();
+    
+    const todayAttendance = todayAttendanceSnapshot.size;
+
+    // Get this month's attendance
+    const monthAttendanceSnapshot = await db.collection('attendance')
+      .where('date', '>=', startOfMonth)
+      .where('date', '<=', endOfMonth)
+      .get();
+
+    const monthAttendance = monthAttendanceSnapshot.size;
+
+    // Get letters count
+    const lettersSnapshot = await db.collection('letters').get();
+    const totalLetters = lettersSnapshot.size;
+
+    // Calculate attendance rate
+    const attendanceRate = totalUsers > 0 ? ((todayAttendance / totalUsers) * 100).toFixed(2) : 0;
+
+    const dashboardData = {
+      overview: {
+        total_users: totalUsers,
+        today_attendance: todayAttendance,
+        month_attendance: monthAttendance,
+        total_letters: totalLetters,
+        attendance_rate: parseFloat(attendanceRate)
+      },
+      summary: {
+        date: today,
+        month: moment().format('MMMM YYYY'),
+        last_updated: new Date().toISOString()
+      }
+    };
+
+    res.json({
+      success: true,
+      data: dashboardData
+    });
+
+  } catch (error) {
+    console.error('Get dashboard error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get dashboard data'
+    });
+  }
+});
+
+// Get dashboard statistics (alias)
 router.get('/dashboard-stats', auth, adminAuth, async (req, res) => {
   try {
     const today = formatDate();

@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:provider/provider.dart';
 import 'core/no_animations.dart';
+
+import 'data/providers/auth_provider.dart';
+import 'data/providers/attendance_provider.dart';
 
 import 'modules/auth/login_page.dart';
 import 'modules/auth/forgot-pass_page.dart';
@@ -24,12 +28,17 @@ import 'modules/user/attendance/user_attendance_form_page.dart';
 import 'modules/user/assignment/assignment_page.dart' as user_assign;
 import 'modules/user/letters/letters_page.dart' as user_letters;
 import 'modules/user/profile/profile_page.dart' as user_profile;
+import 'data/services/api_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
     await initializeDateFormatting('id_ID', null);
   } catch (_) {}
+  
+  // Initialize API service and load stored token
+  await ApiService.instance.initializeToken();
+  
   runApp(const MyApp());
 }
 
@@ -37,17 +46,22 @@ class MyApp extends StatelessWidget {
   const MyApp({super.key});
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'BPR Absence',
-      scrollBehavior: const AppScrollBehavior(),
-      theme: ThemeData(
-        useMaterial3: true,
-        fontFamily: 'Roboto',
-        pageTransitionsTheme: const PageTransitionsTheme(
-          builders: {
-            TargetPlatform.android: NoTransitionsBuilder(),
-            TargetPlatform.iOS: NoTransitionsBuilder(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => AttendanceProvider()),
+      ],
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'BPR Absence',
+        scrollBehavior: const AppScrollBehavior(),
+        theme: ThemeData(
+          useMaterial3: true,
+          fontFamily: 'Roboto',
+          pageTransitionsTheme: const PageTransitionsTheme(
+            builders: {
+              TargetPlatform.android: NoTransitionsBuilder(),
+              TargetPlatform.iOS: NoTransitionsBuilder(),
             TargetPlatform.macOS: NoTransitionsBuilder(),
             TargetPlatform.linux: NoTransitionsBuilder(),
             TargetPlatform.windows: NoTransitionsBuilder(),
@@ -83,6 +97,7 @@ class MyApp extends StatelessWidget {
         '/user/letter': (_) => const user_letters.UserLettersPage(),
         '/user/profile': (_) => const user_profile.UserProfilePage(),
       },
+      ),
     );
   }
 }

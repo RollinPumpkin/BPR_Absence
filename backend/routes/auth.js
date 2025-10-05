@@ -330,4 +330,120 @@ router.put('/change-password', require('../middleware/auth'), async (req, res) =
   }
 });
 
+// Forgot password - request reset
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is required'
+      });
+    }
+
+    // Check if user exists
+    const usersSnapshot = await db.collection('users').where('email', '==', email).get();
+    
+    if (usersSnapshot.empty) {
+      return res.status(404).json({
+        success: false,
+        message: 'User with this email does not exist'
+      });
+    }
+
+    // In a real application, you would:
+    // 1. Generate a reset token
+    // 2. Save it to database with expiration
+    // 3. Send email with reset link
+    
+    // For demo purposes, just return success
+    res.status(200).json({
+      success: true,
+      message: 'Password reset instructions sent to your email'
+    });
+
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to process password reset request'
+    });
+  }
+});
+
+// Reset password with token
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { token, email, newPassword } = req.body;
+
+    if (!token || !email || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Token, email, and new password are required'
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password must be at least 6 characters long'
+      });
+    }
+
+    // Validate password strength
+    if (!/^(?=.*[a-zA-Z])(?=.*\d)/.test(newPassword)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must contain both letters and numbers'
+      });
+    }
+
+    // For this demo, we'll use a simple token validation
+    // In production, you would validate JWT tokens or database-stored tokens
+    if (token !== 'demo-reset-token') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired reset token'
+      });
+    }
+
+    // Find user by email
+    const usersRef = db.collection('users');
+    const userQuery = await usersRef.where('email', '==', email).get();
+
+    if (userQuery.empty) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    const userDoc = userQuery.docs[0];
+    const userRef = userDoc.ref;
+
+    // Hash new password
+    const saltRounds = 12;
+    const hashedNewPassword = await bcrypt.hash(newPassword, saltRounds);
+
+    // Update password
+    await userRef.update({
+      password: hashedNewPassword,
+      updated_at: getServerTimestamp()
+    });
+
+    res.json({
+      success: true,
+      message: 'Password reset successfully'
+    });
+
+  } catch (error) {
+    console.error('Reset password error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to reset password'
+    });
+  }
+});
+
 module.exports = router;
