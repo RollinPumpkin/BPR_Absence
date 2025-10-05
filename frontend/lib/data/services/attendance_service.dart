@@ -2,6 +2,9 @@ import '../models/api_response.dart';
 import '../models/attendance.dart';
 import '../constants/api_constants.dart';
 import 'api_service.dart';
+import 'package:dio/dio.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 
 class AttendanceService {
   final ApiService _apiService = ApiService.instance;
@@ -99,6 +102,23 @@ class AttendanceService {
       ApiConstants.attendance.statistics,
       queryParameters: queryParams,
       fromJson: (json) => AttendanceStatistics.fromJson(json),
+    );
+  }
+
+  // Get monthly attendance summary
+  Future<ApiResponse<AttendanceMonthlySummary>> getMonthlySummary({
+    int? month,
+    int? year,
+  }) async {
+    final queryParams = <String, dynamic>{};
+
+    if (month != null) queryParams['month'] = month;
+    if (year != null) queryParams['year'] = year;
+
+    return await _apiService.get<AttendanceMonthlySummary>(
+      ApiConstants.attendance.summary,
+      queryParameters: queryParams,
+      fromJson: (json) => AttendanceMonthlySummary.fromJson(json),
     );
   }
 
@@ -239,5 +259,57 @@ class AttendanceService {
       queryParameters: queryParams,
       fromJson: (json) => json?.toString() ?? '',
     );
+  }
+
+  // Submit attendance with image upload
+  Future<ApiResponse<Map<String, dynamic>>> submitAttendanceWithImage({
+    required String type,
+    required DateTime startDate,
+    required DateTime endDate,
+    required double latitude,
+    required double longitude,
+    required String address,
+    required XFile image,
+    String? notes,
+  }) async {
+    try {
+      print('📤 [AttendanceService] Submitting attendance with image...');
+      print('📍 Type: $type');
+      print('📅 Start Date: $startDate');
+      print('📅 End Date: $endDate');
+      print('🌍 Location: $latitude, $longitude');
+      
+      // Create FormData for multipart upload
+      FormData formData = FormData.fromMap({
+        'type': type.toLowerCase().replaceAll(' ', '_'), // clock_in, clock_out, absent, etc.
+        'startDate': startDate.toIso8601String(),
+        'endDate': endDate.toIso8601String(),
+        'latitude': latitude,
+        'longitude': longitude,
+        'address': address,
+        'image': await MultipartFile.fromBytes(
+          await image.readAsBytes(),
+          filename: image.name.isNotEmpty ? image.name : 'attendance_${DateTime.now().millisecondsSinceEpoch}.jpg',
+        ),
+        'timestamp': DateTime.now().toIso8601String(),
+        if (notes != null) 'notes': notes,
+      });
+
+      final imageBytes = await image.readAsBytes();
+      print('📷 Image size: ${imageBytes.length} bytes');
+      
+      final response = await _apiService.postFormData<Map<String, dynamic>>(
+        '/attendance/submit',
+        formData: formData,
+        fromJson: (data) => data as Map<String, dynamic>,
+      );
+
+      print('✅ [AttendanceService] Attendance submitted successfully');
+      return response;
+
+    } catch (e) {
+      print('❌ [AttendanceService] Error submitting attendance: $e');
+      rethrow;
+    }
   }
 }

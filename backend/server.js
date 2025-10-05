@@ -124,6 +124,7 @@ app.use('/api/admin', require('./routes/admin'));
 app.use('/api/dashboard', require('./routes/dashboard'));
 app.use('/api/letters', require('./routes/letters'));
 app.use('/api/profile', require('./routes/profile'));
+app.use('/api/assignments', require('./routes/assignments'));
 
 // Health check endpoint
 app.get('/health', (req, res) => {

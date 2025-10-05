@@ -42,9 +42,16 @@ class ApiService {
         // Add auth token if available
         if (_token != null) {
           options.headers['Authorization'] = 'Bearer $_token';
+          print('🔑 Token added to request: ${_token?.substring(0, 20)}...');
+        } else {
+          print('⚠️ No token available for request: ${options.method} ${options.path}');
         }
         
-        // Add request tracking for debugging
+        // Add detailed request tracking for debugging
+        print('🌐 Full URL: ${options.baseUrl}${options.path}');
+        print('🌐 Request method: ${options.method}');
+        print('🌐 Request headers: ${options.headers}');
+        
         final startTime = DateTime.now();
         options.extra['startTime'] = startTime;
         
@@ -114,7 +121,7 @@ class ApiService {
     _token = token;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('token', token);
-    print('💾 Token saved to storage');
+    print('💾 Token saved to storage: ${token.substring(0, 20)}...');
   }
 
   // Clear token from memory and storage
@@ -200,7 +207,11 @@ class ApiService {
         queryParameters: queryParameters,
       );
 
+      print('🌐 Raw HTTP Response Status: ${response.statusCode}');
+      print('🌐 Raw HTTP Response Data: ${response.data}');
+
       final apiResponse = _handleResponse<T>(response, fromJson);
+      print('🔄 Processed API Response: success=${apiResponse.success}, message=${apiResponse.message}');
       
       // Cache successful responses
       if (useCache && apiResponse.success && apiResponse.data != null) {
@@ -209,6 +220,10 @@ class ApiService {
 
       return apiResponse;
     } on DioException catch (e) {
+      print('💥 DioException in GET request: ${e.type}');
+      print('💥 DioException message: ${e.message}');
+      print('💥 DioException response: ${e.response?.data}');
+      print('💥 DioException status: ${e.response?.statusCode}');
       return _handleError<T>(e);
     }
   }
@@ -239,6 +254,45 @@ class ApiService {
 
       return apiResponse;
     } on DioException catch (e) {
+      return _handleError<T>(e);
+    }
+  }
+
+  // POST request with FormData for file uploads
+  Future<ApiResponse<T>> postFormData<T>(
+    String endpoint, {
+    required FormData formData,
+    Map<String, dynamic>? queryParameters,
+    T Function(dynamic)? fromJson,
+    List<String>? invalidateCacheEndpoints,
+  }) async {
+    try {
+      print('📤 [ApiService] Uploading FormData to: $endpoint');
+      
+      final response = await _dio.post(
+        endpoint,
+        data: formData,
+        queryParameters: queryParameters,
+        options: Options(
+          contentType: 'multipart/form-data',
+          sendTimeout: const Duration(minutes: 5), // Extended timeout for file uploads
+          receiveTimeout: const Duration(minutes: 5),
+        ),
+      );
+
+      print('✅ [ApiService] FormData upload successful');
+      final apiResponse = _handleResponse<T>(response, fromJson);
+      
+      // Invalidate cache for specified endpoints after successful POST
+      if (apiResponse.success && invalidateCacheEndpoints != null) {
+        for (final cacheEndpoint in invalidateCacheEndpoints) {
+          clearCacheForEndpoint(cacheEndpoint);
+        }
+      }
+
+      return apiResponse;
+    } on DioException catch (e) {
+      print('❌ [ApiService] FormData upload failed: ${e.message}');
       return _handleError<T>(e);
     }
   }

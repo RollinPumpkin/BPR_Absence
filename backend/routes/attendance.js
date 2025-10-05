@@ -1,11 +1,177 @@
 const express = require('express');
 const moment = require('moment');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 const { getFirestore, getServerTimestamp, formatDate } = require('../config/database');
 const auth = require('../middleware/auth');
 const { validateAttendance } = require('../middleware/validation');
 
 const router = express.Router();
 const db = getFirestore();
+
+// Setup multer for file uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadDir = path.join(__dirname, '../uploads/attendance');
+    // Create directory if it doesn't exist
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    // Generate unique filename with timestamp
+    const timestamp = Date.now();
+    const ext = path.extname(file.originalname);
+    cb(null, `attendance_${timestamp}_${Math.round(Math.random() * 1E9)}${ext}`);
+  }
+});
+
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+  },
+  fileFilter: function (req, file, cb) {
+    // Check if file is an image
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed!'), false);
+    }
+  }
+});
+
+/**
+ * POST /api/attendance/submit
+ * Submit attendance with image
+ */
+router.post('/submit', auth, upload.single('image'), async (req, res) => {
+  try {
+    console.log('📝 Attendance submission request received');
+    console.log('👤 User:', req.user);
+    console.log('📋 Body:', req.body);
+    console.log('📷 File:', req.file ? {
+      filename: req.file.filename,
+      size: req.file.size,
+      mimetype: req.file.mimetype
+    } : 'No file uploaded');
+
+    // Validate required fields
+    const { type, startDate, endDate, latitude, longitude, address, notes } = req.body;
+
+    if (!type || !startDate || !endDate || !latitude || !longitude) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields: type, startDate, endDate, latitude, longitude'
+      });
+    }
+
+    // Validate image upload
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'Image file is required for attendance verification'
+      });
+    }
+
+    // Parse dates
+    let parsedStartDate, parsedEndDate;
+    try {
+      parsedStartDate = new Date(startDate);
+      parsedEndDate = new Date(endDate);
+      
+      if (isNaN(parsedStartDate.getTime()) || isNaN(parsedEndDate.getTime())) {
+        throw new Error('Invalid date format');
+      }
+    } catch (error) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid date format. Please use ISO format (YYYY-MM-DD)'
+      });
+    }
+
+    // Validate coordinates
+    const lat = parseFloat(latitude);
+    const lng = parseFloat(longitude);
+    
+    if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid latitude or longitude coordinates'
+      });
+    }
+
+    // Create attendance document
+    const attendanceData = {
+      user_id: req.user.userId,
+      user_email: req.user.email,
+      type: type,
+      start_date: startDate,
+      end_date: endDate,
+      location: {
+        latitude: lat,
+        longitude: lng,
+        address: address || 'Address not provided'
+      },
+      image: {
+        filename: req.file.filename,
+        original_name: req.file.originalname,
+        size: req.file.size,
+        mimetype: req.file.mimetype,
+        path: req.file.path
+      },
+      notes: notes || '',
+      status: 'submitted',
+      created_at: getServerTimestamp(),
+      updated_at: getServerTimestamp()
+    };
+
+    // Save to Firestore
+    const docRef = await db.collection('attendance_submissions').add(attendanceData);
+    
+    console.log('✅ Attendance saved with ID:', docRef.id);
+
+    // Return success response
+    res.status(201).json({
+      success: true,
+      message: 'Attendance submitted successfully',
+      data: {
+        id: docRef.id,
+        type: type,
+        start_date: startDate,
+        end_date: endDate,
+        location: {
+          latitude: lat,
+          longitude: lng,
+          address: address || 'Address not provided'
+        },
+        image_uploaded: true,
+        created_at: new Date().toISOString()
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error submitting attendance:', error);
+
+    // Clean up uploaded file if there was an error
+    if (req.file && fs.existsSync(req.file.path)) {
+      try {
+        fs.unlinkSync(req.file.path);
+        console.log('🗑️  Cleaned up uploaded file due to error');
+      } catch (cleanupError) {
+        console.error('Failed to cleanup uploaded file:', cleanupError);
+      }
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to submit attendance',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
+});
 
 // Get attendance records with filtering and pagination
 router.get('/', auth, async (req, res) => {

@@ -1,3 +1,4 @@
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/api_response.dart';
 import '../models/user.dart';
 import '../constants/api_constants.dart';
@@ -83,6 +84,14 @@ class AuthService {
 
     // Clear token regardless of response
     await _apiService.clearToken();
+
+    // Clear saved credentials if remember me is not enabled
+    final prefs = await SharedPreferences.getInstance();
+    final rememberMe = prefs.getBool('remember_me') ?? false;
+    if (!rememberMe) {
+      await prefs.remove('saved_email');
+      await prefs.remove('saved_password');
+    }
 
     return response;
   }

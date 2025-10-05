@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/core/constants/colors.dart';
 import 'package:intl/intl.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:geolocator/geolocator.dart';
+import 'dart:io';
 
 class UserAttendanceFormPage extends StatefulWidget {
-  const UserAttendanceFormPage({super.key});
+  final String? type; // 'clock_in' or 'clock_out'
+  
+  const UserAttendanceFormPage({super.key, this.type});
 
   @override
   State<UserAttendanceFormPage> createState() => _UserAttendanceFormPageState();
@@ -14,15 +19,120 @@ class _UserAttendanceFormPageState extends State<UserAttendanceFormPage> {
   DateTime? startDate;
   DateTime? endDate;
   String selectedLocation = 'Choose Location';
-  String detailAddress = 'Malang City, East Java';
+  String detailAddress = 'Getting location...';
+  Position? currentPosition;
+  XFile? capturedImage;
+  final ImagePicker _picker = ImagePicker();
   
-  final List<String> absentTypes = [
-    'Clock In',
-    'Clock Out',
-    'Absent',
-    'Annual Leave',
-    'Sick Leave',
-  ];
+  List<String> clockInTypes = ['Clock In', 'Absent'];
+  List<String> clockOutTypes = ['Clock Out', 'Annual Leave', 'Sick Leave'];
+  
+  @override
+  void initState() {
+    super.initState();
+    _initializeForm();
+  }
+  
+  void _initializeForm() {
+    // Auto-fill dates with current date
+    final now = DateTime.now();
+    startDate = now;
+    endDate = now;
+    
+    // Set appropriate dropdown options based on type
+    if (widget.type == 'clock_in') {
+      selectedAbsentType = 'Clock In';
+    } else if (widget.type == 'clock_out') {
+      selectedAbsentType = 'Clock Out';
+    } else {
+      selectedAbsentType = 'Clock In'; // default
+    }
+    
+    // Get current location
+    _getCurrentLocation();
+  }
+  
+  Future<void> _getCurrentLocation() async {
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        setState(() {
+          detailAddress = 'Location services are disabled';
+        });
+        return;
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          setState(() {
+            detailAddress = 'Location permissions are denied';
+          });
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        setState(() {
+          detailAddress = 'Location permissions are permanently denied';
+        });
+        return;
+      }
+
+      Position position = await Geolocator.getCurrentPosition();
+      setState(() {
+        currentLocation = LatLng(position.latitude, position.longitude);
+        detailAddress = 'Lat: ${position.latitude.toStringAsFixed(6)}, Long: ${position.longitude.toStringAsFixed(6)}';
+      });
+      
+      // Center map on current location
+      if (currentLocation != null) {
+        mapController.move(currentLocation!, 15.0);
+      }
+    } catch (e) {
+      setState(() {
+        detailAddress = 'Error getting location: $e';
+      });
+    }
+  }
+  
+  Future<void> _captureImage() async {
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 80,
+      );
+      if (image != null) {
+        setState(() {
+          capturedImage = image;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Image captured successfully'),
+            backgroundColor: AppColors.primaryGreen,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error capturing image: $e'),
+          backgroundColor: AppColors.errorRed,
+        ),
+      );
+    }
+  }
+  
+  List<String> get currentAbsentTypes {
+    if (widget.type == 'clock_in') {
+      return clockInTypes;
+    } else if (widget.type == 'clock_out') {
+      return clockOutTypes;
+    } else {
+      return clockInTypes; // default
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -89,13 +199,17 @@ class _UserAttendanceFormPageState extends State<UserAttendanceFormPage> {
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
-                  value: selectedAbsentType,
-                  hint: const Text('Choose Absent Type'),
+                  value: currentAbsentTypes.contains(selectedAbsentType) 
+                      ? selectedAbsentType 
+                      : currentAbsentTypes.first,
+                  hint: const Text('Choose Type'),
                   isExpanded: true,
-                  items: absentTypes.map((String type) {
+                  items: currentAbsentTypes.map((String type) {
                     Color? backgroundColor;
                     if (type == 'Absent') {
                       backgroundColor = AppColors.primaryYellow;
+                    } else if (type == 'Annual Leave' || type == 'Sick Leave') {
+                      backgroundColor = Colors.orange.shade100;
                     }
                     
                     return DropdownMenuItem<String>(
@@ -128,7 +242,7 @@ class _UserAttendanceFormPageState extends State<UserAttendanceFormPage> {
             
             const SizedBox(height: 20),
             
-            // Date Selection
+            // Date Selection (Auto-filled, read-only)
             Row(
               children: [
                 Expanded(
@@ -144,41 +258,28 @@ class _UserAttendanceFormPageState extends State<UserAttendanceFormPage> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      GestureDetector(
-                        onTap: () async {
-                          final date = await showDatePicker(
-                            context: context,
-                            initialDate: DateTime.now(),
-                            firstDate: DateTime(2020),
-                            lastDate: DateTime(2030),
-                          );
-                          if (date != null) {
-                            setState(() {
-                              startDate = date;
-                            });
-                          }
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade100,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.grey.shade300),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.calendar_today, color: Colors.grey),
-                              const SizedBox(width: 8),
-                              Text(
-                                startDate != null 
-                                    ? DateFormat('dd/MM/yyyy').format(startDate!)
-                                    : 'dd/mm/yyyy',
-                                style: TextStyle(
-                                  color: startDate != null ? AppColors.black87 : Colors.grey,
-                                ),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade200,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.calendar_today, color: Colors.grey),
+                            const SizedBox(width: 8),
+                            Text(
+                              startDate != null 
+                                  ? DateFormat('dd/MM/yyyy').format(startDate!)
+                                  : 'dd/mm/yyyy',
+                              style: const TextStyle(
+                                color: AppColors.black87,
                               ),
-                            ],
-                          ),
+                            ),
+                            const Spacer(),
+                            const Icon(Icons.lock, color: Colors.grey, size: 16),
+                          ],
                         ),
                       ),
                     ],
@@ -198,41 +299,28 @@ class _UserAttendanceFormPageState extends State<UserAttendanceFormPage> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      GestureDetector(
-                        onTap: () async {
-                          final date = await showDatePicker(
-                            context: context,
-                            initialDate: DateTime.now(),
-                            firstDate: DateTime(2020),
-                            lastDate: DateTime(2030),
-                          );
-                          if (date != null) {
-                            setState(() {
-                              endDate = date;
-                            });
-                          }
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade100,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.grey.shade300),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.calendar_today, color: Colors.grey),
-                              const SizedBox(width: 8),
-                              Text(
-                                endDate != null 
-                                    ? DateFormat('dd/MM/yyyy').format(endDate!)
-                                    : 'dd/mm/yyyy',
-                                style: TextStyle(
-                                  color: endDate != null ? AppColors.black87 : Colors.grey,
-                                ),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade200,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.calendar_today, color: Colors.grey),
+                            const SizedBox(width: 8),
+                            Text(
+                              endDate != null 
+                                  ? DateFormat('dd/MM/yyyy').format(endDate!)
+                                  : 'dd/mm/yyyy',
+                              style: const TextStyle(
+                                color: AppColors.black87,
                               ),
-                            ],
-                          ),
+                            ),
+                            const Spacer(),
+                            const Icon(Icons.lock, color: Colors.grey, size: 16),
+                          ],
                         ),
                       ),
                     ],
@@ -243,7 +331,7 @@ class _UserAttendanceFormPageState extends State<UserAttendanceFormPage> {
             
             const SizedBox(height: 20),
             
-            // Upload Supporting Evidence
+            // Upload Supporting Evidence (Camera only)
             const Text(
               'Upload Supporting Evidence',
               style: TextStyle(
@@ -253,46 +341,50 @@ class _UserAttendanceFormPageState extends State<UserAttendanceFormPage> {
               ),
             ),
             const SizedBox(height: 8),
-            Container(
-              width: double.infinity,
-              height: 120,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey.shade300, style: BorderStyle.solid),
-              ),
-              child: const Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.image_outlined,
-                    size: 40,
-                    color: Colors.grey,
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'Drag and Drop Here',
-                    style: TextStyle(
-                      color: AppColors.black54,
-                      fontSize: 14,
-                    ),
-                  ),
-                  Text(
-                    'Or',
-                    style: TextStyle(
-                      color: AppColors.black54,
-                      fontSize: 12,
-                    ),
-                  ),
-                  Text(
-                    'Browse',
-                    style: TextStyle(
-                      color: AppColors.primaryBlue,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
+            GestureDetector(
+              onTap: _captureImage,
+              child: Container(
+                width: double.infinity,
+                height: 120,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey.shade300, style: BorderStyle.solid),
+                ),
+                child: capturedImage != null
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.file(
+                          File(capturedImage!.path),
+                          fit: BoxFit.cover,
+                        ),
+                      )
+                    : const Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.camera_alt_outlined,
+                            size: 40,
+                            color: Colors.grey,
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            'Tap to Capture Photo',
+                            style: TextStyle(
+                              color: AppColors.black54,
+                              fontSize: 14,
+                            ),
+                          ),
+                          Text(
+                            'Camera Only',
+                            style: TextStyle(
+                              color: AppColors.primaryBlue,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
               ),
             ),
             
@@ -302,17 +394,24 @@ class _UserAttendanceFormPageState extends State<UserAttendanceFormPage> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {},
+                onPressed: capturedImage != null ? () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Image saved successfully'),
+                      backgroundColor: AppColors.primaryGreen,
+                    ),
+                  );
+                } : null,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.errorRed,
+                  backgroundColor: capturedImage != null ? AppColors.errorRed : Colors.grey,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                child: const Text(
-                  'Save Pictures',
-                  style: TextStyle(
+                child: Text(
+                  capturedImage != null ? 'Image Captured' : 'No Image Captured',
+                  style: const TextStyle(
                     color: AppColors.pureWhite,
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -358,22 +457,67 @@ class _UserAttendanceFormPageState extends State<UserAttendanceFormPage> {
             
             const SizedBox(height: 16),
             
-            // Map placeholder
+            // Leaflet Map with zoom controls only
             Container(
               width: double.infinity,
               height: 200,
               decoration: BoxDecoration(
-                color: Colors.grey.shade300,
                 borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey.shade300),
               ),
-              child: const Center(
-                child: Text(
-                  'Map will be displayed here',
-                  style: TextStyle(
-                    color: AppColors.black54,
-                    fontSize: 14,
-                  ),
-                ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: currentLocation != null
+                    ? FlutterMap(
+                        mapController: mapController,
+                        options: MapOptions(
+                          initialCenter: currentLocation!,
+                          initialZoom: 15.0,
+                          minZoom: 10.0,
+                          maxZoom: 18.0,
+                          interactionOptions: const InteractionOptions(
+                            flags: InteractiveFlag.pinchZoom | 
+                                   InteractiveFlag.doubleTapZoom,
+                            enableMultiFingerGestureRace: false,
+                          ),
+                        ),
+                        children: [
+                          TileLayer(
+                            urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                            userAgentPackageName: 'com.example.frontend',
+                          ),
+                          MarkerLayer(
+                            markers: [
+                              Marker(
+                                point: currentLocation!,
+                                width: 40,
+                                height: 40,
+                                child: const Icon(
+                                  Icons.location_pin,
+                                  color: AppColors.errorRed,
+                                  size: 40,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      )
+                    : const Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            CircularProgressIndicator(),
+                            SizedBox(height: 8),
+                            Text(
+                              'Getting location...',
+                              style: TextStyle(
+                                color: AppColors.black54,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
               ),
             ),
             
@@ -414,7 +558,7 @@ class _UserAttendanceFormPageState extends State<UserAttendanceFormPage> {
             
             const SizedBox(height: 16),
             
-            // Lat Long coordinates
+            // Lat Long coordinates (Auto-filled from GPS)
             Row(
               children: [
                 Expanded(
@@ -422,7 +566,7 @@ class _UserAttendanceFormPageState extends State<UserAttendanceFormPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'Lat',
+                        'Latitude',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
@@ -433,16 +577,25 @@ class _UserAttendanceFormPageState extends State<UserAttendanceFormPage> {
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
+                          color: Colors.grey.shade200,
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(color: Colors.grey.shade300),
                         ),
-                        child: const Text(
-                          'Lat lokasi',
-                          style: TextStyle(
-                            color: Colors.grey,
-                            fontSize: 14,
-                          ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                currentLocation != null 
+                                    ? currentLocation!.latitude.toStringAsFixed(6)
+                                    : 'Getting location...',
+                                style: const TextStyle(
+                                  color: AppColors.black87,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                            const Icon(Icons.gps_fixed, color: Colors.green, size: 16),
+                          ],
                         ),
                       ),
                     ],
@@ -454,7 +607,7 @@ class _UserAttendanceFormPageState extends State<UserAttendanceFormPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'Long Lokasi',
+                        'Longitude',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
@@ -465,16 +618,25 @@ class _UserAttendanceFormPageState extends State<UserAttendanceFormPage> {
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
+                          color: Colors.grey.shade200,
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(color: Colors.grey.shade300),
                         ),
-                        child: const Text(
-                          'Long lokasi',
-                          style: TextStyle(
-                            color: Colors.grey,
-                            fontSize: 14,
-                          ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                currentLocation != null 
+                                    ? currentLocation!.longitude.toStringAsFixed(6)
+                                    : 'Getting location...',
+                                style: const TextStyle(
+                                  color: AppColors.black87,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                            const Icon(Icons.gps_fixed, color: Colors.green, size: 16),
+                          ],
                         ),
                       ),
                     ],

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:frontend/core/constants/colors.dart';
 import 'package:frontend/core/widgets/custom_bottom_nav_router.dart';
 import 'package:frontend/modules/user/shared/user_nav_items.dart';
+import 'package:frontend/data/services/assignment_service.dart';
+import 'package:intl/intl.dart';
 import 'assignment_detail_page.dart';
 
 class UserAssignmentPage extends StatefulWidget {
@@ -15,6 +17,11 @@ class _UserAssignmentPageState extends State<UserAssignmentPage> {
   String selectedFilter = "Monthly";
   DateTime? _currentMonth;
   DateTime? _selectedDate;
+  
+  final AssignmentService _assignmentService = AssignmentService();
+  List<Assignment> _assignments = [];
+  bool _isLoading = true;
+  String? _error;
 
   DateTime get currentMonth => _currentMonth ?? DateTime.now();
   DateTime get selectedDate => _selectedDate ?? DateTime.now();
@@ -27,6 +34,37 @@ class _UserAssignmentPageState extends State<UserAssignmentPage> {
     super.initState();
     _currentMonth = DateTime.now();
     _selectedDate = DateTime.now();
+    _loadAssignments();
+  }
+
+  Future<void> _loadAssignments() async {
+    try {
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
+
+      print('📋 [AssignmentPage] Loading assignments...');
+      final assignments = await _assignmentService.getUpcomingAssignments();
+      
+      setState(() {
+        _assignments = assignments;
+        _isLoading = false;
+      });
+      
+      print('✅ [AssignmentPage] Loaded ${assignments.length} assignments');
+      
+      // Force rebuild of daily/weekly views with new data
+      if (mounted) {
+        setState(() {});
+      }
+    } catch (e) {
+      print('❌ [AssignmentPage] Error loading assignments: $e');
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -75,13 +113,25 @@ class _UserAssignmentPageState extends State<UserAssignmentPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            "Assignment",
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: AppColors.black87,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                "Assignment",
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.black87,
+                ),
+              ),
+              IconButton(
+                onPressed: _loadAssignments,
+                icon: Icon(
+                  Icons.refresh,
+                  color: _isLoading ? Colors.grey : AppColors.primaryBlue,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 20),
           Container(
@@ -132,7 +182,48 @@ class _UserAssignmentPageState extends State<UserAssignmentPage> {
   }
 
   Widget _buildDailyView() {
+    if (_isLoading) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Loading daily assignments...'),
+          ],
+        ),
+      );
+    }
+
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 64, color: Colors.red.shade300),
+            const SizedBox(height: 16),
+            Text('Error loading assignments', style: TextStyle(color: Colors.red.shade600)),
+            const SizedBox(height: 16),
+            ElevatedButton(onPressed: _loadAssignments, child: const Text('Retry')),
+          ],
+        ),
+      );
+    }
+
     List<Map<String, dynamic>> dailyData = _generateDailyData();
+
+    if (dailyData.isEmpty) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.assignment_outlined, size: 64, color: Colors.grey),
+            SizedBox(height: 16),
+            Text('No assignments found', style: TextStyle(color: Colors.grey)),
+          ],
+        ),
+      );
+    }
 
     return ListView.builder(
       padding: const EdgeInsets.all(20),
@@ -219,7 +310,48 @@ class _UserAssignmentPageState extends State<UserAssignmentPage> {
   }
 
   Widget _buildWeeklyView() {
+    if (_isLoading) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Loading weekly assignments...'),
+          ],
+        ),
+      );
+    }
+
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 64, color: Colors.red.shade300),
+            const SizedBox(height: 16),
+            Text('Error loading assignments', style: TextStyle(color: Colors.red.shade600)),
+            const SizedBox(height: 16),
+            ElevatedButton(onPressed: _loadAssignments, child: const Text('Retry')),
+          ],
+        ),
+      );
+    }
+
     List<Map<String, dynamic>> weeklyData = _generateWeeklyData();
+
+    if (weeklyData.isEmpty) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.assignment_outlined, size: 64, color: Colors.grey),
+            SizedBox(height: 16),
+            Text('No assignments for this week', style: TextStyle(color: Colors.grey)),
+          ],
+        ),
+      );
+    }
 
     return ListView.builder(
       padding: const EdgeInsets.all(20),
@@ -363,11 +495,54 @@ class _UserAssignmentPageState extends State<UserAssignmentPage> {
         currentMonth.month,
         day,
       );
+      
+      // Check if this is today
+      DateTime today = DateTime.now();
+      bool isToday = currentDay.day == today.day &&
+                    currentDay.month == today.month &&
+                    currentDay.year == today.year;
+      
+      // Check if this is selected date
       bool isSelected =
           currentDay.day == selectedDate.day &&
           currentDay.month == selectedDate.month &&
           currentDay.year == selectedDate.year;
+          
+      // Check if has assignment
       bool hasAssignment = _hasAssignmentOnDate(currentDay);
+
+      // Determine colors based on priority: Selected > Today > HasAssignment > Default
+      Color backgroundColor;
+      Color textColor;
+      FontWeight fontWeight = FontWeight.normal;
+      Border? border;
+
+      if (isSelected) {
+        // Selected date has highest priority - blue background
+        backgroundColor = AppColors.primaryBlue;
+        textColor = AppColors.pureWhite;
+        fontWeight = FontWeight.bold;
+      } else if (isToday) {
+        // Today - blue background if no assignment, or blue border if has assignment
+        if (hasAssignment) {
+          backgroundColor = AppColors.errorRed;
+          textColor = AppColors.pureWhite;
+          border = Border.all(color: AppColors.primaryBlue, width: 2);
+        } else {
+          backgroundColor = AppColors.primaryBlue;
+          textColor = AppColors.pureWhite;
+        }
+        fontWeight = FontWeight.bold;
+      } else if (hasAssignment) {
+        // Has assignment - red background
+        backgroundColor = AppColors.errorRed;
+        textColor = AppColors.pureWhite;
+        fontWeight = FontWeight.bold;
+      } else {
+        // Default - transparent background
+        backgroundColor = AppColors.transparent;
+        textColor = AppColors.black87;
+      }
 
       dayWidgets.add(
         Expanded(
@@ -381,28 +556,16 @@ class _UserAssignmentPageState extends State<UserAssignmentPage> {
               height: 40,
               margin: const EdgeInsets.all(1),
               decoration: BoxDecoration(
-                color: isSelected
-                    ? AppColors.primaryBlue
-                    : hasAssignment
-                    ? AppColors.errorRed
-                    : AppColors.transparent,
+                color: backgroundColor,
                 borderRadius: BorderRadius.circular(8),
-                border: hasAssignment && !isSelected
-                    ? Border.all(color: AppColors.errorRed, width: 1)
-                    : null,
+                border: border,
               ),
               child: Center(
                 child: Text(
                   day.toString(),
                   style: TextStyle(
-                    color: isSelected
-                        ? AppColors.pureWhite
-                        : hasAssignment
-                        ? AppColors.errorRed
-                        : AppColors.black87,
-                    fontWeight: isSelected || hasAssignment
-                        ? FontWeight.bold
-                        : FontWeight.normal,
+                    color: textColor,
+                    fontWeight: fontWeight,
                     fontSize: 14,
                   ),
                 ),
@@ -432,9 +595,51 @@ class _UserAssignmentPageState extends State<UserAssignmentPage> {
   }
 
   Widget _buildAssignmentsList() {
-    List<Map<String, dynamic>> assignments = _getAssignmentsForDate(
-      selectedDate,
-    );
+    if (_isLoading) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Loading assignments...'),
+          ],
+        ),
+      );
+    }
+
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 64,
+              color: Colors.red.shade300,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Error loading assignments',
+              style: TextStyle(color: Colors.red.shade600, fontSize: 16),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _error!,
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _loadAssignments,
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    List<Assignment> assignments = _getAssignmentsForDate(selectedDate);
 
     if (assignments.isEmpty) {
       return Center(
@@ -462,7 +667,7 @@ class _UserAssignmentPageState extends State<UserAssignmentPage> {
       itemBuilder: (context, index) {
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
-          child: _buildAssignmentCard(assignments[index]),
+          child: _buildRealAssignmentCard(assignments[index]),
         );
       },
     );
@@ -618,218 +823,304 @@ class _UserAssignmentPageState extends State<UserAssignmentPage> {
   }
 
   List<Map<String, dynamic>> _generateDailyData() {
-    return [
-      {
-        'date': '15',
-        'day': 'MON',
-        'isActive': true,
-        'assignments': [
-          {
-            'title': 'Loan Application Review Meeting',
-            'category': 'Credit Analysis',
-            'description':
-                'Review and evaluate new micro-loan applications from local businesses and individuals.',
-            'time': '09:00 AM - 11:00 AM',
-            'priority': 'High',
-            'peopleCount': '6 people',
-          },
-          {
-            'title': 'Customer Onboarding Session',
-            'category': 'Customer Service',
-            'description':
-                'Assist new customers with account opening and banking product orientation.',
-            'time': '02:00 PM - 04:00 PM',
-            'priority': 'Medium',
-            'peopleCount': '3 people',
-          },
-        ],
-      },
-      {
-        'date': '16',
-        'day': 'TUE',
-        'isActive': false,
-        'assignments': [
-          {
-            'title': 'Monthly Risk Assessment',
-            'category': 'Risk Management',
-            'description':
-                'Conduct monthly portfolio risk evaluation and prepare compliance reports.',
-            'time': '10:00 AM - 12:00 PM',
-            'priority': 'High',
-            'peopleCount': '8 people',
-          },
-        ],
-      },
-      {
-        'date': '17',
-        'day': 'WED',
-        'isActive': false,
-        'assignments': [
-          {
-            'title': 'Financial Literacy Workshop',
-            'category': 'Community Outreach',
-            'description':
-                'Conduct financial education workshop for local small business owners.',
-            'time': '09:00 AM - 05:00 PM',
-            'priority': 'Medium',
-            'peopleCount': '4 people',
-          },
-        ],
-      },
-    ];
+    if (_assignments.isEmpty) {
+      return [];
+    }
+
+    // Group assignments by date
+    Map<String, List<Assignment>> assignmentsByDate = {};
+    
+    for (Assignment assignment in _assignments) {
+      String dateKey = DateFormat('yyyy-MM-dd').format(assignment.dueDate);
+      if (!assignmentsByDate.containsKey(dateKey)) {
+        assignmentsByDate[dateKey] = [];
+      }
+      assignmentsByDate[dateKey]!.add(assignment);
+    }
+
+    // Convert to daily data format
+    List<Map<String, dynamic>> dailyData = [];
+    List<String> sortedDates = assignmentsByDate.keys.toList()..sort();
+    
+    DateTime today = DateTime.now();
+    
+    for (String dateKey in sortedDates) {
+      DateTime date = DateTime.parse(dateKey);
+      List<Assignment> dayAssignments = assignmentsByDate[dateKey]!;
+      
+      bool isActiveDay = date.year == today.year && 
+                        date.month == today.month && 
+                        date.day == today.day;
+      
+      dailyData.add({
+        'date': date.day.toString(),
+        'day': DateFormat('EEE').format(date).toUpperCase(),
+        'isActive': isActiveDay,
+        'assignments': dayAssignments.map((assignment) => _convertAssignmentToMap(assignment)).toList(),
+      });
+    }
+    
+    return dailyData;
   }
 
   List<Map<String, dynamic>> _generateWeeklyData() {
-    return [
-      {
-        'date': '15',
-        'day': 'MON',
-        'isActive': true,
-        'assignments': [
-          {
-            'title': 'Weekly Credit Committee Meeting',
-            'category': 'Credit Management',
-            'description':
-                'Review loan approvals, rejections, and discuss credit policy updates.',
-            'time': '09:00 AM - 11:00 AM',
-            'priority': 'High',
-            'peopleCount': '7 people',
-          },
-        ],
-      },
-      {
-        'date': '16',
-        'day': 'TUE',
-        'isActive': false,
-        'assignments': [
-          {
-            'title': 'Branch Audit Preparation',
-            'category': 'Compliance',
-            'description':
-                'Prepare documentation and records for upcoming OJK compliance audit.',
-            'time': '02:00 PM - 04:00 PM',
-            'priority': 'High',
-            'peopleCount': '5 people',
-          },
-        ],
-      },
-      {
-        'date': '17',
-        'day': 'WED',
-        'isActive': false,
-        'assignments': [
-          {
-            'title': 'Customer Relationship Management',
-            'category': 'Customer Service',
-            'description':
-                'Visit key corporate clients to maintain business relationships and discuss new opportunities.',
-            'time': '01:00 PM - 05:00 PM',
-            'priority': 'Medium',
-            'peopleCount': '3 people',
-          },
-        ],
-      },
-    ];
+    if (_assignments.isEmpty) {
+      return [];
+    }
+
+    // Get current week's assignments
+    DateTime now = DateTime.now();
+    DateTime startOfWeek = now.subtract(Duration(days: now.weekday % 7));
+    DateTime endOfWeek = startOfWeek.add(const Duration(days: 6));
+    
+    List<Assignment> weekAssignments = _assignments.where((assignment) {
+      return assignment.dueDate.isAfter(startOfWeek.subtract(const Duration(days: 1))) &&
+             assignment.dueDate.isBefore(endOfWeek.add(const Duration(days: 1)));
+    }).toList();
+
+    // Group by date
+    Map<String, List<Assignment>> assignmentsByDate = {};
+    
+    for (Assignment assignment in weekAssignments) {
+      String dateKey = DateFormat('yyyy-MM-dd').format(assignment.dueDate);
+      if (!assignmentsByDate.containsKey(dateKey)) {
+        assignmentsByDate[dateKey] = [];
+      }
+      assignmentsByDate[dateKey]!.add(assignment);
+    }
+
+    // Convert to weekly data format
+    List<Map<String, dynamic>> weeklyData = [];
+    List<String> sortedDates = assignmentsByDate.keys.toList()..sort();
+    
+    DateTime today = DateTime.now();
+    
+    for (String dateKey in sortedDates) {
+      DateTime date = DateTime.parse(dateKey);
+      List<Assignment> dayAssignments = assignmentsByDate[dateKey]!;
+      
+      bool isActiveDay = date.year == today.year && 
+                        date.month == today.month && 
+                        date.day == today.day;
+      
+      weeklyData.add({
+        'date': date.day.toString(),
+        'day': DateFormat('EEE').format(date).toUpperCase(),
+        'isActive': isActiveDay,
+        'assignments': dayAssignments.map((assignment) => _convertAssignmentToMap(assignment)).toList(),
+      });
+    }
+    
+    return weeklyData;
   }
 
   bool _hasAssignmentOnDate(DateTime date) {
-    // Sample logic to check if there are assignments on a specific date
-    List<int> assignmentDays = [
-      5,
-      12,
-      15,
-      18,
-      22,
-      28,
-    ]; // Sample days with banking assignments
-    return assignmentDays.contains(date.day);
+    // Check if any real assignments are due on this date
+    return _assignments.any((assignment) {
+      return assignment.dueDate.year == date.year &&
+             assignment.dueDate.month == date.month &&
+             assignment.dueDate.day == date.day;
+    });
   }
 
-  List<Map<String, dynamic>> _getAssignmentsForDate(DateTime date) {
-    // Sample assignments for specific dates
-    if (date.day == 15) {
-      return [
-        {
-          'title': 'Loan Portfolio Analysis',
-          'category': 'Credit Analysis',
-          'description':
-              'Analyze current loan portfolio performance and identify potential risks.',
-          'time': '10:00 AM - 12:00 PM',
-          'priority': 'High',
-          'peopleCount': '5 people',
-        },
-        {
-          'title': 'New Product Training Session',
-          'category': 'Training',
-          'description':
-              'Training on new savings product features and customer presentation techniques.',
-          'time': '02:00 PM - 04:00 PM',
-          'priority': 'Medium',
-          'peopleCount': '8 people',
-        },
-      ];
-    } else if (date.day == 22) {
-      return [
-        {
-          'title': 'Monthly Financial Reporting',
-          'category': 'Finance',
-          'description':
-              'Prepare and review monthly financial statements and regulatory reports.',
-          'time': '09:00 AM - 11:00 AM',
-          'priority': 'High',
-          'peopleCount': '4 people',
-        },
-      ];
-    } else if (date.day == 5) {
-      return [
-        {
-          'title': 'Customer Service Review',
-          'category': 'Customer Service',
-          'description':
-              'Review customer feedback and implement service improvement strategies.',
-          'time': '01:00 PM - 03:00 PM',
-          'priority': 'Medium',
-          'peopleCount': '6 people',
-        },
-      ];
-    } else if (date.day == 12) {
-      return [
-        {
-          'title': 'Branch Security Assessment',
-          'category': 'Security',
-          'description':
-              'Conduct security audit and update emergency response procedures.',
-          'time': '09:00 AM - 12:00 PM',
-          'priority': 'High',
-          'peopleCount': '3 people',
-        },
-      ];
-    } else if (date.day == 18) {
-      return [
-        {
-          'title': 'Community Banking Outreach',
-          'category': 'Community Relations',
-          'description':
-              'Visit local businesses to promote BPR services and gather market insights.',
-          'time': '08:00 AM - 05:00 PM',
-          'priority': 'Medium',
-          'peopleCount': '4 people',
-        },
-      ];
-    } else if (date.day == 28) {
-      return [
-        {
-          'title': 'Regulatory Compliance Review',
-          'category': 'Compliance',
-          'description':
-              'Review compliance with OJK regulations and prepare monthly compliance report.',
-          'time': '10:00 AM - 02:00 PM',
-          'priority': 'High',
-          'peopleCount': '6 people',
-        },
-      ];
+  List<Assignment> _getAssignmentsForDate(DateTime date) {
+    // Get real assignments for the specified date
+    return _assignments.where((assignment) {
+      return assignment.dueDate.year == date.year &&
+             assignment.dueDate.month == date.month &&
+             assignment.dueDate.day == date.day;
+    }).toList();
+  }
+
+  Widget _buildRealAssignmentCard(Assignment assignment) {
+    // Convert Assignment object to display format
+    final now = DateTime.now();
+    final isToday = assignment.dueDate.year == now.year &&
+                   assignment.dueDate.month == now.month &&
+                   assignment.dueDate.day == now.day;
+    
+    // Format time
+    final timeFormatter = DateFormat('HH:mm');
+    final timeString = '${timeFormatter.format(assignment.dueDate)} - Due';
+    
+    return GestureDetector(
+      onTap: () {
+        // Convert Assignment to Map for detail page
+        final assignmentMap = {
+          'title': assignment.title,
+          'description': assignment.description,
+          'priority': assignment.priority,
+          'status': assignment.status,
+          'dueDate': assignment.dueDate.toIso8601String(),
+          'createdBy': assignment.createdBy,
+          'category': 'Assignment', // Default category
+          'time': timeString,
+          'peopleCount': '1 person', // Default people count
+        };
+        
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => AssignmentDetailPage(assignment: assignmentMap),
+          ),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.pureWhite,
+          borderRadius: BorderRadius.circular(12),
+          border: isToday ? Border.all(color: AppColors.errorRed, width: 2) : null,
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.black.withOpacity(0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    assignment.title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.black87,
+                    ),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _getPriorityColor(assignment.priority),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    assignment.priority.toUpperCase(),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.pureWhite,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Status: ${assignment.status}',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              assignment.description,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade700,
+                height: 1.4,
+              ),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Icon(Icons.access_time, size: 16, color: Colors.grey.shade500),
+                const SizedBox(width: 4),
+                Text(
+                  timeString,
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                ),
+                const Spacer(),
+                if (isToday)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.errorRed,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Text(
+                      "DUE TODAY",
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: AppColors.pureWhite,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    "View",
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Color _getPriorityColor(String priority) {
+    switch (priority.toLowerCase()) {
+      case 'high':
+        return AppColors.errorRed;
+      case 'medium':
+        return AppColors.vibrantOrange;
+      case 'low':
+        return AppColors.primaryGreen;
+      default:
+        return Colors.grey;
     }
-    return [];
+  }
+
+  Map<String, dynamic> _convertAssignmentToMap(Assignment assignment) {
+    final timeFormatter = DateFormat('HH:mm');
+    final timeString = '${timeFormatter.format(assignment.dueDate)} - Due';
+    
+    return {
+      'title': assignment.title,
+      'category': 'Assignment',
+      'description': assignment.description,
+      'time': timeString,
+      'priority': assignment.priority.toLowerCase() == 'high' ? 'High' : 
+                 assignment.priority.toLowerCase() == 'medium' ? 'Medium' : 'Low',
+      'peopleCount': '1 person',
+      'status': assignment.status,
+      'dueDate': assignment.dueDate.toIso8601String(),
+      'createdBy': assignment.createdBy,
+    };
   }
 
   String _getMonthName(int month) {

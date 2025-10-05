@@ -2,11 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:frontend/core/constants/colors.dart';
 import 'package:frontend/core/services/location_service.dart';
 import 'package:frontend/core/services/camera_service.dart';
+import 'package:frontend/data/services/attendance_service.dart';
 import 'package:intl/intl.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
+import 'dart:ui' as ui;
+import 'package:flutter/services.dart';
 
 class AttendanceFormPage extends StatefulWidget {
   const AttendanceFormPage({super.key});
@@ -25,9 +30,14 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
   double? longitude;
   bool isLoadingLocation = false;
   Position? currentPosition;
-  final MapController mapController = MapController();
-  File? capturedImage;
+  XFile? capturedImageFile; // Use XFile for web compatibility
+  Uint8List? capturedImageBytes; // Store image bytes for web
   bool isCapturingImage = false;
+  bool isSaving = false;
+  bool hasCameraPermission = false;
+  bool isRequestingPermission = false;
+  
+  final AttendanceService _attendanceService = AttendanceService();
 
   final List<String> absentTypes = [
     'Clock In',
@@ -42,6 +52,130 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
     super.initState();
     _getCurrentLocation();
     _setDefaultDates(); // Set tanggal default
+    _requestCameraPermission(); // Request camera permission on init
+  }
+
+  /// Request camera permission when the page loads
+  Future<void> _requestCameraPermission() async {
+    if (kIsWeb) {
+      // For web, we can't request permission until user interaction
+      // We'll handle this when user actually tries to use camera
+      print('📷 Web platform - camera permission will be requested on first use');
+      setState(() {
+        hasCameraPermission = true; // Assume available for web
+      });
+      return;
+    }
+
+    setState(() {
+      isRequestingPermission = true;
+    });
+
+    try {
+      print('📷 Checking camera permission status...');
+      
+      // Check current permission status (might already be granted from app startup)
+      PermissionStatus cameraStatus = await Permission.camera.status;
+      print('📷 Current camera permission status: $cameraStatus');
+
+      if (cameraStatus.isGranted) {
+        // Already granted (likely from app startup)
+        print('📷 Camera permission already granted from app startup');
+        setState(() {
+          hasCameraPermission = true;
+          isRequestingPermission = false;
+        });
+        return;
+      }
+
+      if (cameraStatus.isDenied) {
+        // Request permission
+        print('📷 Requesting camera permission...');
+        cameraStatus = await Permission.camera.request();
+        print('📷 Permission request result: $cameraStatus');
+      }
+
+      bool hasPermission = cameraStatus.isGranted;
+      
+      setState(() {
+        hasCameraPermission = hasPermission;
+        isRequestingPermission = false;
+      });
+
+      if (hasPermission) {
+        print('📷 Camera permission granted');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('📷 Camera access granted!'),
+            backgroundColor: AppColors.primaryGreen,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      } else {
+        print('📷 Camera permission denied');
+        _showPermissionDeniedDialog();
+      }
+    } catch (e) {
+      print('📷 Error requesting camera permission: $e');
+      setState(() {
+        isRequestingPermission = false;
+        hasCameraPermission = false;
+      });
+    }
+  }
+
+  /// Show dialog when camera permission is denied
+  void _showPermissionDeniedDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('📷 Camera Permission Required'),
+          content: const Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('This app needs camera access to take attendance photos.'),
+              SizedBox(height: 12),
+              Text('To enable camera access:'),
+              SizedBox(height: 8),
+              Text('1. Go to device Settings'),
+              Text('2. Find this app in Apps/Applications'),
+              Text('3. Enable Camera permission'),
+              Text('4. Return to this app'),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                openAppSettings(); // Open app settings
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryBlue,
+              ),
+              child: const Text('Open Settings', style: TextStyle(color: AppColors.pureWhite)),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _requestCameraPermission(); // Try again
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryGreen,
+              ),
+              child: const Text('Try Again', style: TextStyle(color: AppColors.pureWhite)),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _setDefaultDates() {
@@ -77,14 +211,17 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
   }
 
   Future<void> _getCurrentLocation() async {
+    print('📍 Starting _getCurrentLocation...');
     setState(() {
       isLoadingLocation = true;
       detailAddress = 'Getting location...';
     });
 
     try {
+      print('📍 Calling LocationService.getCurrentLocation...');
       Position? position = await LocationService.getCurrentLocation();
       if (position != null) {
+        print('📍 Position received: ${position.latitude}, ${position.longitude}');
         setState(() {
           currentPosition = position;
           latitude = position.latitude;
@@ -92,30 +229,28 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
         });
 
         // Get address from coordinates
+        print('📍 Getting address from coordinates...');
         String? address = await LocationService.getAddressFromCoordinates(
           position.latitude, 
           position.longitude
         );
         
+        print('📍 Address received: $address');
         setState(() {
           detailAddress = address ?? 'Unknown location';
           isLoadingLocation = false;
         });
 
-        // Move map to current location
-        if (mapController != null) {
-          mapController.move(
-            LatLng(position.latitude, position.longitude), 
-            15.0
-          );
-        }
+        print('📍 Location updated successfully');
       } else {
+        print('📍 Position is null');
         setState(() {
           detailAddress = 'Failed to get location';
           isLoadingLocation = false;
         });
       }
     } catch (e) {
+      print('📍 Error in _getCurrentLocation: $e');
       setState(() {
         detailAddress = 'Error getting location: $e';
         isLoadingLocation = false;
@@ -156,41 +291,300 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
   }
 
   void _refreshLocation() {
+    print('📍 Refresh location requested');
     _getCurrentLocation();
   }
 
   Future<void> _capturePhoto() async {
+    print('📷 _capturePhoto method called!');
+
+    // Check camera permission first
+    if (!kIsWeb && !hasCameraPermission) {
+      print('📷 No camera permission, requesting...');
+      await _requestCameraPermission();
+      if (!hasCameraPermission) {
+        print('📷 Permission denied, cannot proceed');
+        return;
+      }
+    }
+
     setState(() {
       isCapturingImage = true;
     });
 
     try {
-      final File? photo = await CameraService.captureAttendancePhoto();
+      print('📷 Initializing ImagePicker...');
+      final ImagePicker picker = ImagePicker();
+      
+      print('📷 Platform: ${kIsWeb ? 'Web' : 'Mobile'}');
+      
+      XFile? photo;
+      
+      if (kIsWeb) {
+        // For web, show guidance message
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('📷 Opening camera... Please allow camera access when prompted'),
+            backgroundColor: AppColors.primaryBlue,
+            duration: Duration(seconds: 3),
+          ),
+        );
+        
+        print('📷 Web platform - accessing camera with permission prompt...');
+        photo = await picker.pickImage(
+          source: ImageSource.camera,
+          imageQuality: 70,
+          maxWidth: 1000,
+          maxHeight: 1000,
+        );
+      } else {
+        // For mobile, standard camera access
+        print('📷 Mobile platform - accessing camera...');
+        photo = await picker.pickImage(
+          source: ImageSource.camera,
+          imageQuality: 70,
+          maxWidth: 1000,
+          maxHeight: 1000,
+        );
+      }
+
+      print('📷 ImagePicker result: ${photo != null ? 'Success' : 'Null'}');
 
       if (photo != null) {
-        // Check file size
-        double fileSizeMB = CameraService.getFileSizeInMB(photo);
+        print('📷 Reading image bytes...');
+        // Read original image bytes
+        final Uint8List originalBytes = await photo.readAsBytes();
+        double originalSizeKB = originalBytes.length / 1024;
         
+        print('📷 Original image: ${originalSizeKB.toStringAsFixed(1)} KB');
+        
+        // Resize image to 200KB target
+        print('📷 Starting image compression...');
+        final Uint8List compressedBytes = await _resizeImageToTarget(originalBytes, targetSizeKB: 200);
+        double compressedSizeKB = compressedBytes.length / 1024;
+        
+        print('📷 Setting state with compressed image...');
         setState(() {
-          capturedImage = photo;
+          capturedImageFile = photo;
+          capturedImageBytes = compressedBytes;
         });
         
+        print('📷 Showing success message...');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              'Photo captured successfully! (${fileSizeMB.toStringAsFixed(1)} MB)'
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '📷 Photo optimized successfully!',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                Text('Original: ${originalSizeKB.toStringAsFixed(0)} KB'),
+                Text('Optimized: ${compressedSizeKB.toStringAsFixed(0)} KB'),
+                Text('Reduction: ${((originalSizeKB - compressedSizeKB) / originalSizeKB * 100).toStringAsFixed(0)}%'),
+              ],
             ),
             backgroundColor: AppColors.primaryGreen,
-            duration: const Duration(seconds: 2),
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      } else {
+        print('📷 User cancelled camera or no photo selected');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('📷 Camera access cancelled'),
+            backgroundColor: AppColors.primaryYellow,
+            duration: Duration(seconds: 2),
           ),
         );
       }
     } catch (e) {
+      print('📷 Error capturing photo: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Failed to capture photo: $e'),
           backgroundColor: AppColors.errorRed,
           duration: const Duration(seconds: 3),
+        ),
+      );
+    } finally {
+      print('📷 Setting isCapturingImage to false');
+      setState(() {
+        isCapturingImage = false;
+      });
+    }
+  }
+
+  void _removePhoto() {
+    setState(() {
+      capturedImageFile = null;
+      capturedImageBytes = null;
+    });
+  }
+
+  /// Alternative method for web camera access
+  Future<void> _capturePhotoAlternative() async {
+    try {
+      // For web, we can try using HTML5 getUserMedia API through JavaScript
+      if (kIsWeb) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('📷 Accessing camera... Please allow camera permission when prompted'),
+            backgroundColor: AppColors.primaryBlue,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+      
+      final ImagePicker picker = ImagePicker();
+      
+      // Try with different approaches for web
+      final XFile? photo = await picker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 70,
+        maxWidth: 1000,
+        maxHeight: 1000,
+      );
+      
+      if (photo != null) {
+        final Uint8List originalBytes = await photo.readAsBytes();
+        final Uint8List compressedBytes = await _resizeImageToTarget(originalBytes, targetSizeKB: 200);
+        
+        setState(() {
+          capturedImageFile = photo;
+          capturedImageBytes = compressedBytes;
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('📷 Photo captured successfully!'),
+            backgroundColor: AppColors.primaryGreen,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      print('📷 Alternative capture failed: $e');
+    }
+  }
+
+  /// Show camera options for web users with permission request
+  void _showCameraOptions() {
+    if (kIsWeb) {
+      _requestWebCameraAccess();
+    } else {
+      _capturePhoto();
+    }
+  }
+
+  /// Request camera access specifically for web with user interaction
+  Future<void> _requestWebCameraAccess() async {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('📷 Camera Access'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('This app needs camera access to take attendance photos.'),
+              const SizedBox(height: 12),
+              const Text('Tips for web camera:'),
+              const SizedBox(height: 8),
+              const Text('• Allow camera permission when prompted by browser'),
+              const Text('• Make sure camera is not used by other apps'),
+              const Text('• Check browser camera settings if needed'),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  ElevatedButton(
+                    onPressed: () async {
+                      Navigator.of(context).pop();
+                      await _requestWebCameraPermission();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryBlue,
+                    ),
+                    child: const Text('📸 Allow Camera', style: TextStyle(color: AppColors.pureWhite)),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                    child: const Text('Cancel'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// Request camera permission for web by actually trying to access camera
+  Future<void> _requestWebCameraPermission() async {
+    setState(() {
+      isCapturingImage = true;
+    });
+
+    try {
+      print('📷 Web - Requesting camera permission via getUserMedia...');
+      
+      // Try to access camera - this will trigger browser permission popup
+      final ImagePicker picker = ImagePicker();
+      final XFile? photo = await picker.pickImage(
+        source: ImageSource.camera,
+        maxWidth: 1920,
+        maxHeight: 1080,
+        imageQuality: 85,
+      );
+
+      if (photo != null) {
+        print('📷 Web - Camera permission granted, processing photo...');
+        
+        // Process the captured photo
+        final Uint8List originalBytes = await photo.readAsBytes();
+        double originalSizeKB = originalBytes.length / 1024;
+        print('📷 Original image: ${originalSizeKB.toStringAsFixed(1)} KB');
+
+        // Resize image to 200KB target
+        print('📷 Starting image compression...');
+        final Uint8List compressedBytes = await _resizeImageToTarget(originalBytes, targetSizeKB: 200);
+        double compressedSizeKB = compressedBytes.length / 1024;
+        
+        print('📷 Setting state with compressed image...');
+        setState(() {
+          capturedImageFile = photo;
+          capturedImageBytes = compressedBytes;
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('📷 Camera access granted! Photo captured successfully.'),
+            backgroundColor: AppColors.primaryGreen,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      } else {
+        print('📷 Web - Camera access denied or cancelled');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('📷 Camera access denied. Please allow camera permission in your browser.'),
+            backgroundColor: AppColors.errorRed,
+            duration: Duration(seconds: 4),
+          ),
+        );
+      }
+    } catch (e) {
+      print('📷 Web - Error accessing camera: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('📷 Error accessing camera: ${e.toString()}'),
+          backgroundColor: AppColors.errorRed,
+          duration: const Duration(seconds: 4),
         ),
       );
     } finally {
@@ -200,10 +594,180 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
     }
   }
 
-  void _removePhoto() {
+  /// Resize image to target size in KB
+  Future<Uint8List> _resizeImageToTarget(Uint8List imageBytes, {required int targetSizeKB}) async {
+    final targetSizeBytes = targetSizeKB * 1024;
+    
+    // If already smaller than target, return as is
+    if (imageBytes.length <= targetSizeBytes) {
+      print('📷 Image already small enough: ${(imageBytes.length / 1024).toStringAsFixed(1)} KB');
+      return imageBytes;
+    }
+
+    print('📷 Original image size: ${(imageBytes.length / 1024).toStringAsFixed(1)} KB');
+    
+    try {
+      // Decode the image
+      final ui.Codec codec = await ui.instantiateImageCodec(imageBytes);
+      final ui.FrameInfo frameInfo = await codec.getNextFrame();
+      final ui.Image originalImage = frameInfo.image;
+      
+      // Calculate scale factor to reduce file size
+      double scaleFactor = 0.8;
+      
+      // Start with smaller dimensions
+      int newWidth = (originalImage.width * scaleFactor).round();
+      int newHeight = (originalImage.height * scaleFactor).round();
+      
+      // Ensure minimum size
+      if (newWidth < 200) newWidth = 200;
+      if (newHeight < 200) newHeight = 200;
+      
+      // Create resized image
+      final ui.PictureRecorder recorder = ui.PictureRecorder();
+      final ui.Canvas canvas = ui.Canvas(recorder);
+      
+      // Draw resized image
+      canvas.drawImageRect(
+        originalImage,
+        ui.Rect.fromLTWH(0, 0, originalImage.width.toDouble(), originalImage.height.toDouble()),
+        ui.Rect.fromLTWH(0, 0, newWidth.toDouble(), newHeight.toDouble()),
+        ui.Paint(),
+      );
+      
+      final ui.Picture picture = recorder.endRecording();
+      final ui.Image resizedImage = await picture.toImage(newWidth, newHeight);
+      
+      // Convert to bytes using JPEG format for better compression
+      final ByteData? byteData = await resizedImage.toByteData(
+        format: ui.ImageByteFormat.png,
+      );
+      
+      if (byteData != null) {
+        final Uint8List resizedBytes = byteData.buffer.asUint8List();
+        print('📷 Resized to: ${(resizedBytes.length / 1024).toStringAsFixed(1)} KB (${newWidth}x${newHeight})');
+        
+        // If still too large, try more aggressive resizing
+        if (resizedBytes.length > targetSizeBytes && newWidth > 300) {
+          return _resizeImageToTarget(resizedBytes, targetSizeKB: targetSizeKB);
+        }
+        
+        return resizedBytes;
+      }
+    } catch (e) {
+      print('📷 Error resizing image: $e');
+    }
+    
+    // If resizing fails, return original
+    return imageBytes;
+  }
+
+  Future<void> _saveAttendance() async {
+    // Validate location data
+    if (latitude == null || longitude == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please wait for location to be obtained first'),
+          backgroundColor: AppColors.errorRed,
+        ),
+      );
+      return;
+    }
+
+    // Validate photo evidence
+    if (capturedImageFile == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please take a photo for attendance verification'),
+          backgroundColor: AppColors.errorRed,
+        ),
+      );
+      return;
+    }
+
+    // Validate dates
+    if (startDate == null || endDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select valid dates'),
+          backgroundColor: AppColors.errorRed,
+        ),
+      );
+      return;
+    }
+
     setState(() {
-      capturedImage = null;
+      isSaving = true;
     });
+
+    try {
+      print('💾 Saving attendance...');
+      print('📍 Type: $selectedAbsentType');
+      print('📅 Dates: $startDate to $endDate');
+      print('🌍 Location: $latitude, $longitude');
+      print('📷 Image: ${capturedImageFile!.name}');
+
+      final response = await _attendanceService.submitAttendanceWithImage(
+        type: selectedAbsentType,
+        startDate: startDate!,
+        endDate: endDate!,
+        latitude: latitude!,
+        longitude: longitude!,
+        address: detailAddress,
+        image: capturedImageFile!,
+        notes: 'Submitted via mobile app',
+      );
+
+      if (response.success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '✅ Attendance saved successfully!',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 4),
+                Text('Type: $selectedAbsentType'),
+                Text('Date: ${DateFormat('dd/MM/yyyy').format(startDate!)}'),
+                if (startDate != endDate)
+                  Text('Until: ${DateFormat('dd/MM/yyyy').format(endDate!)}'),
+                Text('Location: ${detailAddress.substring(0, detailAddress.length > 30 ? 30 : detailAddress.length)}...'),
+                const Text('Photo: Uploaded successfully'),
+              ],
+            ),
+            backgroundColor: AppColors.primaryGreen,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+
+        // Navigate back to previous screen
+        Navigator.pop(context, true); // Pass true to indicate successful save
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to save attendance: ${response.message}'),
+            backgroundColor: AppColors.errorRed,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } catch (e) {
+      print('❌ Error saving attendance: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error saving attendance: ${e.toString()}'),
+          backgroundColor: AppColors.errorRed,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    } finally {
+      setState(() {
+        isSaving = false;
+      });
+    }
   }
 
   @override
@@ -451,9 +1015,9 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                 margin: const EdgeInsets.only(top: 12),
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppColors.primaryBlue.withOpacity(0.1),
+                  color: AppColors.primaryBlue.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.primaryBlue.withOpacity(0.3)),
+                  border: Border.all(color: AppColors.primaryBlue.withValues(alpha: 0.3)),
                 ),
                 child: Row(
                   children: [
@@ -489,26 +1053,58 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
             const SizedBox(height: 12),
             
             // Photo Container
-            Container(
-              width: double.infinity,
-              height: capturedImage != null ? 200 : 110,
-              decoration: BoxDecoration(
-                color: AppColors.pureWhite,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey.shade300),
-              ),
-              child: capturedImage != null
+            GestureDetector(
+              onTap: () {
+                print('📷 Photo container tapped!');
+                if (capturedImageFile == null && !isCapturingImage) {
+                  print('📷 Calling camera method...');
+                  
+                  if (kIsWeb) {
+                    _showCameraOptions();
+                  } else if (!hasCameraPermission) {
+                    print('📷 No permission, requesting...');
+                    _requestCameraPermission();
+                  } else {
+                    _capturePhoto();
+                  }
+                } else {
+                  print('📷 Cannot capture: hasImage=${capturedImageFile != null}, isCapturing=$isCapturingImage');
+                }
+              },
+              child: Container(
+                width: double.infinity,
+                height: capturedImageFile != null ? 200 : 110,
+                decoration: BoxDecoration(
+                  color: capturedImageFile == null 
+                      ? AppColors.primaryBlue.withValues(alpha: 0.02)
+                      : AppColors.pureWhite,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: capturedImageFile == null 
+                        ? AppColors.primaryBlue.withValues(alpha: 0.3)
+                        : Colors.grey.shade300,
+                    width: capturedImageFile == null ? 2 : 1,
+                  ),
+                ),
+                child: capturedImageFile != null
                   ? ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: Stack(
                         children: [
-                          // Display captured photo
-                          Image.file(
-                            capturedImage!,
-                            width: double.infinity,
-                            height: 200,
-                            fit: BoxFit.cover,
-                          ),
+                          // Display captured photo - use Image.memory for web compatibility
+                          kIsWeb
+                              ? Image.memory(
+                                  capturedImageBytes!,
+                                  width: double.infinity,
+                                  height: 200,
+                                  fit: BoxFit.cover,
+                                )
+                              : Image.network(
+                                  capturedImageFile!.path,
+                                  width: double.infinity,
+                                  height: 200,
+                                  fit: BoxFit.cover,
+                                ),
                           // Remove photo button
                           Positioned(
                             top: 8,
@@ -554,74 +1150,83 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                         ],
                       ),
                     )
-                  : Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: AppColors.primaryBlue.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(50),
-                          ),
-                          child: Icon(
-                            Icons.camera_alt,
-                            size: 30,
-                            color: AppColors.primaryBlue,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Take Photo with Camera',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: AppColors.black87,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        const Text(
-                          'Required for attendance verification',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        ElevatedButton.icon(
-                          onPressed: isCapturingImage ? null : _capturePhoto,
-                          icon: isCapturingImage 
-                              ? const SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.pureWhite),
-                                  ),
-                                )
-                              : const Icon(Icons.camera_alt, size: 18),
-                          label: Text(isCapturingImage ? 'Opening Camera...' : 'Open Camera'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primaryBlue,
-                            foregroundColor: AppColors.pureWhite,
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
+                  : MouseRegion(
+                      cursor: capturedImageFile == null ? SystemMouseCursors.click : SystemMouseCursors.basic,
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: AppColors.primaryBlue.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(50),
+                              ),
+                              child: Icon(
+                                Icons.camera_alt,
+                                size: 30,
+                                color: AppColors.primaryBlue,
+                              ),
                             ),
-                          ),
+                            const SizedBox(height: 8),
+                            Text(
+                              kIsWeb 
+                                  ? (isCapturingImage 
+                                      ? 'Capturing Photo...'
+                                      : 'Tap to Enable Camera')
+                                  : hasCameraPermission 
+                                      ? (isCapturingImage 
+                                          ? 'Capturing Photo...'
+                                          : 'Tap to Capture Photo')
+                                      : isRequestingPermission
+                                          ? 'Requesting Permission...'
+                                          : 'Camera Permission Required',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: hasCameraPermission || kIsWeb
+                                    ? AppColors.primaryBlue
+                                    : isRequestingPermission
+                                        ? AppColors.primaryYellow
+                                        : AppColors.errorRed,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              kIsWeb 
+                                  ? 'Browser will ask for camera permission'
+                                  : hasCameraPermission
+                                      ? 'Camera Only'
+                                      : isRequestingPermission
+                                          ? 'Please wait...'
+                                          : 'Tap to grant permission',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: hasCameraPermission || kIsWeb
+                                    ? AppColors.primaryBlue
+                                    : isRequestingPermission
+                                        ? AppColors.primaryYellow
+                                        : AppColors.errorRed,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
+              ),
             ),
             
             // Show photo requirement status
-            if (capturedImage == null)
+            if (capturedImageFile == null)
               Container(
                 margin: const EdgeInsets.only(top: 16),
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppColors.primaryYellow.withOpacity(0.1),
+                  color: AppColors.primaryYellow.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.primaryYellow.withOpacity(0.3)),
+                  border: Border.all(color: AppColors.primaryYellow.withValues(alpha: 0.3)),
                 ),
                 child: Row(
                   children: [
@@ -648,9 +1253,9 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                 margin: const EdgeInsets.only(top: 16),
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppColors.primaryGreen.withOpacity(0.1),
+                  color: AppColors.primaryGreen.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.primaryGreen.withOpacity(0.3)),
+                  border: Border.all(color: AppColors.primaryGreen.withValues(alpha: 0.3)),
                 ),
                 child: Row(
                   children: [
@@ -720,7 +1325,7 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
             
             const SizedBox(height: 16),
             
-            // Map dengan Leaflet (Flutter Map)
+            // Location Display Container
             Container(
               width: double.infinity,
               height: 200,
@@ -732,70 +1337,113 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: currentPosition != null
-                    ? FlutterMap(
-                        mapController: mapController,
-                        options: MapOptions(
-                          initialCenter: LatLng(currentPosition!.latitude, currentPosition!.longitude),
-                          initialZoom: 15.0,
-                          minZoom: 5.0,
-                          maxZoom: 18.0,
-                          interactionOptions: const InteractionOptions(
-                            flags: InteractiveFlag.pinchZoom | InteractiveFlag.doubleTapZoom,
-                          ),
-                        ),
-                        children: [
-                          // OpenStreetMap Tile Layer
-                          TileLayer(
-                            urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                            userAgentPackageName: 'com.example.frontend',
-                            maxZoom: 18,
-                            minZoom: 5,
-                          ),
-                          // Marker Layer
-                          MarkerLayer(
-                            markers: [
-                              Marker(
-                                point: LatLng(currentPosition!.latitude, currentPosition!.longitude),
-                                width: 40,
-                                height: 40,
-                                child: const Icon(
-                                  Icons.location_on,
-                                  color: AppColors.errorRed,
-                                  size: 40,
-                                ),
-                              ),
+                    ? Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              AppColors.primaryBlue.withValues(alpha: 0.1),
+                              AppColors.primaryGreen.withValues(alpha: 0.1),
                             ],
                           ),
-                          // Refresh button overlay
-                          Positioned(
-                            right: 10,
-                            top: 10,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: AppColors.pureWhite,
-                                borderRadius: BorderRadius.circular(20),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.2),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 2),
+                        ),
+                        child: Stack(
+                          children: [
+                            // Location Info Content
+                            Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(16),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.pureWhite,
+                                      borderRadius: BorderRadius.circular(12),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withValues(alpha: 0.1),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Column(
+                                      children: [
+                                        const Icon(
+                                          Icons.location_on,
+                                          color: AppColors.primaryBlue,
+                                          size: 32,
+                                        ),
+                                        const SizedBox(height: 8),
+                                        const Text(
+                                          'Current Location',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600,
+                                            color: AppColors.primaryBlue,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          'Lat: ${currentPosition!.latitude.toStringAsFixed(6)}',
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            color: AppColors.black54,
+                                          ),
+                                        ),
+                                        Text(
+                                          'Lng: ${currentPosition!.longitude.toStringAsFixed(6)}',
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            color: AppColors.black54,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          'Accuracy: ${currentPosition!.accuracy.toStringAsFixed(1)}m',
+                                          style: const TextStyle(
+                                            fontSize: 10,
+                                            color: AppColors.black38,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ],
                               ),
-                              child: IconButton(
-                                icon: isLoadingLocation 
-                                    ? const SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: CircularProgressIndicator(strokeWidth: 2),
-                                      )
-                                    : const Icon(Icons.my_location, color: AppColors.primaryBlue),
-                                onPressed: isLoadingLocation ? null : _refreshLocation,
-                                tooltip: 'Refresh Location',
+                            ),
+                            // Refresh button overlay
+                            Positioned(
+                              right: 10,
+                              top: 10,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: AppColors.pureWhite,
+                                  borderRadius: BorderRadius.circular(20),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.2),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: IconButton(
+                                  icon: isLoadingLocation 
+                                      ? const SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(strokeWidth: 2),
+                                        )
+                                      : const Icon(Icons.my_location, color: AppColors.primaryBlue),
+                                  onPressed: isLoadingLocation ? null : _refreshLocation,
+                                  tooltip: 'Refresh Location',
+                                ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       )
                     : Container(
                         width: double.infinity,
@@ -996,60 +1644,47 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                 const SizedBox(width: 16),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () {
-                      // Validate location data
-                      if (latitude == null || longitude == null) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Please wait for location to be obtained first'),
-                            backgroundColor: AppColors.errorRed,
-                          ),
-                        );
-                        return;
-                      }
-
-                      // Validate photo evidence
-                      if (capturedImage == null) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Please take a photo for attendance verification'),
-                            backgroundColor: AppColors.errorRed,
-                          ),
-                        );
-                        return;
-                      }
-
-                      // Handle save functionality with location and photo data
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Attendance saved successfully!\n'
-                            'Type: $selectedAbsentType\n'
-                            'Location: ${latitude!.toStringAsFixed(6)}, ${longitude!.toStringAsFixed(6)}\n'
-                            'Address: $detailAddress\n'
-                            'Photo: Captured'
-                          ),
-                          backgroundColor: AppColors.primaryGreen,
-                          duration: const Duration(seconds: 4),
-                        ),
-                      );
-                      Navigator.pop(context);
-                    },
+                    onPressed: isSaving ? null : _saveAttendance,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primaryGreen,
+                      backgroundColor: isSaving 
+                          ? Colors.grey.shade400 
+                          : AppColors.primaryGreen,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    child: const Text(
-                      'Save',
-                      style: TextStyle(
-                        color: AppColors.pureWhite,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                    child: isSaving
+                        ? Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.pureWhite),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              const Text(
+                                'Saving...',
+                                style: TextStyle(
+                                  color: AppColors.pureWhite,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          )
+                        : const Text(
+                            'Save',
+                            style: TextStyle(
+                              color: AppColors.pureWhite,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                   ),
                 ),
               ],

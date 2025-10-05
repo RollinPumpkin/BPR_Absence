@@ -46,10 +46,11 @@ class _FigmaClockCardState extends State<FigmaClockCard> {
   Future<void> _loadAttendanceData() async {
     final prefs = await SharedPreferences.getInstance();
     final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    final userId = prefs.getString('user_id') ?? '';
     
     setState(() {
-      _clockInTime = prefs.getString('clock_in_$today');
-      _clockOutTime = prefs.getString('clock_out_$today');
+      _clockInTime = prefs.getString('clock_in_${userId}_$today');
+      _clockOutTime = prefs.getString('clock_out_${userId}_$today');
       _hasClockIn = _clockInTime != null;
       _hasClockOut = _clockOutTime != null;
     });
@@ -59,8 +60,9 @@ class _FigmaClockCardState extends State<FigmaClockCard> {
     final prefs = await SharedPreferences.getInstance();
     final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
     final currentTime = DateFormat('HH:mm:ss').format(DateTime.now());
+    final userId = prefs.getString('user_id') ?? '';
     
-    await prefs.setString('clock_in_$today', currentTime);
+    await prefs.setString('clock_in_${userId}_$today', currentTime);
     
     setState(() {
       _clockInTime = currentTime;
@@ -93,8 +95,9 @@ class _FigmaClockCardState extends State<FigmaClockCard> {
     final prefs = await SharedPreferences.getInstance();
     final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
     final currentTime = DateFormat('HH:mm:ss').format(DateTime.now());
+    final userId = prefs.getString('user_id') ?? '';
     
-    await prefs.setString('clock_out_$today', currentTime);
+    await prefs.setString('clock_out_${userId}_$today', currentTime);
     
     setState(() {
       _clockOutTime = currentTime;
@@ -114,22 +117,32 @@ class _FigmaClockCardState extends State<FigmaClockCard> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.pureWhite,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.black.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Clock In/Out'),
+        backgroundColor: AppColors.pureWhite,
+        foregroundColor: AppColors.black,
+        elevation: 0,
       ),
-      child: Column(
-        children: [
+      backgroundColor: AppColors.backgroundGray,
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: AppColors.pureWhite,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.black.withOpacity(0.1),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
           // Clock In/Out Row
           Row(
             children: [
@@ -147,7 +160,7 @@ class _FigmaClockCardState extends State<FigmaClockCard> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      _hasClockIn ? _clockInTime! : _currentTime,
+                      _hasClockIn ? _clockInTime! : '--:--:--',
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -176,7 +189,7 @@ class _FigmaClockCardState extends State<FigmaClockCard> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      _hasClockOut ? _clockOutTime! : '------',
+                      _hasClockOut ? _clockOutTime! : '--:--:--',
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -259,7 +272,9 @@ class _FigmaClockCardState extends State<FigmaClockCard> {
               ),
             ],
           ),
-        ],
+            ],
+          ),
+        ),
       ),
     );
   }

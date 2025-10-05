@@ -177,3 +177,72 @@ class CheckOutRequest {
     };
   }
 }
+
+class AttendanceMonthlySummary {
+  final int month;
+  final int year;
+  final List<Attendance> attendance;
+  final AttendanceMonthlyStats stats;
+
+  AttendanceMonthlySummary({
+    required this.month,
+    required this.year,
+    required this.attendance,
+    required this.stats,
+  });
+
+  factory AttendanceMonthlySummary.fromJson(Map<String, dynamic> json) {
+    return AttendanceMonthlySummary(
+      month: json['month'] ?? 0,
+      year: json['year'] ?? 0,
+      attendance: (json['attendance'] as List? ?? [])
+          .map((item) => Attendance.fromJson(item))
+          .toList(),
+      stats: AttendanceMonthlyStats.fromJson(json['stats'] ?? {}),
+    );
+  }
+}
+
+class AttendanceMonthlyStats {
+  final int totalDays;
+  final int presentDays;
+  final int lateDays;
+  final int absentDays;
+  final int sickDays;
+  final int leaveDays;
+  final double totalHoursWorked;
+  final double totalOvertimeHours;
+  final double averageHoursPerDay;
+
+  AttendanceMonthlyStats({
+    required this.totalDays,
+    required this.presentDays,
+    required this.lateDays,
+    required this.absentDays,
+    required this.sickDays,
+    required this.leaveDays,
+    required this.totalHoursWorked,
+    required this.totalOvertimeHours,
+    required this.averageHoursPerDay,
+  });
+
+  factory AttendanceMonthlyStats.fromJson(Map<String, dynamic> json) {
+    return AttendanceMonthlyStats(
+      totalDays: json['total_days'] ?? 0,
+      presentDays: json['present_days'] ?? 0,
+      lateDays: json['late_days'] ?? 0,
+      absentDays: json['absent_days'] ?? 0,
+      sickDays: json['sick_days'] ?? 0,
+      leaveDays: json['leave_days'] ?? 0,
+      totalHoursWorked: (json['total_hours_worked'] ?? 0.0).toDouble(),
+      totalOvertimeHours: (json['total_overtime_hours'] ?? 0.0).toDouble(),
+      averageHoursPerDay: (json['average_hours_per_day'] ?? 0.0).toDouble(),
+    );
+  }
+
+  // Calculated properties for UI display
+  int get present => presentDays;
+  int get late => lateDays;
+  int get absent => absentDays;
+  int get leave => leaveDays + sickDays; // Combine sick and leave for UI
+}

@@ -15,6 +15,7 @@ class ApiConstants {
   static const LetterEndpoints letters = LetterEndpoints();
   static const UserEndpoints users = UserEndpoints();
   static const DashboardEndpoints dashboard = DashboardEndpoints();
+  static const AssignmentEndpoints assignments = AssignmentEndpoints();
   
   // HTTP Headers
   static const String contentType = 'Content-Type';
@@ -66,6 +67,7 @@ class AttendanceEndpoints {
   String get checkOut => '/attendance/checkout';
   String get list => '/attendance';
   String get current => '/attendance/today';
+  String get summary => '/attendance/summary';
   String get statistics => '/attendance/statistics';
   String get report => '/attendance/report';
   String get lateArrivals => '/attendance/late-arrivals';
@@ -118,6 +120,19 @@ class DashboardEndpoints {
   String get admin => '/dashboard/admin';
   String get statistics => '/dashboard/statistics';
   String get summary => '/dashboard/summary';
+  String get userActivity => '/dashboard/user/activity';
+}
+
+class AssignmentEndpoints {
+  const AssignmentEndpoints();
+  
+  String get list => '/assignments';
+  String get upcoming => '/assignments/upcoming';
+  String get test => '/assignments/test';
+  String get create => '/assignments';
+  String get update => '/assignments';
+  String get delete => '/assignments';
+  String assignmentById(String id) => '/assignments/$id';
 }
 
 class ApiEndpoints {
@@ -160,4 +175,10 @@ class ApiEndpoints {
   static String get adminDashboard => fullUrl(ApiConstants.dashboard.admin);
   static String get dashboardStatistics => fullUrl(ApiConstants.dashboard.statistics);
   static String get dashboardSummary => fullUrl(ApiConstants.dashboard.summary);
+  
+  // Assignment endpoints
+  static String get assignments => fullUrl(ApiConstants.assignments.list);
+  static String get upcomingAssignments => fullUrl(ApiConstants.assignments.upcoming);
+  static String get testAssignments => fullUrl(ApiConstants.assignments.test);
+  static String assignmentById(String id) => fullUrl(ApiConstants.assignments.assignmentById(id));
 }
