@@ -41,12 +41,13 @@ class AttendancePage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const SizedBox(height: 12), // Added more space from AppBar
             // Tanggal
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16),
               child: DateRow(),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 12), // Increased spacing after date
 
             // Stat ringkas
             Padding(
