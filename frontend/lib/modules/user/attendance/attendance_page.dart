@@ -1,348 +1,352 @@
+import 'dart:typed_data';
+import 'package:excel/excel.dart';
+import 'package:file_saver/file_saver.dart';
 import 'package:flutter/material.dart';
+
 import 'package:frontend/core/constants/colors.dart';
 import 'package:frontend/core/widgets/custom_bottom_nav_router.dart';
-import 'package:frontend/modules/user/shared/user_nav_items.dart';
-import 'package:frontend/data/services/attendance_service.dart';
-import 'package:frontend/data/models/attendance.dart';
-import 'package:intl/intl.dart';
+import 'package:frontend/modules/admin/shared/admin_nav_items.dart';
 
-import 'widgets/attendance_stats.dart';
-import 'widgets/attendance_history_card.dart';
-import 'widgets/attendance_detail_dialog.dart';
-import 'attendance_history_page.dart';
+import 'widgets/date_row.dart';
+import 'widgets/attendance_stat.dart';
+import 'widgets/divider.dart';
+import 'widgets/attendance_card.dart';
+import 'widgets/section_lined_title.dart';
+import 'pages/attendance_form_page.dart';
 
-class UserAttendancePage extends StatefulWidget {
-  const UserAttendancePage({super.key});
-
-  @override
-  State<UserAttendancePage> createState() => _UserAttendancePageState();
-}
-
-class _UserAttendancePageState extends State<UserAttendancePage> {
-  final AttendanceService _attendanceService = AttendanceService();
-  List<Attendance> _recentAttendance = [];
-  bool _isLoading = true;
-  String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadRecentAttendance();
-  }
-
-  Future<void> _loadRecentAttendance() async {
-    try {
-      setState(() {
-        _isLoading = true;
-        _error = null;
-      });
-
-      final response = await _attendanceService.getMonthlySummary();
-      
-      if (response.isSuccess && response.data != null) {
-        setState(() {
-          // Take only the last 5 records for recent history
-          _recentAttendance = response.data!.attendance.take(5).toList();
-          _isLoading = false;
-        });
-      } else {
-        setState(() {
-          _error = response.message ?? 'Failed to load attendance data';
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      setState(() {
-        _error = 'Error loading attendance data: ${e.toString()}';
-        _isLoading = false;
-      });
-    }
-  }
-
-  String _getAttendanceStatus(Attendance attendance) {
-    final now = DateTime.now();
-    final attendanceDate = DateTime.parse(attendance.date);
-    final isToday = DateFormat('yyyy-MM-dd').format(now) == attendance.date;
-    
-    // If no check in, check the database status first
-    if (attendance.checkInTime == null) {
-      // Check if there's a leave/sick status from database
-      if (attendance.status == 'leave' || attendance.status == 'sick') {
-        return 'Leave';
-      }
-      // If no status in database, it's absent
-      return 'Absent';
-    }
-    
-    // Parse check in time
-    final checkInTime = TimeOfDay(
-      hour: int.parse(attendance.checkInTime!.split(':')[0]),
-      minute: int.parse(attendance.checkInTime!.split(':')[1]),
-    );
-    
-    // Define work start time (8:00 AM)
-    const workStartTime = TimeOfDay(hour: 8, minute: 0);
-    
-    // Check if late (after 8:00 AM)
-    final isLate = checkInTime.hour > workStartTime.hour || 
-                   (checkInTime.hour == workStartTime.hour && checkInTime.minute > workStartTime.minute);
-    
-    // If no check out and it's today, show "Working"
-    if (attendance.checkOutTime == null) {
-      if (isToday) {
-        return 'Working';
-      } else {
-        // If it's not today and no checkout, it's incomplete
-        return 'Incomplete';
-      }
-    }
-    
-    // Parse check out time
-    final checkOutTime = TimeOfDay(
-      hour: int.parse(attendance.checkOutTime!.split(':')[0]),
-      minute: int.parse(attendance.checkOutTime!.split(':')[1]),
-    );
-    
-    // Define normal work end time (17:00 PM)
-    const workEndTime = TimeOfDay(hour: 17, minute: 0);
-    
-    // Check if early departure (before 17:00 PM)
-    final isEarly = checkOutTime.hour < workEndTime.hour || 
-                    (checkOutTime.hour == workEndTime.hour && checkOutTime.minute < workEndTime.minute);
-    
-    // Priority: Late stays late even if completed (as per requirement)
-    if (isLate) {
-      return 'Late';
-    }
-    
-    // Early departure (leave early)
-    if (isEarly) {
-      return 'Leave';
-    }
-    
-    // Normal completion
-    return 'Completed';
-  }
-
-  Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'working':
-        return AppColors.primaryGreen;
-      case 'late':
-        return AppColors.vibrantOrange;
-      case 'completed':
-        return AppColors.primaryBlue;
-      case 'leave':
-        return AppColors.primaryBlue;
-      case 'absent':
-        return AppColors.errorRed;
-      case 'incomplete':
-        return Colors.grey;
-      default:
-        return AppColors.black;
-    }
-  }
-
-  String _calculateWorkHours(Attendance attendance) {
-    if (attendance.checkInTime == null || attendance.checkOutTime == null) {
-      return "-";
-    }
-
-    try {
-      final checkIn = TimeOfDay(
-        hour: int.parse(attendance.checkInTime!.split(':')[0]),
-        minute: int.parse(attendance.checkInTime!.split(':')[1]),
-      );
-      
-      final checkOut = TimeOfDay(
-        hour: int.parse(attendance.checkOutTime!.split(':')[0]),
-        minute: int.parse(attendance.checkOutTime!.split(':')[1]),
-      );
-
-      // Convert to minutes for easier calculation
-      final checkInMinutes = checkIn.hour * 60 + checkIn.minute;
-      final checkOutMinutes = checkOut.hour * 60 + checkOut.minute;
-      
-      final totalMinutes = checkOutMinutes - checkInMinutes;
-      
-      if (totalMinutes <= 0) return "-";
-      
-      final hours = totalMinutes ~/ 60;
-      final minutes = totalMinutes % 60;
-      
-      return "${hours}h ${minutes}m";
-    } catch (e) {
-      return "-";
-    }
-  }
+class AttendancePage extends StatelessWidget {
+  const AttendancePage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildHeader(),
-            Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    /// Attendance Statistics
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: AttendanceStats(),
-                    ),
+      backgroundColor: AppColors.backgroundGray,
 
-                    /// History Section
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            "Recent History",
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const AttendanceHistoryPage(),
-                                ),
-                              );
-                            },
-                            child: const Text("View All"),
-                          ),
-                        ],
+      appBar: AppBar(
+        backgroundColor: AppColors.pureWhite,
+        elevation: 0,
+        centerTitle: false,
+        automaticallyImplyLeading: false,
+        title: const Text(
+          'Attendance',
+          style: TextStyle(
+            color: AppColors.neutral800,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ),
+
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.only(bottom: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 12), // Added more space from AppBar
+            // Tanggal
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: DateRow(),
+            ),
+            const SizedBox(height: 12), // Increased spacing after date
+
+            // Stat ringkas
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: _StatsBar(
+                stats: const [
+                  _StatItem('Present', '28', AppColors.primaryGreen),
+                  _StatItem('Late', '15', AppColors.primaryRed),
+                  _StatItem('Sick', '15', AppColors.primaryYellow),
+                  _StatItem('Leave', '5', AppColors.accentBlue),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 10),
+
+            // ====== Tambahan: Judul "Data" + garis ======
+            const LinedSectionTitle(title: "Data"),
+
+            // Aksi: Filter • Export • Attendance Form
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: Row(
+                children: [
+                  // FILTER
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        // TODO: tampilkan filter
+                      },
+                      icon: const Icon(Icons.filter_list, size: 18),
+                      label: const Text('Filter'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.neutral800,
+                        side: const BorderSide(color: AppColors.dividerGray),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                     ),
+                  ),
+                  const SizedBox(width: 8),
 
-                    /// History List
-                    _isLoading
-                        ? const Padding(
-                            padding: EdgeInsets.all(32),
-                            child: Center(child: CircularProgressIndicator()),
-                          )
-                        : _error != null
-                            ? Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Column(
-                                  children: [
-                                    Text(
-                                      _error!,
-                                      style: const TextStyle(color: AppColors.errorRed),
-                                      textAlign: TextAlign.center,
-                                    ),
-                                    const SizedBox(height: 8),
-                                    ElevatedButton(
-                                      onPressed: _loadRecentAttendance,
-                                      child: const Text('Retry'),
-                                    ),
-                                  ],
-                                ),
-                              )
-                            : _recentAttendance.isEmpty
-                                ? const Padding(
-                                    padding: EdgeInsets.all(32),
-                                    child: Center(
-                                      child: Text(
-                                        'No attendance records found',
-                                        style: TextStyle(color: Colors.grey),
-                                      ),
-                                    ),
-                                  )
-                                : ListView.separated(
-                                    physics: const NeverScrollableScrollPhysics(),
-                                    shrinkWrap: true,
-                                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                                    itemCount: _recentAttendance.length,
-                                    separatorBuilder: (_, __) => const SizedBox(height: 12),
-                                    itemBuilder: (context, index) {
-                                      final attendance = _recentAttendance[index];
-                                      final status = _getAttendanceStatus(attendance);
-                                      final statusColor = _getStatusColor(status);
-                                      
-                                      // Format date
-                                      final date = DateTime.parse(attendance.date);
-                                      final formattedDate = DateFormat('MMMM d, yyyy').format(date);
+                  // EXPORT
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => _exportAttendanceExcel(context),
+                      icon: const Icon(Icons.file_download_outlined, size: 18),
+                      label: const Text('Export'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.white,
+                        backgroundColor: AppColors.primaryRed,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
 
-                                      return AttendanceHistoryCard(
-                                        date: formattedDate,
-                                        clockIn: attendance.checkInTime ?? "-",
-                                        clockOut: attendance.checkOutTime ?? "-",
-                                        status: status,
-                                        statusColor: statusColor,
-                                        onTap: () {
-                                          showDialog(
-                                            context: context,
-                                            builder: (context) => AttendanceDetailDialog(
-                                              date: formattedDate,
-                                              status: status,
-                                              checkIn: attendance.checkInTime ?? "-",
-                                              checkOut: attendance.checkOutTime ?? "-",
-                                              workHours: _calculateWorkHours(attendance),
-                                              location: attendance.checkInLocation ?? "Unknown",
-                                              address: attendance.checkInLocation ?? "Address not available",
-                                              lat: attendance.latitude?.toString() ?? "0",
-                                              long: attendance.longitude?.toString() ?? "0",
-                                            ),
-                                          );
-                                        },
-                                      );
-                                    },
-                                  ),
-                    const SizedBox(height: 16),
-                  ],
-                ),
+                  // ATTENDANCE FORM
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const AttendanceFormPage(),
+                          ),
+                        );
+                      },
+                      icon: const Icon(
+                        Icons.assignment_turned_in_outlined,
+                        size: 18,
+                      ),
+                      label: const Text('Attendance Form'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primaryBlue,
+                        foregroundColor: AppColors.pureWhite,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        elevation: 0,
+                      ),
+                    ),
+                  ),
+                ],
               ),
+            ),
+
+            const SizedBox(height: 12),
+
+            // List kartu attendance (contoh)
+            AttendanceCard(
+              name: "Haidar Mahapatih",
+              division: "Mobile Developer",
+              status: "Present",
+              statusColor: AppColors.primaryGreen,
+              clockIn: "08:33:10",
+              clockOut: "16:03:10",
+              date: "20 Januari 2025",
+            ),
+            AttendanceCard(
+              name: "Septa Puma",
+              division: "Web Developer",
+              status: "Sick",
+              statusColor: AppColors.primaryYellow,
+              clockIn: "-",
+              clockOut: "-",
+              date: "19 Januari 2025",
+            ),
+            AttendanceCard(
+              name: "Agung Riyadi",
+              division: "Backend Developer",
+              status: "Late",
+              statusColor: AppColors.primaryRed,
+              clockIn: "09:45:56",
+              clockOut: "-",
+              date: "18 Januari 2025",
             ),
           ],
         ),
       ),
 
-      bottomNavigationBar: CustomBottomNavRouter(
+      bottomNavigationBar: const CustomBottomNavRouter(
         currentIndex: 1,
-        items: UserNavItems.items,
+        items: AdminNavItems.items,
       ),
     );
   }
+}
 
-  Widget _buildHeader() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.pureWhite,
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(20),
-          bottomRight: Radius.circular(20),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+/// Card stats responsif (Row di layar lebar, Wrap di layar sempit)
+class _StatsBar extends StatelessWidget {
+  final List<_StatItem> stats;
+  const _StatsBar({required this.stats});
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, c) {
+        final w = c.maxWidth;
+        final bool narrow = w < 360;
+
+        final content = [
+          for (int i = 0; i < stats.length; i++) ...[
+            if (i != 0)
+              narrow
+                  ? const SizedBox(width: 10, height: 10)
+                  : const VerticalDividerCustom(),
+            _StatBox(item: stats[i]),
+          ],
+        ];
+
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          decoration: BoxDecoration(
+            color: AppColors.pureWhite,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: const [
+              BoxShadow(
+                color: AppColors.shadowColor,
+                blurRadius: 12,
+                offset: Offset(0, 4),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          child: narrow
+              ? Wrap(
+                  spacing: 12,
+                  runSpacing: 8,
+                  alignment: WrapAlignment.spaceBetween,
+                  children: content,
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: content,
+                ),
+        );
+      },
+    );
+  }
+}
+
+class _StatBox extends StatelessWidget {
+  final _StatItem item;
+  const _StatBox({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          const Text(
-            "My Attendance",
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: AppColors.black87,
-            ),
+          AttendanceStat(
+            label: item.label,
+            value: item.value,
+            color: item.color,
           ),
         ],
       ),
     );
+  }
+}
+
+class _StatItem {
+  final String label;
+  final String value;
+  final Color color;
+  const _StatItem(this.label, this.value, this.color);
+}
+
+Future<void> _exportAttendanceExcel(BuildContext context) async {
+  // TODO: ambil dari data asli (provider/repo). Ini contoh dummy:
+  final data = <Map<String, String>>[
+    {
+      'Name': 'Haidar Mahapatih',
+      'Division': 'Mobile Developer',
+      'Status': 'Present',
+      'Clock In': '08:33:10',
+      'Clock Out': '16:03:10',
+      'Date': '20 Januari 2025',
+    },
+    {
+      'Name': 'Septa Puma',
+      'Division': 'Web Developer',
+      'Status': 'Sick',
+      'Clock In': '-',
+      'Clock Out': '-',
+      'Date': '19 Januari 2025',
+    },
+    {
+      'Name': 'Agung Riyadi',
+      'Division': 'Backend Developer',
+      'Status': 'Late',
+      'Clock In': '09:45:56',
+      'Clock Out': '-',
+      'Date': '18 Januari 2025',
+    },
+  ];
+
+  try {
+    final excel = Excel.createExcel();
+    final sheet = excel['Attendance'];
+    excel.setDefaultSheet('Attendance');
+
+    // ===== Header (row 0) =====
+    const headers = ['Name', 'Division', 'Status', 'Clock In', 'Clock Out', 'Date'];
+    for (var c = 0; c < headers.length; c++) {
+      final cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: c, rowIndex: 0));
+      cell.value = TextCellValue(headers[c]);        // ← v4: pakai TextCellValue
+      cell.cellStyle = CellStyle(bold: true);
+    }
+
+    // ===== Data rows (mulai rowIndex = 1) =====
+    for (var r = 0; r < data.length; r++) {
+      final row = data[r];
+      final values = [
+        row['Name'] ?? '',
+        row['Division'] ?? '',
+        row['Status'] ?? '',
+        row['Clock In'] ?? '',
+        row['Clock Out'] ?? '',
+        row['Date'] ?? '',
+      ];
+      for (var c = 0; c < values.length; c++) {
+        sheet
+            .cell(CellIndex.indexByColumnRow(columnIndex: c, rowIndex: r + 1))
+            .value = TextCellValue(values[c]);       // ← v4: pakai TextCellValue
+      }
+    }
+
+    // Simpan
+    final saved = excel.save();                      // List<int>?
+    if (saved == null) throw 'Failed to generate file bytes';
+    final bytes = Uint8List.fromList(saved);
+    final filename = 'attendance_${DateTime.now().millisecondsSinceEpoch}.xlsx';
+
+    await FileSaver.instance.saveFile(
+      name: filename,
+      bytes: bytes,
+      mimeType: MimeType.microsoftExcel,
+    );
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Exported to Excel successfully'),
+          backgroundColor: AppColors.primaryGreen,
+        ),
+      );
+    }
+  } catch (e) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Export failed: $e'),
+          backgroundColor: AppColors.errorRed,
+        ),
+      );
+    }
   }
 }

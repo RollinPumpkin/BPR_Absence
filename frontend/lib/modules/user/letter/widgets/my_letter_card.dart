@@ -135,7 +135,6 @@ class MyLetterCard extends StatelessWidget {
       ),
     );
   }
-  }
 
   void _showLetterDetails(BuildContext context) {
     showDialog(
