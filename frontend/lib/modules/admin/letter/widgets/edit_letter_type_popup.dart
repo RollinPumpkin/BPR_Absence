@@ -36,6 +36,8 @@ class EditLetterTypePopup extends StatelessWidget {
         );
 
     return Dialog(
+      backgroundColor: AppColors.pureWhite,         
+      surfaceTintColor: Colors.transparent, 
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: ConstrainedBox(
