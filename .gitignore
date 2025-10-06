@@ -1,0 +1,50 @@
+# Dependencies
+node_modules/
+.npm
+.yarn
+
+# Environment variables
+.env
+.env.local
+.env.production
+
+# Firebase credentials
+backend/*firebase*adminsdk*.json
+backend/google-services.json
+
+# Flutter/Dart
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Database
+*.db
+*.sqlite
+
+# Build outputs
+dist/
+out/
+target/
+
+# Temporary files
+*.tmp
+*.temp

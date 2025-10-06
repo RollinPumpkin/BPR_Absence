@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Location Map</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossorigin=""/>
+    
+    <!-- Leaflet JavaScript -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+            crossorigin=""></script>
+    
+    <style>
+        #map {
+            height: 200px;
+            width: 100%;
+            border-radius: 8px;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        .map-container {
+            padding: 0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+    <div class="map-container">
+        <div id="map"></div>
+    </div>
+
+    <script>
+        let map;
+        let marker;
+
+        // Initialize map
+        function initializeMap(lat = -7.942041, lng = 112.587197, zoom = 15) {
+            // Create map
+            map = L.map('map').setView([lat, lng], zoom);
+
+            // Add OpenStreetMap tile layer
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 18,
+            }).addTo(map);
+
+            // Add marker
+            marker = L.marker([lat, lng])
+                .addTo(map)
+                .bindPopup('Current Location')
+                .openPopup();
+        }
+
+        // Update map location
+        function updateLocation(lat, lng, zoom = 15) {
+            if (map) {
+                map.setView([lat, lng], zoom);
+                if (marker) {
+                    marker.setLatLng([lat, lng]);
+                }
+            } else {
+                initializeMap(lat, lng, zoom);
+            }
+        }
+
+        // Message handler from Flutter
+        window.addEventListener('message', function(event) {
+            if (event.data.type === 'updateLocation') {
+                updateLocation(event.data.lat, event.data.lng, event.data.zoom || 15);
+            }
+        });
+
+        // Initialize map when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeMap();
+        });
+
+        // Notify Flutter that map is ready
+        window.parent.postMessage({type: 'mapReady'}, '*');
+    </script>
+</body>
+</html>

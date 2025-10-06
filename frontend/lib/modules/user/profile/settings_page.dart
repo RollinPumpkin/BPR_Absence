@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/core/constants/colors.dart';
+import 'package:frontend/core/services/notification_service.dart';
 import 'check_email_page.dart';
 import 'help_desk_page.dart';
 
@@ -13,6 +14,40 @@ class UserSettingsPage extends StatefulWidget {
 class _UserSettingsPageState extends State<UserSettingsPage> {
   bool notificationEnabled = true;
   bool faceIdEnabled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNotificationSetting();
+  }
+
+  Future<void> _loadNotificationSetting() async {
+    final setting = await NotificationService.getNotificationSetting();
+    setState(() {
+      notificationEnabled = setting;
+    });
+  }
+
+  Future<void> _updateNotificationSetting(bool value) async {
+    await NotificationService.setNotificationSetting(value);
+    setState(() {
+      notificationEnabled = value;
+    });
+    
+    // Show feedback to user
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            value 
+                ? 'Notifikasi telah diaktifkan' 
+                : 'Notifikasi telah dinonaktifkan',
+          ),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,9 +73,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
             const SizedBox(height: 8),
             _buildSettingsCard([
               _buildToggleItem('Notification', notificationEnabled, (value) {
-                setState(() {
-                  notificationEnabled = value;
-                });
+                _updateNotificationSetting(value);
               }),
               _buildDivider(),
               _buildNavigationItem('Language', 'English'),

@@ -1,104 +1,138 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:provider/provider.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'core/no_animations.dart';
 
-// Auth
+import 'data/providers/auth_provider.dart';
+import 'data/providers/attendance_provider.dart';
+
 import 'modules/auth/login_page.dart';
-// import 'modules/auth/register_page.dart';
 import 'modules/auth/forgot-pass_page.dart';
 import 'modules/auth/email_page.dart';
 import 'modules/auth/reset_password_page.dart';
 import 'modules/auth/expired-link_page.dart';
 
-// Splash
 import 'modules/splash_page.dart';
 
-// Admin
 import 'modules/admin/dashboard/dashboard_page.dart';
 import 'modules/admin/employee/employee_page.dart';
+import 'modules/admin/report/report_page.dart';
 import 'modules/admin/attendance/attendance_page.dart';
 import 'modules/admin/assignment/assignment_page.dart';
 import 'modules/admin/letter/letter_page.dart';
 import 'modules/admin/profile/profile_page.dart';
 
-// User
-import 'modules/user/dashboard/dashboard_page.dart';
-import 'modules/user/attendance/attendance_page.dart';
-import 'modules/user/attendance/user_attendance_form_page.dart';
-import 'modules/user/assignment/assignment_page.dart';
-import 'modules/user/letters/letters_page.dart';
-import 'modules/user/profile/profile_page.dart';
+import 'modules/user/dashboard/dashboard_page.dart' as user_dash;
+import 'modules/user/attendance/attendance_page.dart' as user_att;
+import 'modules/user/attendance/attendance_form_page.dart';
+// import 'modules/user/attendance/user_attendance_form_page.dart'; // Disabled - using attendance_form_page.dart instead
+import 'modules/user/assignment/assignment_page.dart' as user_assign;
+import 'modules/user/letters/letters_page.dart' as user_letters;
+import 'modules/user/profile/profile_page.dart' as user_profile;
+import 'data/services/api_service.dart';
+
+Future<void> requestCameraPermissionOnStartup() async {
+  if (!kIsWeb) {
+    try {
+      final permission = await Permission.camera.status;
+      print('📷 App Startup - Camera permission status: $permission');
+      
+      if (permission.isDenied || permission.isLimited) {
+        print('📷 App Startup - Requesting camera permission...');
+        final result = await Permission.camera.request();
+        print('📷 App Startup - Camera permission result: $result');
+        
+        if (result.isGranted) {
+          print('📷 App Startup - Camera permission granted successfully');
+        } else if (result.isPermanentlyDenied) {
+          print('📷 App Startup - Camera permission permanently denied');
+        } else {
+          print('📷 App Startup - Camera permission denied');
+        }
+      } else if (permission.isGranted) {
+        print('📷 App Startup - Camera permission already granted');
+      }
+    } catch (e) {
+      print('📷 App Startup - Error checking camera permission: $e');
+    }
+  } else {
+    print('📷 App Startup - Web platform, camera permission handled by browser');
+  }
+}
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Initialize date formatting with error handling
   try {
     await initializeDateFormatting('id_ID', null);
-  } catch (e) {
-    print('Date formatting initialization failed: $e');
-    // Continue anyway, app can work without Indonesian locale
-  }
-
+  } catch (_) {}
+  
+  // Initialize API service and load stored token
+  await ApiService.instance.initializeToken();
+  
+  // Request camera permission on app startup (for mobile platforms)
+  await requestCameraPermissionOnStartup();
+  
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
-
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'BPR Absence',
-      theme: ThemeData(useMaterial3: true, fontFamily: 'Roboto'),
-      initialRoute: '/', // Splash pertama
-      onGenerateRoute: (settings) {
-        final routeMap = {
-          // General
-          '/': (_) => const SplashPage(),
-          '/login': (_) => const LoginPage(),
-          // '/register': (_) => const RegisterPage(),
-          '/forgot-password': (_) => const ForgotPassPage(),
-          '/forgot-password/email': (_) => const EmailPage(),
-          '/forgot-password/email/Expired-link': (_) => const LinkExpiredPage(),
-          '/forgot-password/reset-password': (_) => const ResetPasswordPage(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => AttendanceProvider()),
+      ],
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'BPR Absence',
+        scrollBehavior: const AppScrollBehavior(),
+        theme: ThemeData(
+          useMaterial3: true,
+          fontFamily: 'Roboto',
+          pageTransitionsTheme: const PageTransitionsTheme(
+            builders: {
+              TargetPlatform.android: NoTransitionsBuilder(),
+              TargetPlatform.iOS: NoTransitionsBuilder(),
+            TargetPlatform.macOS: NoTransitionsBuilder(),
+            TargetPlatform.linux: NoTransitionsBuilder(),
+            TargetPlatform.windows: NoTransitionsBuilder(),
+            TargetPlatform.fuchsia: NoTransitionsBuilder(),
+          },
+        ),
+        splashFactory: NoSplash.splashFactory,
+        highlightColor: Colors.transparent,
+        splashColor: Colors.transparent,
+        hoverColor: Colors.transparent,
+      ),
+      initialRoute: '/',
+      routes: {
+        '/': (_) => const SplashPage(),
+        '/login': (_) => const LoginPage(),
+        '/forgot-password': (_) => const ForgotPassPage(),
+        '/forgot-password/email': (_) => const EmailPage(),
+        '/forgot-password/email/Expired-link': (_) => const LinkExpiredPage(),
+        '/forgot-password/reset-password': (_) => const ResetPasswordPage(),
 
-          // Admin routes
-          '/admin/dashboard': (_) => const AdminDashboardPage(),
-          '/admin/employees': (_) => const EmployeePage(),
-          '/admin/attendance': (_) => const AttendancePage(),
-          '/admin/assignment': (_) => const AssignmentPage(),
-          '/admin/letter': (_) => const LetterPage(),
-          '/admin/profile': (_) => const ProfilePage(),
+        '/admin/dashboard': (_) => const AdminDashboardPage(),
+        '/admin/employees': (_) => const EmployeePage(),
+        '/admin/report': (_) => const ReportPage(),
+        '/admin/attendance': (_) => const AttendancePage(),
+        '/admin/assignment': (_) => const AssignmentPage(),
+        '/admin/letter': (_) => const LetterPage(),
+        '/admin/profile': (_) => const ProfilePage(),
 
-          // User routes
-          '/user/dashboard': (_) => const UserDashboardPage(),
-          '/user/attendance': (_) => const UserAttendancePage(),
-          '/user/attendance/form': (_) => const UserAttendanceFormPage(),
-          '/user/assignment': (_) => const UserAssignmentPage(),
-          '/user/letter': (_) => const UserLettersPage(),
-          '/user/profile': (_) => const UserProfilePage(),
-        };
-
-        final builder = routeMap[settings.name];
-        if (builder != null) {
-          // For user pages, use zero transition
-          if (settings.name?.startsWith('/user/') ?? false) {
-            return PageRouteBuilder(
-              settings: settings,
-              pageBuilder: (context, animation, secondaryAnimation) => builder(context),
-              transitionDuration: Duration.zero,
-              reverseTransitionDuration: Duration.zero,
-            );
-          }
-          // For other pages, use default MaterialPageRoute
-          return MaterialPageRoute(
-            settings: settings,
-            builder: builder,
-          );
-        }
-        return null;
+        '/user/dashboard': (_) => const user_dash.UserDashboardPage(),
+        '/user/attendance': (_) => const user_att.UserAttendancePage(),
+        '/user/attendance/form': (_) => const AttendanceFormPage(),
+        '/user/assignment': (_) => const user_assign.UserAssignmentPage(),
+        '/user/letter': (_) => const user_letters.UserLettersPage(),
+        '/user/profile': (_) => const user_profile.UserProfilePage(),
       },
+      ),
     );
   }
 }

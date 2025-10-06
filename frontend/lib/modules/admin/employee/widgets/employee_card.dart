@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:frontend/core/constants/colors.dart';
 import 'package:frontend/modules/admin/employee/pages/edit_page.dart';
 import 'package:frontend/modules/admin/employee/pages/details_page.dart';
+import 'package:frontend/modules/admin/employee/models/employee.dart';
 
 class EmployeeCard extends StatelessWidget {
   final String name;
@@ -24,47 +25,39 @@ class EmployeeCard extends StatelessWidget {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          title: const Text(
+            'Confirm Delete',
+            style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.neutral800),
           ),
           content: const Text(
-            "Are You sure want to delete this data?",
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 16),
+            "Are you sure you want to delete this employee?",
+            style: TextStyle(color: AppColors.neutral800),
           ),
-          actionsAlignment: MainAxisAlignment.center,
+          actionsAlignment: MainAxisAlignment.end,
           actions: [
-            // Cancel Button
             TextButton(
-              style: TextButton.styleFrom(
-                foregroundColor: AppColors.black87,
-                backgroundColor: Colors.grey.shade200,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(6),
-                ),
-              ),
-              onPressed: () {
-                Navigator.pop(context); // Tutup dialog
-              },
+              style: TextButton.styleFrom(foregroundColor: AppColors.neutral800),
+              onPressed: () => Navigator.pop(context),
               child: const Text("Cancel"),
             ),
-
-            // Yes Button
-            TextButton(
-              style: TextButton.styleFrom(
-                foregroundColor: AppColors.pureWhite,
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primaryRed,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(6),
-                ),
+                foregroundColor: AppColors.pureWhite,
+                elevation: 0,
               ),
               onPressed: () {
                 Navigator.pop(context);
-                // 👉 Tambahin logic hapus data di sini
+                // TODO: delete logic
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Employee deleted'),
+                    backgroundColor: AppColors.primaryRed,
+                  ),
+                );
               },
-              child: const Text("Yes"),
+              child: const Text("Delete"),
             ),
           ],
         );
@@ -74,6 +67,15 @@ class EmployeeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Instance Employee dari data yang ada di kartu
+    final emp = Employee(
+      fullName: name,
+      division: division,
+      position: position,
+      mobileNumber: phone,
+      // field lain boleh diisi saat punya data
+    );
+
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       margin: const EdgeInsets.only(bottom: 12),
@@ -84,7 +86,7 @@ class EmployeeCard extends StatelessWidget {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => const DetailsPage(),
+              builder: (context) => DetailsPage(employee: emp),
             ),
           );
         },
@@ -99,7 +101,7 @@ class EmployeeCard extends StatelessWidget {
                 children: [
                   const CircleAvatar(
                     radius: 28,
-                    backgroundColor: Colors.grey,
+                    backgroundColor: AppColors.neutral300,
                     child: Icon(Icons.person, size: 32, color: AppColors.pureWhite),
                   ),
                   const SizedBox(width: 12),
@@ -116,6 +118,7 @@ class EmployeeCard extends StatelessWidget {
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 18,
+                                  color: AppColors.neutral800,
                                 ),
                               ),
                             ),
@@ -124,7 +127,7 @@ class EmployeeCard extends StatelessWidget {
                               style: const TextStyle(
                                 color: AppColors.primaryGreen,
                                 fontSize: 14,
-                                fontWeight: FontWeight.w500,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ],
@@ -132,8 +135,8 @@ class EmployeeCard extends StatelessWidget {
                         const SizedBox(height: 2),
                         Text(
                           division,
-                          style: TextStyle(
-                            color: Colors.grey.shade600,
+                          style: const TextStyle(
+                            color: AppColors.neutral100,
                             fontSize: 13,
                           ),
                         ),
@@ -145,23 +148,23 @@ class EmployeeCard extends StatelessWidget {
 
               const SizedBox(height: 12),
 
-              /// Jabatan & No Hp
-              Text(
-                "Jabatan",
+              /// Position & Phone
+              const Text(
+                "Position",
                 style: TextStyle(
-                  color: Colors.grey.shade600,
+                  color: AppColors.neutral100,
                   fontSize: 13,
                 ),
               ),
               Text(
                 position,
-                style: const TextStyle(fontSize: 14),
+                style: const TextStyle(fontSize: 14, color: AppColors.neutral800),
               ),
               const SizedBox(height: 8),
-              Text(
-                "No. Hp",
+              const Text(
+                "Phone",
                 style: TextStyle(
-                  color: Colors.grey.shade600,
+                  color: AppColors.neutral100,
                   fontSize: 13,
                 ),
               ),
@@ -180,25 +183,28 @@ class EmployeeCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   IconButton(
+                    tooltip: 'Export PDF',
                     icon: const Icon(Icons.picture_as_pdf, color: AppColors.primaryGreen),
-                    onPressed: () {},
+                    onPressed: () {
+                      // TODO: export pdf
+                    },
                   ),
                   IconButton(
+                    tooltip: 'Edit',
                     icon: const Icon(Icons.edit, color: AppColors.primaryYellow),
                     onPressed: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const EditPage(),
+                          builder: (context) => EditPage(employee: emp),
                         ),
                       );
                     },
                   ),
                   IconButton(
+                    tooltip: 'Delete',
                     icon: const Icon(Icons.delete, color: AppColors.primaryRed),
-                    onPressed: () {
-                      _showDeleteDialog(context);
-                    },
+                    onPressed: () => _showDeleteDialog(context),
                   ),
                 ],
               )

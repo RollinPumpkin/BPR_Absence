@@ -81,5 +81,5 @@ class AppColors {
   @Deprecated('Use primaryGreen')
   static const Color green = primaryGreen;
 
-  static get primaryBlueGrey => null;
+  static Color? get primaryBlueGrey => null; // Added type annotation
 }

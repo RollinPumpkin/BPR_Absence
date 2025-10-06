@@ -2,14 +2,179 @@ import 'package:flutter/material.dart';
 import 'package:frontend/core/constants/colors.dart';
 import 'package:frontend/core/widgets/custom_bottom_nav_router.dart';
 import 'package:frontend/modules/user/shared/user_nav_items.dart';
+import 'package:frontend/data/services/attendance_service.dart';
+import 'package:frontend/data/models/attendance.dart';
+import 'package:intl/intl.dart';
 
 import 'widgets/attendance_stats.dart';
 import 'widgets/attendance_history_card.dart';
 import 'widgets/attendance_detail_dialog.dart';
 import 'attendance_history_page.dart';
 
-class UserAttendancePage extends StatelessWidget {
+class UserAttendancePage extends StatefulWidget {
   const UserAttendancePage({super.key});
+
+  @override
+  State<UserAttendancePage> createState() => _UserAttendancePageState();
+}
+
+class _UserAttendancePageState extends State<UserAttendancePage> {
+  final AttendanceService _attendanceService = AttendanceService();
+  List<Attendance> _recentAttendance = [];
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRecentAttendance();
+  }
+
+  Future<void> _loadRecentAttendance() async {
+    try {
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
+
+      final response = await _attendanceService.getMonthlySummary();
+      
+      if (response.isSuccess && response.data != null) {
+        setState(() {
+          // Take only the last 5 records for recent history
+          _recentAttendance = response.data!.attendance.take(5).toList();
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _error = response.message ?? 'Failed to load attendance data';
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _error = 'Error loading attendance data: ${e.toString()}';
+        _isLoading = false;
+      });
+    }
+  }
+
+  String _getAttendanceStatus(Attendance attendance) {
+    final now = DateTime.now();
+    final attendanceDate = DateTime.parse(attendance.date);
+    final isToday = DateFormat('yyyy-MM-dd').format(now) == attendance.date;
+    
+    // If no check in, check the database status first
+    if (attendance.checkInTime == null) {
+      // Check if there's a leave/sick status from database
+      if (attendance.status == 'leave' || attendance.status == 'sick') {
+        return 'Leave';
+      }
+      // If no status in database, it's absent
+      return 'Absent';
+    }
+    
+    // Parse check in time
+    final checkInTime = TimeOfDay(
+      hour: int.parse(attendance.checkInTime!.split(':')[0]),
+      minute: int.parse(attendance.checkInTime!.split(':')[1]),
+    );
+    
+    // Define work start time (8:00 AM)
+    const workStartTime = TimeOfDay(hour: 8, minute: 0);
+    
+    // Check if late (after 8:00 AM)
+    final isLate = checkInTime.hour > workStartTime.hour || 
+                   (checkInTime.hour == workStartTime.hour && checkInTime.minute > workStartTime.minute);
+    
+    // If no check out and it's today, show "Working"
+    if (attendance.checkOutTime == null) {
+      if (isToday) {
+        return 'Working';
+      } else {
+        // If it's not today and no checkout, it's incomplete
+        return 'Incomplete';
+      }
+    }
+    
+    // Parse check out time
+    final checkOutTime = TimeOfDay(
+      hour: int.parse(attendance.checkOutTime!.split(':')[0]),
+      minute: int.parse(attendance.checkOutTime!.split(':')[1]),
+    );
+    
+    // Define normal work end time (17:00 PM)
+    const workEndTime = TimeOfDay(hour: 17, minute: 0);
+    
+    // Check if early departure (before 17:00 PM)
+    final isEarly = checkOutTime.hour < workEndTime.hour || 
+                    (checkOutTime.hour == workEndTime.hour && checkOutTime.minute < workEndTime.minute);
+    
+    // Priority: Late stays late even if completed (as per requirement)
+    if (isLate) {
+      return 'Late';
+    }
+    
+    // Early departure (leave early)
+    if (isEarly) {
+      return 'Leave';
+    }
+    
+    // Normal completion
+    return 'Completed';
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'working':
+        return AppColors.primaryGreen;
+      case 'late':
+        return AppColors.vibrantOrange;
+      case 'completed':
+        return AppColors.primaryBlue;
+      case 'leave':
+        return AppColors.primaryBlue;
+      case 'absent':
+        return AppColors.errorRed;
+      case 'incomplete':
+        return Colors.grey;
+      default:
+        return AppColors.black;
+    }
+  }
+
+  String _calculateWorkHours(Attendance attendance) {
+    if (attendance.checkInTime == null || attendance.checkOutTime == null) {
+      return "-";
+    }
+
+    try {
+      final checkIn = TimeOfDay(
+        hour: int.parse(attendance.checkInTime!.split(':')[0]),
+        minute: int.parse(attendance.checkInTime!.split(':')[1]),
+      );
+      
+      final checkOut = TimeOfDay(
+        hour: int.parse(attendance.checkOutTime!.split(':')[0]),
+        minute: int.parse(attendance.checkOutTime!.split(':')[1]),
+      );
+
+      // Convert to minutes for easier calculation
+      final checkInMinutes = checkIn.hour * 60 + checkIn.minute;
+      final checkOutMinutes = checkOut.hour * 60 + checkOut.minute;
+      
+      final totalMinutes = checkOutMinutes - checkInMinutes;
+      
+      if (totalMinutes <= 0) return "-";
+      
+      final hours = totalMinutes ~/ 60;
+      final minutes = totalMinutes % 60;
+      
+      return "${hours}h ${minutes}m";
+    } catch (e) {
+      return "-";
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,8 +193,6 @@ class UserAttendancePage extends StatelessWidget {
                       padding: const EdgeInsets.all(16),
                       child: AttendanceStats(),
                     ),
-
-                    const SizedBox(height: 20),
 
                     /// History Section
                     Padding(
@@ -61,54 +224,79 @@ class UserAttendancePage extends StatelessWidget {
                     ),
 
                     /// History List
-                    ListView.separated(
-                      physics: const NeverScrollableScrollPhysics(),
-                      shrinkWrap: true,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      itemCount: 5,
-                      separatorBuilder: (_, __) => const SizedBox(height: 12),
-                      itemBuilder: (context, index) {
-                        String status;
-                        Color statusColor;
-                        String clockIn;
+                    _isLoading
+                        ? const Padding(
+                            padding: EdgeInsets.all(32),
+                            child: Center(child: CircularProgressIndicator()),
+                          )
+                        : _error != null
+                            ? Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      _error!,
+                                      style: const TextStyle(color: AppColors.errorRed),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    const SizedBox(height: 8),
+                                    ElevatedButton(
+                                      onPressed: _loadRecentAttendance,
+                                      child: const Text('Retry'),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : _recentAttendance.isEmpty
+                                ? const Padding(
+                                    padding: EdgeInsets.all(32),
+                                    child: Center(
+                                      child: Text(
+                                        'No attendance records found',
+                                        style: TextStyle(color: Colors.grey),
+                                      ),
+                                    ),
+                                  )
+                                : ListView.separated(
+                                    physics: const NeverScrollableScrollPhysics(),
+                                    shrinkWrap: true,
+                                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                                    itemCount: _recentAttendance.length,
+                                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                                    itemBuilder: (context, index) {
+                                      final attendance = _recentAttendance[index];
+                                      final status = _getAttendanceStatus(attendance);
+                                      final statusColor = _getStatusColor(status);
+                                      
+                                      // Format date
+                                      final date = DateTime.parse(attendance.date);
+                                      final formattedDate = DateFormat('MMMM d, yyyy').format(date);
 
-                        if (index == 0) {
-                          status = "Working";
-                          statusColor = AppColors.primaryGreen;
-                          clockIn = "08:30 AM";
-                        } else if (index == 1) {
-                          status = "Late";
-                          statusColor = AppColors.vibrantOrange;
-                          clockIn = "08:45 AM";
-                        } else {
-                          status = "Completed";
-                          statusColor = AppColors.primaryBlue;
-                          clockIn = "08:30 AM";
-                        }
-
-                        return AttendanceHistoryCard(
-                          date: "January ${18 - index}, 2025",
-                          clockIn: clockIn,
-                          clockOut: index == 0 ? "-" : "17:30 PM",
-                          status: status,
-                          statusColor: statusColor,
-                          onTap: () {
-                            showDialog(
-                              context: context,
-                              builder: (context) => AttendanceDetailDialog(
-                                date: "January ${18 - index}, 2025",
-                                status: status,
-                                checkIn: clockIn,
-                                checkOut: index == 0 ? "-" : "17:30 PM",
-                                workHours: index == 0 ? "-" : "8h 30m",
-                                location: "Main Office",
-                                address: "123 Business District, City Center",
-                              ),
-                            );
-                          },
-                        );
-                      },
-                    ),
+                                      return AttendanceHistoryCard(
+                                        date: formattedDate,
+                                        clockIn: attendance.checkInTime ?? "-",
+                                        clockOut: attendance.checkOutTime ?? "-",
+                                        status: status,
+                                        statusColor: statusColor,
+                                        onTap: () {
+                                          showDialog(
+                                            context: context,
+                                            builder: (context) => AttendanceDetailDialog(
+                                              date: formattedDate,
+                                              status: status,
+                                              checkIn: attendance.checkInTime ?? "-",
+                                              checkOut: attendance.checkOutTime ?? "-",
+                                              workHours: _calculateWorkHours(attendance),
+                                              location: attendance.checkInLocation ?? "Unknown",
+                                              address: attendance.checkInLocation ?? "Address not available",
+                                              lat: attendance.latitude?.toString() ?? "0",
+                                              long: attendance.longitude?.toString() ?? "0",
+                                            ),
+                                          );
+                                        },
+                                      );
+                                    },
+                                  ),
                     const SizedBox(height: 16),
                   ],
                 ),
@@ -121,9 +309,6 @@ class UserAttendancePage extends StatelessWidget {
       bottomNavigationBar: CustomBottomNavRouter(
         currentIndex: 1,
         items: UserNavItems.items,
-        style: SimpleNavStyle.preset().copyWith(
-          indicatorColor: AppColors.primaryRed,
-        ),
       ),
     );
   }

@@ -327,7 +327,6 @@ Future<void> _exportAttendanceExcel(BuildContext context) async {
     await FileSaver.instance.saveFile(
       name: filename,
       bytes: bytes,
-      ext: 'xlsx',
       mimeType: MimeType.microsoftExcel,
     );
 

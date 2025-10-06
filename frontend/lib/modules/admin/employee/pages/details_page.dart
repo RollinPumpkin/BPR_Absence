@@ -1,9 +1,47 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/core/constants/colors.dart';
+import 'package:frontend/modules/admin/employee/models/employee.dart';
 import 'package:frontend/modules/admin/employee/pages/edit_page.dart';
+import 'package:intl/intl.dart';
 
 class DetailsPage extends StatelessWidget {
-  const DetailsPage({super.key});
+  final Employee employee;
+  const DetailsPage({super.key, required this.employee});
+
+  String _fmtDate(DateTime? d) {
+    if (d == null) return '—';
+    // tampilkan mirip form: dd / mm / yyyy
+    return '${d.day.toString().padLeft(2, '0')} / '
+           '${d.month.toString().padLeft(2, '0')} / '
+           '${d.year}';
+  }
+
+  String _val(String? s) => (s == null || s.trim().isEmpty) ? '—' : s.trim();
+
+  // untuk masking/spasi nomor telepon agar rapi
+  String _fmtPhone(String? s) {
+    final v = _val(s);
+    if (v == '—') return v;
+    // sederhana: tambahkan spasi setiap 4-5 digit (biar kebaca)
+    final digits = v.replaceAll(RegExp(r'\s+'), '');
+    final parts = <String>[];
+    for (var i = 0; i < digits.length; i += 4) {
+      parts.add(digits.substring(i, i + 4 > digits.length ? digits.length : i + 4));
+    }
+    return parts.join(' ');
+  }
+
+  // format nomor rekening (kelompok 4)
+  String _fmtAccount(String? s) {
+    final v = _val(s);
+    if (v == '—') return v;
+    final d = v.replaceAll(RegExp(r'\s+'), '');
+    final parts = <String>[];
+    for (var i = 0; i < d.length; i += 4) {
+      parts.add(d.substring(i, i + 4 > d.length ? d.length : i + 4));
+    }
+    return parts.join(' ');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +70,7 @@ class DetailsPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Avatar + edit
+            // Avatar + edit icon (dummy)
             Center(
               child: Stack(
                 clipBehavior: Clip.none,
@@ -63,7 +101,6 @@ class DetailsPage extends StatelessWidget {
                       child: InkWell(
                         customBorder: const CircleBorder(),
                         onTap: () {
-                          // opsional: buka ganti foto
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('Change profile picture')),
                           );
@@ -85,7 +122,7 @@ class DetailsPage extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            // Kartu detail
+            // Card detail
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -100,41 +137,51 @@ class DetailsPage extends StatelessWidget {
                 ],
               ),
               child: Column(
-                children: const [
-                  _DetailItem(label: 'First Name', value: 'Septa Puma Surya'),
-                  _DividerLine(),
-                  _DetailItem(label: 'Last Name', value: 'Surya'),
-                  _DividerLine(),
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const _SectionDivider(title: 'Personal Information'),
+                  _DetailItem(label: 'Full Name', value: _val(employee.fullName)),
+                  const _DividerLine(),
+                  _DetailItem(label: 'Email', value: _val(employee.email)),
+                  const _DividerLine(),
+                  _DetailItem(label: 'Role', value: _val(employee.role)),
+                  const _DividerLine(),
+                  _DetailItem(label: 'Mobile Number', value: _fmtPhone(employee.mobileNumber)),
+                  const _DividerLine(),
+                  _DetailItem(label: 'Gender', value: _val(employee.gender)),
+                  const _DividerLine(),
+                  _DetailItem(label: 'Place of Birth', value: _val(employee.placeOfBirth)),
+                  const _DividerLine(),
                   _DetailItem(
                     label: 'Date of Birth',
-                    value: '22 / 05 / 2004',
+                    value: _fmtDate(employee.dateOfBirth),
                     icon: Icons.calendar_today,
                     iconColor: AppColors.darkBlue,
                   ),
-                  _DividerLine(),
-                  _DetailItem(label: 'Place of Birth', value: 'DKI Jakarta 1'),
-                  _DividerLine(),
-                  _DetailItem(label: 'NIK', value: '22323233746474876382393'),
-                  _DividerLine(),
-                  _DetailItem(label: 'Gender', value: 'Male'),
-                  _DividerLine(),
-                  _DetailItem(label: 'Mobile Number', value: '+62174844749043'),
-                  _DividerLine(),
-                  _DetailItem(label: 'Last Education', value: 'Vocational High School'),
-                  _DividerLine(),
-                  _DetailItem(label: 'Contract Type', value: '3 Months'),
-                  _DividerLine(),
-                  _DetailItem(label: 'Position', value: 'Employee'),
-                  _DividerLine(),
-                  _DetailItem(label: 'Devision', value: 'Technology'),
-                  _DividerLine(),
-                  _DetailItem(label: 'Bank', value: 'Bank Central Asia (BCA)'),
-                  _DividerLine(),
-                  _DetailItem(label: 'Account Number', value: '5362728301239437'),
-                  _DividerLine(),
-                  _DetailItem(label: "Account Holder's Name", value: 'Septa Puma Surya'),
-                  _DividerLine(),
-                  _DetailItem(label: 'Warning Letter Type', value: 'None'),
+
+                  const SizedBox(height: 8),
+                  const _SectionDivider(title: 'Employment'),
+                  _DetailItem(label: 'Position', value: _val(employee.position)),
+                  const _DividerLine(),
+                  _DetailItem(label: 'Contract Type', value: _val(employee.contractType)),
+                  const _DividerLine(),
+                  _DetailItem(label: 'Division', value: _val(employee.division)),
+                  const _DividerLine(),
+                  _DetailItem(label: 'Last Education', value: _val(employee.lastEducation)),
+                  const _DividerLine(),
+                  _DetailItem(label: 'NIK', value: _val(employee.nik)),
+
+                  const SizedBox(height: 8),
+                  const _SectionDivider(title: 'Banking'),
+                  _DetailItem(label: 'Bank', value: _val(employee.bank)),
+                  const _DividerLine(),
+                  _DetailItem(label: 'Account Number', value: _fmtAccount(employee.accountNumber)),
+                  const _DividerLine(),
+                  _DetailItem(label: "Account Holder's Name", value: _val(employee.accountHolderName)),
+
+                  const SizedBox(height: 8),
+                  const _SectionDivider(title: 'Other'),
+                  _DetailItem(label: 'Warning Letter Type', value: _val(employee.warningLetterType ?? 'None')),
                 ],
               ),
             ),
@@ -155,6 +202,7 @@ class DetailsPage extends StatelessWidget {
                   icon: const Icon(Icons.edit),
                   label: const Text('Edit', style: TextStyle(fontWeight: FontWeight.w700)),
                   onPressed: () {
+                    // lewatkan Employee ke EditPage kalau EditPage kamu sudah support prefill
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (_) => const EditPage()),
@@ -222,6 +270,8 @@ class DetailsPage extends StatelessWidget {
   }
 }
 
+// ===== Utilities konsisten dengan Add/Edit =====
+
 class _DividerLine extends StatelessWidget {
   const _DividerLine();
 
@@ -230,6 +280,32 @@ class _DividerLine extends StatelessWidget {
     return const Padding(
       padding: EdgeInsets.symmetric(vertical: 10),
       child: Divider(color: AppColors.dividerGray, height: 1),
+    );
+  }
+}
+
+class _SectionDivider extends StatelessWidget {
+  final String title;
+  const _SectionDivider({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12, top: 6),
+      child: Row(
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              color: AppColors.neutral800,
+              fontWeight: FontWeight.w800,
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(width: 10),
+          const Expanded(child: Divider(color: AppColors.dividerGray, height: 1)),
+        ],
+      ),
     );
   }
 }
@@ -249,6 +325,18 @@ class _DetailItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const labelStyle = TextStyle(
+      fontSize: 12,
+      color: AppColors.neutral500,
+      fontWeight: FontWeight.w700,
+    );
+    const valueStyle = TextStyle(
+      fontSize: 14,
+      color: AppColors.neutral800,
+      fontWeight: FontWeight.w600,
+      height: 1.35,
+    );
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -261,26 +349,9 @@ class _DetailItem extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppColors.neutral500,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
+              Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: labelStyle),
               const SizedBox(height: 4),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: AppColors.neutral800,
-                  fontWeight: FontWeight.w600,
-                  height: 1.35,
-                ),
-              ),
+              Text(value, style: valueStyle),
             ],
           ),
         ),

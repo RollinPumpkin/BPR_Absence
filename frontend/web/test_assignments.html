@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Assignment Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .log { background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        button { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Assignment API Test</h1>
+        <button onclick="testAssignments()">Run Test</button>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        async function testAssignments() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<div class="log">🚀 Starting assignment tests...</div>';
+
+            try {
+                // Step 1: Login
+                appendLog('🔐 Step 1: Logging in...');
+                
+                const loginResponse = await fetch('http://localhost:3000/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: 'user@gmail.com',
+                        password: 'user123'
+                    })
+                });
+
+                const loginData = await loginResponse.json();
+                
+                if (loginData.success) {
+                    appendLog('✅ Login successful', 'success');
+                    const token = loginData.data.token;
+                    appendLog(`🔑 Token received: ${token.substring(0, 20)}...`);
+
+                    // Step 2: Get assignments
+                    appendLog('📋 Step 2: Getting upcoming assignments...');
+                    
+                    const assignmentsResponse = await fetch('http://localhost:3000/api/assignments/upcoming', {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    const assignmentsData = await assignmentsResponse.json();
+                    
+                    if (assignmentsData.success) {
+                        appendLog('✅ Assignments retrieved successfully', 'success');
+                        appendLog(`📊 Found ${assignmentsData.data.count} assignments:`);
+                        
+                        assignmentsData.data.assignments.forEach((assignment, index) => {
+                            const dueDate = new Date(assignment.dueDate);
+                            appendLog(`  ${index + 1}. ${assignment.title} (${assignment.priority}) - Due: ${dueDate.toLocaleDateString()}`);
+                        });
+                        
+                        appendLog('🎯 Test completed successfully!', 'success');
+                    } else {
+                        appendLog(`❌ Failed to get assignments: ${assignmentsData.message}`, 'error');
+                    }
+
+                } else {
+                    appendLog(`❌ Login failed: ${loginData.message}`, 'error');
+                }
+
+            } catch (error) {
+                appendLog(`❌ Error: ${error.message}`, 'error');
+                console.error('Full error:', error);
+            }
+        }
+
+        function appendLog(message, type = '') {
+            const results = document.getElementById('results');
+            const className = type ? ` class="${type}"` : '';
+            results.innerHTML += `<div class="log"${className}>${message}</div>`;
+        }
+    </script>
+</body>
+</html>

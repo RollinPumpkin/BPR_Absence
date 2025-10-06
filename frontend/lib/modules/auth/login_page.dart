@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:frontend/core/constants/colors.dart';
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../data/services/api_service.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -43,8 +45,43 @@ class _LoginPageState extends State<LoginPage>
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _animController, curve: Curves.easeOut));
 
+    // Load saved credentials if remember me was checked
+    _loadSavedCredentials();
+
     // mulai animasi
     _animController.forward();
+  }
+
+  // Load saved credentials if remember me was enabled
+  Future<void> _loadSavedCredentials() async {
+    final prefs = await SharedPreferences.getInstance();
+    final rememberMe = prefs.getBool('remember_me') ?? false;
+    
+    if (rememberMe) {
+      final savedEmail = prefs.getString('saved_email') ?? '';
+      final savedPassword = prefs.getString('saved_password') ?? '';
+      
+      setState(() {
+        _rememberMe = rememberMe;
+        _emailController.text = savedEmail;
+        _passwordController.text = savedPassword;
+      });
+    }
+  }
+
+  // Save or clear credentials based on remember me state
+  Future<void> _saveCredentials() async {
+    final prefs = await SharedPreferences.getInstance();
+    
+    if (_rememberMe) {
+      await prefs.setString('saved_email', _emailController.text.trim());
+      await prefs.setString('saved_password', _passwordController.text);
+      await prefs.setBool('remember_me', true);
+    } else {
+      await prefs.remove('saved_email');
+      await prefs.remove('saved_password');
+      await prefs.setBool('remember_me', false);
+    }
   }
 
   @override
@@ -65,53 +102,21 @@ class _LoginPageState extends State<LoginPage>
     });
 
     try {
-      // For demo purposes, let's simulate different user types based on email
-      final email = _emailController.text.toLowerCase();
+      final identifier = _emailController.text.trim();
       final password = _passwordController.text;
 
-      // Simulate API call delay
-      await Future.delayed(const Duration(seconds: 1));
-
-      // Demo logic: route based on email
-      if (email.contains('admin')) {
-        // Save user data
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('user_role', 'admin');
-        await prefs.setString('user_email', email);
-        await prefs.setBool('is_logged_in', true);
-
-        if (mounted) {
-          Navigator.pushReplacementNamed(context, '/admin/dashboard');
-        }
-      } else {
-        // Save user data
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('user_role', 'employee');
-        await prefs.setString('user_email', email);
-        await prefs.setBool('is_logged_in', true);
-
-        if (mounted) {
-          Navigator.pushReplacementNamed(context, '/user/dashboard');
-        }
-      }
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Login successful!'),
-            backgroundColor: AppColors.primaryGreen,
-          ),
-        );
-      }
-
-      /* 
-      // TODO: Replace with actual API call when backend is connected
+      // Call backend authentication
       final response = await _dio.post(
         'http://localhost:3000/api/auth/login',
         data: {
-          'email': email,
+          'email': identifier, // Backend expects 'email' field but accepts email/phone/employee_id
           'password': password,
         },
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        ),
       );
 
       if (response.statusCode == 200) {
@@ -122,23 +127,54 @@ class _LoginPageState extends State<LoginPage>
         // Save user data and token
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('token', token);
+        await prefs.setString('user_id', user['id']);
         await prefs.setString('user_role', user['role']);
         await prefs.setString('user_email', user['email']);
+        await prefs.setString('user_name', user['full_name']);
+        await prefs.setString('employee_id', user['employee_id']);
         await prefs.setBool('is_logged_in', true);
 
-        // Route based on user role
-        if (user['role'] == 'admin') {
-          Navigator.pushReplacementNamed(context, '/admin/dashboard');
-        } else {
-          Navigator.pushReplacementNamed(context, '/user/dashboard');
+        // IMPORTANT: Set token in ApiService for authenticated requests
+        await ApiService.instance.setToken(token);
+
+        // Save credentials if remember me is checked
+        await _saveCredentials();
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Login successful!'),
+              backgroundColor: AppColors.primaryGreen,
+            ),
+          );
+
+          // Route based on user role
+          if (user['role'] == 'admin' || user['role'] == 'account_officer') {
+            Navigator.pushReplacementNamed(context, '/admin/dashboard');
+          } else {
+            Navigator.pushReplacementNamed(context, '/user/dashboard');
+          }
         }
       }
-      */
     } catch (e) {
       if (mounted) {
+        String errorMessage = 'Login failed';
+        
+        if (e is DioException) {
+          if (e.response?.statusCode == 401) {
+            errorMessage = 'Invalid email or password';
+          } else if (e.response?.statusCode == 500) {
+            errorMessage = 'Server error. Please try again later.';
+          } else if (e.response?.data != null && e.response?.data['message'] != null) {
+            errorMessage = e.response?.data['message'];
+          }
+        } else {
+          errorMessage = 'Network error. Please check your connection.';
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Login failed: ${e.toString()}'),
+            content: Text(errorMessage),
             backgroundColor: AppColors.errorRed,
           ),
         );
@@ -223,10 +259,19 @@ class _LoginPageState extends State<LoginPage>
                     children: [
                       Checkbox(
                         value: _rememberMe,
-                        onChanged: (v) {
+                        onChanged: (v) async {
+                          final newValue = v ?? false;
                           setState(() {
-                            _rememberMe = v ?? false;
+                            _rememberMe = newValue;
                           });
+                          
+                          // If unchecked, clear saved credentials immediately
+                          if (!newValue) {
+                            final prefs = await SharedPreferences.getInstance();
+                            await prefs.remove('saved_email');
+                            await prefs.remove('saved_password');
+                            await prefs.setBool('remember_me', false);
+                          }
                         },
                       ),
                       const Text("Remember Me"),
@@ -289,15 +334,28 @@ class _LoginPageState extends State<LoginPage>
                             decoration: TextDecoration.underline,
                           ),
                           recognizer: TapGestureRecognizer()
-                            ..onTap = () {
-                              // TODO: request akun
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    "Request from Data Team clicked",
+                            ..onTap = () async {
+                              // Open WhatsApp chat with admin
+                              const adminPhone = '6285250600020';
+                                final waMessage = Uri.encodeComponent(
+                                  'Halo Admin, saya ingin request akun BPR Absence.\n\n'
+                                  'Nama Lengkap:\n'
+                                  'Email:\n'
+                                  'Role: Employee, AO, Security, OB (Pilih salah satu)\n'
+                                  'Departemen:\n'
+                                  'Posisi:\n'
+                                  'No. Tlp.:'
+                                );
+                                final url = 'https://wa.me/$adminPhone?text=$waMessage';
+                                if (await canLaunch(url)) {
+                                  await launch(url);
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text("Could not open WhatsApp. Please contact admin manually (Pak Agus)."),
                                   ),
-                                ),
-                              );
+                                );
+                              }
                             },
                         ),
                       ],

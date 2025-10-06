@@ -1,8 +1,54 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/core/constants/colors.dart';
+import 'package:frontend/data/services/attendance_service.dart';
+import 'package:frontend/data/models/attendance.dart';
 
-class AttendanceStats extends StatelessWidget {
+class AttendanceStats extends StatefulWidget {
   const AttendanceStats({super.key});
+
+  @override
+  State<AttendanceStats> createState() => _AttendanceStatsState();
+}
+
+class _AttendanceStatsState extends State<AttendanceStats> {
+  final AttendanceService _attendanceService = AttendanceService();
+  AttendanceMonthlyStats? _stats;
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMonthlyStats();
+  }
+
+  Future<void> _loadMonthlyStats() async {
+    try {
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
+
+      final response = await _attendanceService.getMonthlySummary();
+      
+      if (response.isSuccess && response.data != null) {
+        setState(() {
+          _stats = response.data!.stats;
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _error = response.message ?? 'Failed to load attendance data';
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _error = 'Error loading attendance data: ${e.toString()}';
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -22,45 +68,93 @@ class AttendanceStats extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            "This Month",
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: AppColors.black87,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                "This Month",
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.black87,
+                ),
+              ),
+              if (_isLoading)
+                const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              else if (_error != null)
+                GestureDetector(
+                  onTap: _loadMonthlyStats,
+                  child: Icon(
+                    Icons.refresh,
+                    size: 20,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+            ],
           ),
           const SizedBox(height: 16),
 
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildStatItem(
-                icon: Icons.check_circle,
-                iconColor: AppColors.primaryGreen,
-                value: "18",
-                label: "Present",
+          if (_error != null)
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.errorRed.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
               ),
-              _buildStatItem(
-                icon: Icons.access_time,
-                iconColor: AppColors.vibrantOrange,
-                value: "2",
-                label: "Late",
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    color: AppColors.errorRed,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _error!,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.errorRed,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              _buildStatItem(
-                icon: Icons.cancel,
-                iconColor: AppColors.errorRed,
-                value: "1",
-                label: "Absent",
-              ),
-              _buildStatItem(
-                icon: Icons.event_available,
-                iconColor: AppColors.primaryBlue,
-                value: "2",
-                label: "Leave",
-              ),
-            ],
-          ),
+            )
+          else
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildStatItem(
+                  icon: Icons.check_circle,
+                  iconColor: AppColors.primaryGreen,
+                  value: _stats?.present.toString() ?? "0",
+                  label: "Present",
+                ),
+                _buildStatItem(
+                  icon: Icons.access_time,
+                  iconColor: AppColors.vibrantOrange,
+                  value: _stats?.late.toString() ?? "0",
+                  label: "Late",
+                ),
+                _buildStatItem(
+                  icon: Icons.cancel,
+                  iconColor: AppColors.errorRed,
+                  value: _stats?.absent.toString() ?? "0",
+                  label: "Absent",
+                ),
+                _buildStatItem(
+                  icon: Icons.event_available,
+                  iconColor: AppColors.primaryBlue,
+                  value: _stats?.leave.toString() ?? "0",
+                  label: "Leave",
+                ),
+              ],
+            ),
         ],
       ),
     );

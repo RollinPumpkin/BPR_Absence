@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/core/constants/colors.dart';
 
-import 'widgets/employee_header.dart';
 import 'widgets/employee_stat_section.dart';
 import 'widgets/employee_action_buttons.dart';
 import 'widgets/employee_search.dart';
