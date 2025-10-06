@@ -6,13 +6,15 @@ import 'package:flutter/material.dart';
 import 'package:frontend/core/constants/colors.dart';
 import 'package:frontend/core/widgets/custom_bottom_nav_router.dart';
 import 'package:frontend/modules/admin/shared/admin_nav_items.dart';
+import 'package:frontend/modules/admin/attendance/widgets/section_lined_title.dart';
+import 'package:frontend/modules/admin/attendance/widgets/date_row.dart';
+import 'package:frontend/modules/admin/attendance/widgets/attendance_card.dart';
+import 'package:frontend/modules/admin/attendance/widgets/divider.dart';
+import 'package:frontend/modules/admin/attendance/widgets/attendance_stat.dart';
 
-import 'widgets/date_row.dart';
-import 'widgets/attendance_stat.dart';
-import 'widgets/divider.dart';
-import 'widgets/attendance_card.dart';
-import 'widgets/section_lined_title.dart';
-import 'pages/attendance_form_page.dart';
+import 'widgets/attendance_stats.dart';
+import 'widgets/attendance_history_card.dart';
+import 'attendance_form_page.dart';
 
 class AttendancePage extends StatelessWidget {
   const AttendancePage({super.key});
@@ -113,7 +115,7 @@ class AttendancePage extends StatelessWidget {
                       onPressed: () {
                         Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder: (_) => const AttendanceFormPage(),
+                            builder: (_) => const AttendanceFormPage(type: 'checkin'),
                           ),
                         );
                       },

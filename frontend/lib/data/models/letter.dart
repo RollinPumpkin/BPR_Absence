@@ -68,36 +68,53 @@ class Letter {
       status: json['status'] ?? 'sent',
       priority: json['priority'] ?? 'normal',
       letterNumber: json['letter_number'],
-      letterDate: json['letter_date'] != null 
-          ? DateTime.parse(json['letter_date']) 
-          : null,
+      letterDate: _parseFirestoreTimestamp(json['letter_date']),
       requiresResponse: json['requires_response'] ?? false,
-      responseDeadline: json['response_deadline'] != null 
-          ? DateTime.parse(json['response_deadline']) 
-          : null,
+      responseDeadline: _parseFirestoreTimestamp(json['response_deadline']),
       responseReceived: json['response_received'] ?? false,
       responseContent: json['response_content'],
-      responseDate: json['response_date'] != null 
-          ? DateTime.parse(json['response_date']) 
-          : null,
+      responseDate: _parseFirestoreTimestamp(json['response_date']),
       attachments: (json['attachments'] as List<dynamic>?)
           ?.map((item) => LetterAttachment.fromJson(item))
           .toList() ?? [],
       ccRecipients: List<String>.from(json['cc_recipients'] ?? []),
       templateUsed: json['template_used'],
       referenceNumber: json['reference_number'],
-      createdAt: json['created_at'] != null 
-          ? DateTime.parse(json['created_at']) 
-          : null,
-      updatedAt: json['updated_at'] != null 
-          ? DateTime.parse(json['updated_at']) 
-          : null,
+      createdAt: _parseFirestoreTimestamp(json['created_at']),
+      updatedAt: _parseFirestoreTimestamp(json['updated_at']),
       recipientName: json['recipient_name'],
       recipientEmployeeId: json['recipient_employee_id'],
       recipientDepartment: json['recipient_department'],
       senderName: json['sender_name'],
       senderPosition: json['sender_position'],
     );
+  }
+
+  // Helper method to parse Firestore timestamp format
+  static DateTime? _parseFirestoreTimestamp(dynamic timestamp) {
+    if (timestamp == null) return null;
+    
+    if (timestamp is Map<String, dynamic>) {
+      // Firestore timestamp format: {"_seconds": 1234567890, "_nanoseconds": 123000000}
+      if (timestamp.containsKey('_seconds')) {
+        final seconds = timestamp['_seconds'] as int;
+        final nanoseconds = timestamp['_nanoseconds'] as int? ?? 0;
+        return DateTime.fromMillisecondsSinceEpoch(
+          seconds * 1000 + (nanoseconds ~/ 1000000)
+        );
+      }
+    }
+    
+    if (timestamp is String) {
+      // Regular ISO string format
+      try {
+        return DateTime.parse(timestamp);
+      } catch (_) {
+        return null;
+      }
+    }
+    
+    return null;
   }
 
   String get displayType {

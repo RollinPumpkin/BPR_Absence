@@ -130,7 +130,7 @@ class MyApp extends StatelessWidget {
         '/admin/profile': (_) => const ProfilePage(),
 
         '/user/dashboard': (_) => const user_dash.UserDashboardPage(),
-        '/user/attendance': (_) => const user_att.UserAttendancePage(),
+        '/user/attendance': (_) => const user_att.AttendancePage(),
         '/user/attendance/form': (_) => const AttendanceFormPage(type: 'Clock In'),
         '/user/assignment': (_) => const user_assign.UserAssignmentPage(),
         '/user/letter': (_) => const user_letters.UserLettersPage(),

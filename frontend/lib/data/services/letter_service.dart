@@ -84,9 +84,9 @@ class LetterService {
       ApiConstants.letters.received,
       queryParameters: queryParams,
       fromJson: (json) => ListResponse<Letter>.fromJson(
-        json,
+        json['data'], // Extract the 'data' object first
         (item) => Letter.fromJson(item),
-        'data',
+        'letters', // Then look for 'letters' within 'data'
       ),
     );
   }
