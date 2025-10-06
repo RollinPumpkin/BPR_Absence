@@ -29,10 +29,61 @@
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""/>
+
   <title>frontend</title>
   <link rel="manifest" href="manifest.json">
 </head>
 <body>
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""></script>
+  
+  <!-- Camera Web Support -->
+  <script>
+    window.takePictureFromCamera = function() {
+      return new Promise((resolve, reject) => {
+        navigator.mediaDevices.getUserMedia({ video: true })
+          .then(stream => {
+            const video = document.createElement('video');
+            video.srcObject = stream;
+            video.play();
+            
+            // Create canvas to capture frame
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Wait for video to load metadata
+            video.addEventListener('loadedmetadata', () => {
+              canvas.width = video.videoWidth;
+              canvas.height = video.videoHeight;
+              
+              // Draw video frame to canvas
+              ctx.drawImage(video, 0, 0);
+              
+              // Convert to blob
+              canvas.toBlob(blob => {
+                // Stop camera stream
+                stream.getTracks().forEach(track => track.stop());
+                
+                // Create file-like object
+                const file = new File([blob], 'camera_capture.jpg', { type: 'image/jpeg' });
+                resolve(file);
+              }, 'image/jpeg', 0.8);
+            });
+          })
+          .catch(error => {
+            console.error('Camera access error:', error);
+            reject(error);
+          });
+      });
+    };
+  </script>
+  
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
