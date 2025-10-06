@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/core/constants/colors.dart';
 import 'package:frontend/core/services/location_service.dart';
-import 'package:frontend/core/services/camera_service.dart';
 import 'package:frontend/data/services/attendance_service.dart';
 import 'package:intl/intl.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'dart:ui' as ui;
@@ -553,7 +551,6 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
         // Resize image to 200KB target
         print('📷 Starting image compression...');
         final Uint8List compressedBytes = await _resizeImageToTarget(originalBytes, targetSizeKB: 200);
-        double compressedSizeKB = compressedBytes.length / 1024;
         
         print('📷 Setting state with compressed image...');
         setState(() {
