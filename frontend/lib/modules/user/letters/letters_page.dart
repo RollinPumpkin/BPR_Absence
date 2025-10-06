@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:frontend/core/constants/colors.dart';
 import 'package:frontend/core/widgets/custom_bottom_nav_router.dart';
 import 'package:frontend/modules/user/shared/user_nav_items.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
 
 import 'letter_form_page.dart';
 
@@ -14,8 +17,15 @@ class UserLettersPage extends StatefulWidget {
 
 class _UserLettersPageState extends State<UserLettersPage> {
   String selectedFilter = "Waiting approval";
+  List<Map<String, dynamic>> _letters = [];
+  bool _isLoading = true;
+  String? _error;
   
   @override
+  void initState() {
+    super.initState();
+    _loadLetters();
+  }
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
@@ -156,6 +166,7 @@ class _UserLettersPageState extends State<UserLettersPage> {
         setState(() {
           selectedFilter = filter;
         });
+        _loadLetters(); // Reload letters when filter changes
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -179,6 +190,41 @@ class _UserLettersPageState extends State<UserLettersPage> {
   }
 
   Widget _buildLettersList() {
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
+
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 64,
+              color: Colors.grey.shade400,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              _error!,
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontSize: 16,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _loadLetters,
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+
     List<Map<String, dynamic>> letters = _getFilteredLetters();
     
     if (letters.isEmpty) {
@@ -199,17 +245,25 @@ class _UserLettersPageState extends State<UserLettersPage> {
                 fontSize: 16,
               ),
             ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _loadLetters,
+              child: const Text('Refresh'),
+            ),
           ],
         ),
       );
     }
     
-    return ListView.builder(
-      padding: const EdgeInsets.all(20),
-      itemCount: letters.length,
-      itemBuilder: (context, index) {
-        return _buildLetterCard(letters[index]);
-      },
+    return RefreshIndicator(
+      onRefresh: _loadLetters,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(20),
+        itemCount: letters.length,
+        itemBuilder: (context, index) {
+          return _buildLetterCard(letters[index]);
+        },
+      ),
     );
   }
 
@@ -342,58 +396,211 @@ class _UserLettersPageState extends State<UserLettersPage> {
     );
   }
 
+  Future<void> _loadLetters() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      // Get current user info from SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final userEmail = prefs.getString('user_email');
+      final userId = prefs.getString('user_id');
+      final employeeId = prefs.getString('employee_id');
+      
+      print('🔍 Debug: Loading letters...');
+      print('🔍 Debug: User Email: $userEmail');
+      print('🔍 Debug: User ID: $userId');
+      print('🔍 Debug: Employee ID: $employeeId');
+      
+      if (userId == null && employeeId == null && userEmail == null) {
+        throw Exception('User info not found. Please log in again.');
+      }
+      
+      // Try multiple approaches to get letters
+      List<Map<String, dynamic>> letters = [];
+      
+      // Approach 1: Try by employeeId first (most specific)
+      if (employeeId != null) {
+        print('🔍 Debug: Trying to fetch by employeeId...');
+        letters = await _getLettersByEmployeeId(employeeId);
+        print('🔍 Debug: Found ${letters.length} letters by employee ID');
+      }
+      
+      // Approach 2: Try by userId if no results
+      if (letters.isEmpty && userId != null) {
+        print('🔍 Debug: Trying to fetch by userId...');
+        letters = await _getLettersByUserId(userId);
+        print('🔍 Debug: Found ${letters.length} letters by user ID');
+      }
+      
+      // Approach 3: Try by email if still no results
+      if (letters.isEmpty && userEmail != null) {
+        print('🔍 Debug: Trying to fetch by email...');
+        letters = await _getLettersByEmail(userEmail);
+        print('🔍 Debug: Found ${letters.length} letters by email');
+      }
+      
+      // Approach 4: If still no results, try to get all letters and filter
+      if (letters.isEmpty) {
+        print('🔍 Debug: Trying to fetch all letters and filter...');
+        letters = await _getAllLettersAndFilter(userEmail, userId, employeeId);
+        print('🔍 Debug: Found ${letters.length} letters after filtering all');
+      }
+      
+      print('🔍 Debug: Final result - Found ${letters.length} letters');
+      
+      setState(() {
+        _letters = letters;
+        _isLoading = false;
+      });
+      
+      print('🔍 Debug: Successfully loaded ${letters.length} letters');
+      for (var letter in letters) {
+        print('  - ${letter['title']} (${letter['status']})');
+      }
+    } catch (e) {
+      print('🔍 Debug: Error loading letters: $e');
+      setState(() {
+        _error = 'Error loading letters: $e';
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> _getLettersByEmployeeId(String employeeId) async {
+    try {
+      final firestore = FirebaseFirestore.instance;
+      final querySnapshot = await firestore
+          .collection('letters')
+          .where('recipientEmployeeId', isEqualTo: employeeId)
+          .orderBy('createdAt', descending: true)
+          .get();
+
+      return querySnapshot.docs.map((doc) {
+        final data = doc.data();
+        return _convertFirestoreDataToLetter(doc.id, data);
+      }).toList();
+    } catch (e) {
+      print('Error fetching letters by employee ID: $e');
+      return [];
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> _getLettersByUserId(String userId) async {
+    try {
+      final firestore = FirebaseFirestore.instance;
+      final querySnapshot = await firestore
+          .collection('letters')
+          .where('recipientId', isEqualTo: userId)
+          .orderBy('createdAt', descending: true)
+          .get();
+
+      return querySnapshot.docs.map((doc) {
+        final data = doc.data();
+        return _convertFirestoreDataToLetter(doc.id, data);
+      }).toList();
+    } catch (e) {
+      print('Error fetching letters by user ID: $e');
+      return [];
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> _getLettersByEmail(String email) async {
+    try {
+      final firestore = FirebaseFirestore.instance;
+      final querySnapshot = await firestore
+          .collection('letters')
+          .where('recipientEmail', isEqualTo: email)
+          .orderBy('createdAt', descending: true)
+          .get();
+
+      return querySnapshot.docs.map((doc) {
+        final data = doc.data();
+        return _convertFirestoreDataToLetter(doc.id, data);
+      }).toList();
+    } catch (e) {
+      print('Error fetching letters by email: $e');
+      return [];
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> _getAllLettersAndFilter(String? email, String? userId, String? employeeId) async {
+    try {
+      final firestore = FirebaseFirestore.instance;
+      final querySnapshot = await firestore
+          .collection('letters')
+          .orderBy('createdAt', descending: true)
+          .limit(100) // Limit to avoid too much data
+          .get();
+
+      print('🔍 Debug: Fetched ${querySnapshot.docs.length} total letters');
+      
+      final allLetters = querySnapshot.docs.map((doc) {
+        final data = doc.data();
+        print('🔍 Debug: Letter ${doc.id} - recipientEmail: ${data['recipientEmail']}, recipientId: ${data['recipientId']}, employeeId: ${data['recipientEmployeeId']}');
+        return _convertFirestoreDataToLetter(doc.id, data);
+      }).toList();
+
+      // Filter manually
+      final filteredLetters = allLetters.where((letter) {
+        return (employeeId != null && letter['employeeId'] == employeeId) ||
+               (userId != null && letter['userId'] == userId) ||
+               (email != null && letter['email'] == email);
+      }).toList();
+
+      print('🔍 Debug: After manual filtering: ${filteredLetters.length} letters');
+      return filteredLetters;
+    } catch (e) {
+      print('Error fetching and filtering all letters: $e');
+      return [];
+    }
+  }
+
+  Map<String, dynamic> _convertFirestoreDataToLetter(String docId, Map<String, dynamic> data) {
+    // Convert Firestore timestamp to formatted date
+    String formattedDate = 'No date';
+    if (data['createdAt'] != null) {
+      try {
+        Timestamp timestamp = data['createdAt'] as Timestamp;
+        DateTime dateTime = timestamp.toDate();
+        formattedDate = DateFormat('dd MMMM yyyy').format(dateTime);
+      } catch (e) {
+        print('Error parsing date: $e');
+      }
+    }
+
+    // Map status values
+    String status = data['status'] ?? 'waiting_approval';
+    if (status == 'waiting_approval') {
+      status = 'Waiting Approval';
+    } else if (status == 'approved') {
+      status = 'Approved';
+    } else if (status == 'rejected') {
+      status = 'Rejected';
+    }
+
+    return {
+      'id': docId,
+      'title': data['subject'] ?? 'No Subject',
+      'date': formattedDate,
+      'description': data['content'] ?? 'No Content',
+      'status': status,
+      'type': data['letterType'] ?? 'Letter',
+      'userId': data['recipientId'],
+      'email': data['recipientEmail'],
+      'employeeId': data['recipientEmployeeId'],
+    };
+  }
+
   List<Map<String, dynamic>> _getFilteredLetters() {
-    List<Map<String, dynamic>> allLetters = _getAllLetters();
-    
-    return allLetters.where((letter) {
+    return _letters.where((letter) {
       return letter['status'].toLowerCase() == selectedFilter.toLowerCase();
     }).toList();
   }
 
   List<Map<String, dynamic>> _getAllLetters() {
-    return [
-      {
-        'title': "DOCTOR'S NOTE",
-        'date': '27 Agustus 2024',
-        'description': 'Medical certificate for sick leave due to acute respiratory infection. Employee requires 3 days rest as recommended by attending physician.',
-        'status': 'Waiting Approval',
-        'type': 'Absence',
-      },
-      {
-        'title': "DOCTOR'S NOTE",
-        'date': '25 Agustus 2024',
-        'description': 'Medical certificate for maternity check-up appointment. Regular prenatal examination scheduled with obstetrician.',
-        'status': 'Approved',
-        'type': 'Absence',
-      },
-      {
-        'title': "DOCTOR'S NOTE",
-        'date': '23 Agustus 2024',
-        'description': 'Medical certificate for emergency dental treatment. Urgent dental procedure required due to severe tooth infection.',
-        'status': 'Rejected',
-        'type': 'Absence',
-      },
-      {
-        'title': "DOCTOR'S NOTE",
-        'date': '21 Agustus 2024',
-        'description': 'Medical certificate for routine health check-up. Annual medical examination as required by company policy.',
-        'status': 'Approved',
-        'type': 'Absence',
-      },
-      {
-        'title': "MEDICAL CERTIFICATE",
-        'date': '19 Agustus 2024',
-        'description': 'Medical certificate for work-related injury treatment. Follow-up treatment for workplace accident rehabilitation.',
-        'status': 'Waiting Approval',
-        'type': 'Absence',
-      },
-      {
-        'title': "HEALTH CLEARANCE",
-        'date': '17 Agustus 2024',
-        'description': 'Medical clearance certificate for return to work after recovery from illness. Fit for duty certification.',
-        'status': 'Approved',
-        'type': 'Absence',
-      },
-    ];
+    return _letters; // Return the loaded letters from Firestore
   }
 }

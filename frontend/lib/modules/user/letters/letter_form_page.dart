@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
 import '../../../core/services/firestore_letter_service.dart';
 import '../../../core/services/user_context_service.dart';
@@ -796,23 +797,22 @@ class _LetterFormPageState extends State<LetterFormPage> {
       return;
     }
 
-    if (_descriptionController.text.isEmpty) {
-      _showErrorMessage('Please enter a description');
-      return;
-    }
-
-    // Get user info from auth provider and ensure we have the name
-    final authProvider = context.read<AuthProvider>();
-    if (!authProvider.isAuthenticated) {
+    // Get user info from SharedPreferences (same as letters page)
+    final prefs = await SharedPreferences.getInstance();
+    final userEmail = prefs.getString('user_email');
+    final userId = prefs.getString('user_id');
+    final employeeId = prefs.getString('employee_id');
+    
+    if (userId == null && employeeId == null && userEmail == null) {
       _showErrorMessage('You must be logged in to submit a letter');
       return;
     }
 
     // Use the selected employee name (which is the user's name)
-    String userName = selectedEmployee ?? 'Unknown User';
-    String userId = authProvider.currentUser?.id ?? '';
+    String userName = selectedEmployee ?? 'User Test';
+    String actualUserId = userId ?? employeeId ?? '';
     
-    if (userId.isEmpty) {
+    if (actualUserId.isEmpty) {
       _showErrorMessage('Unable to identify user. Please login again.');
       return;
     }
@@ -829,13 +829,13 @@ class _LetterFormPageState extends State<LetterFormPage> {
         letterType: selectedLetterType!,
         subject: _letterNameController.text.trim(),
         content: _descriptionController.text.trim(),
-        recipientId: userId,
+        recipientId: actualUserId,
         recipientName: userName, // Use the name we loaded
-        recipientEmployeeId: authProvider.currentUser?.employeeId ?? '',
-        recipientDepartment: authProvider.currentUser?.department ?? '',
-        senderId: userId,
+        recipientEmployeeId: employeeId ?? 'EMP001',
+        recipientDepartment: 'IT Department',
+        senderId: actualUserId,
         senderName: userName, // Use the same name
-        senderPosition: authProvider.currentUser?.position ?? '',
+        senderPosition: 'Employee',
         status: 'waiting_approval', // Auto set to waiting approval
         priority: selectedPriority,
         createdAt: DateTime.now(),
@@ -845,7 +845,7 @@ class _LetterFormPageState extends State<LetterFormPage> {
           ApprovalHistoryModel(
             action: 'created',
             timestamp: DateTime.now(),
-            userId: userId,
+            userId: actualUserId,
             userName: userName, // Use the loaded name
             notes: 'Letter submitted for approval',
           ),

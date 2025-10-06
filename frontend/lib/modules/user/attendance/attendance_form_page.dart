@@ -1,26 +1,20 @@
-import 'package:flutter/material.dart';
-import 'package:frontend/core/constants/colors.dart';
-import 'package:frontend/core/services/location_service.dart';
-import 'package:frontend/data/services/attendance_service.dart';
-import 'package:intl/intl.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'dart:typed_data';
+import 'dart:async';
 import 'dart:convert';
-import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
-import '../../../core/constants/colors.dart';
-
-import 'package:intl/intl.dart';
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'dart:html' as html;
 import 'dart:js' as js;
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:frontend/core/constants/colors.dart';
+import 'package:frontend/core/services/location_service.dart';
+import 'package:frontend/data/services/attendance_service.dart';
 // import '../../../services/leaflet_service.dart';
 
 class AttendanceFormPage extends StatefulWidget {
@@ -34,7 +28,7 @@ class AttendanceFormPage extends StatefulWidget {
 
 class _AttendanceFormPageState extends State<AttendanceFormPage> {
   // State variables
-  File? capturedImageFile;
+  XFile? capturedImageFile;
   Uint8List? capturedImageBytes;
   bool isCapturingImage = false;
   bool hasCameraPermission = false;
@@ -390,7 +384,7 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
         if (photo != null) {
           photoBytes = await photo.readAsBytes();
           setState(() {
-            capturedImageFile = photo.path != null ? File(photo.path) : null;
+            capturedImageFile = photo;
           });
         }
       }
@@ -482,9 +476,9 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                             capturedImageBytes!,
                             fit: BoxFit.contain,
                           )
-                        : capturedImageFile != null
-                            ? Image.file(
-                                capturedImageFile!,
+                        : capturedImageBytes != null
+                            ? Image.memory(
+                                capturedImageBytes!,
                                 fit: BoxFit.contain,
                               )
                             : Container(),
@@ -572,6 +566,7 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
 
   Future<Uint8List> _compressImage(Uint8List imageBytes) async {
     try {
+      // Compress the image using ui.instantiateImageCodec
       ui.Codec codec = await ui.instantiateImageCodec(
         imageBytes,
         targetWidth: 800,
@@ -579,52 +574,50 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
       );
       ui.FrameInfo frameInfo = await codec.getNextFrame();
       
-      // Try to access camera - this will trigger browser permission popup
-      final ImagePicker picker = ImagePicker();
-      final XFile? photo = await picker.pickImage(
-        source: ImageSource.camera,
-        maxWidth: 1920,
-        maxHeight: 1080,
-        imageQuality: 85,
-      );
-
-      if (photo != null) {
-        print('📷 Web - Camera permission granted, processing photo...');
+      // Convert to bytes with PNG format first
+      final ByteData? byteData = await frameInfo.image.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData != null) {
+        final compressedBytes = byteData.buffer.asUint8List();
         
-        // Process the captured photo
-        final Uint8List originalBytes = await photo.readAsBytes();
-        double originalSizeKB = originalBytes.length / 1024;
-        print('📷 Original image: ${originalSizeKB.toStringAsFixed(1)} KB');
-
-        // Resize image to 200KB target
-        print('📷 Starting image compression...');
-        final Uint8List compressedBytes = await _resizeImageToTarget(originalBytes, targetSizeKB: 200);
+        // If still too large, resize further
+        if (compressedBytes.length > 200 * 1024) { // 200KB
+          return await _resizeImageToTarget(imageBytes, targetSizeKB: 200);
+        }
         
-        print('📷 Setting state with compressed image...');
-        setState(() {
-          capturedImageFile = photo;
-          capturedImageBytes = compressedBytes;
-        });
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('📷 Camera access granted! Photo captured successfully.'),
-            backgroundColor: AppColors.primaryGreen,
-            duration: Duration(seconds: 3),
-          ),
-        );
-      } else {
-        print('📷 Web - Camera access denied or cancelled');
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('📷 Camera access denied. Please allow camera permission in your browser.'),
-            backgroundColor: AppColors.errorRed,
-            duration: Duration(seconds: 4),
-          ),
-        );
+        return compressedBytes;
       }
+      
+      return imageBytes;
     } catch (e) {
       print('Error compressing image: $e');
+      return imageBytes;
+    }
+  }
+
+  Future<Uint8List> _resizeImageToTarget(Uint8List imageBytes, {required int targetSizeKB}) async {
+    try {
+      int quality = 90;
+      Uint8List result = imageBytes;
+      
+      while (result.length > targetSizeKB * 1024 && quality > 10) {
+        ui.Codec codec = await ui.instantiateImageCodec(
+          imageBytes,
+          targetWidth: (800 * quality / 100).round(),
+          targetHeight: (800 * quality / 100).round(),
+        );
+        ui.FrameInfo frameInfo = await codec.getNextFrame();
+        
+        final ByteData? byteData = await frameInfo.image.toByteData(format: ui.ImageByteFormat.png);
+        if (byteData != null) {
+          result = byteData.buffer.asUint8List();
+        }
+        
+        quality -= 10;
+      }
+      
+      return result;
+    } catch (e) {
+      print('Error resizing image: $e');
       return imageBytes;
     }
   }
@@ -1110,12 +1103,14 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                                     height: double.infinity,
                                     fit: BoxFit.cover,
                                   )
-                                : Image.file(
-                                    capturedImageFile!,
-                                    width: double.infinity,
-                                    height: double.infinity,
-                                    fit: BoxFit.cover,
-                                  ),
+                                : capturedImageBytes != null
+                                    ? Image.memory(
+                                        capturedImageBytes!,
+                                        width: double.infinity,
+                                        height: double.infinity,
+                                        fit: BoxFit.cover,
+                                      )
+                                    : Container(),
                           ),
                           Positioned(
                             top: 8,
@@ -1543,7 +1538,7 @@ class DummyAttendanceService {
     required double latitude,
     required double longitude,
     required String address,
-    required File? image,
+    required XFile? image,
     required String notes,
   }) async {
     await Future.delayed(const Duration(seconds: 1));
