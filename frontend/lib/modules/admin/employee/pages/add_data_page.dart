@@ -2,7 +2,10 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:frontend/core/constants/colors.dart';
+import '../../../data/providers/auth_provider.dart';
+import '../../../data/services/api_service.dart';
 
 class AddEmployeePage extends StatefulWidget {
   const AddEmployeePage({super.key});
@@ -17,11 +20,7 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
   final TextEditingController fullnameController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController mobileController = TextEditingController();
-  final TextEditingController placeOfBirthController = TextEditingController();
   final TextEditingController positionController = TextEditingController();
-  final TextEditingController nikController = TextEditingController();
-  final TextEditingController accountHolderController = TextEditingController();
-  final TextEditingController accountNumberController = TextEditingController();
   final TextEditingController divisionController = TextEditingController();
   final TextEditingController _dobController = TextEditingController();
   final TextEditingController departmentController = TextEditingController();
@@ -29,11 +28,10 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
   // Dropdown values
   String? selectedGender;
   String? selectedContractType;
-  String? selectedBank;
   String? selectedEducation;
-  String? selectedWarningLetter;
   String? selectedRole;
-  final List<String> roleOptions = ['Employee', 'Account Officer', 'Security', 'Office Boy'];
+  List<String> roleOptions = [];
+  bool _isLoading = false;
 
   // Date of Birth
   DateTime? selectedDate;
@@ -42,16 +40,34 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
   bool _isPasswordVisible = false;
 
   @override
+  void initState() {
+    super.initState();
+    _setupRoleOptions();
+  }
+
+  void _setupRoleOptions() {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final currentUserRole = authProvider.currentUser?.role;
+
+    if (currentUserRole == 'super_admin') {
+      // Super Admin can add: Admin, Employee, Account Officer, Security, Office Boy
+      roleOptions = ['Admin', 'Employee', 'Account Officer', 'Security', 'Office Boy'];
+    } else if (currentUserRole == 'admin') {
+      // Admin can add: Employee, Account Officer, Security, Office Boy (no Admin)
+      roleOptions = ['Employee', 'Account Officer', 'Security', 'Office Boy'];
+    } else {
+      // Default fallback
+      roleOptions = ['Employee'];
+    }
+  }
+
+  @override
   void dispose() {
-  emailController.dispose();
-  fullnameController.dispose();
-  passwordController.dispose();
+    emailController.dispose();
+    fullnameController.dispose();
+    passwordController.dispose();
     mobileController.dispose();
-    placeOfBirthController.dispose();
     positionController.dispose();
-    nikController.dispose();
-    accountHolderController.dispose();
-    accountNumberController.dispose();
     divisionController.dispose();
     _dobController.dispose();
     departmentController.dispose();
@@ -221,12 +237,6 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
                 ),
               ),
               _field(
-                child: TextField(
-                  controller: placeOfBirthController,
-                  decoration: _inputDec('Place of Birth', 'Enter the Place of Birth'),
-                ),
-              ),
-              _field(
                 child: TextFormField(
                   readOnly: true,
                   controller: _dobController,
@@ -286,28 +296,202 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
                   onChanged: (v) => setState(() => selectedEducation = v),
                 ),
               ),
-              _field(
-                child: TextField(
-                  controller: nikController,
-                  keyboardType: TextInputType.number,
-                  decoration: _inputDec('NIK', 'Enter the NIK', prefixIcon: const Icon(Icons.badge_outlined, size: 18)),
-                ),
-              ),
 
-              const SizedBox(height: 8),
-              const _SectionDivider(title: 'Banking'),
+              const SizedBox(height: 20),
 
-              _field(
-                child: _dropdown(
-                  label: 'Bank',
-                  value: selectedBank,
-                  items: const ['BCA', 'BRI', 'Mandiri', 'BNI'],
-                  onChanged: (v) => setState(() => selectedBank = v),
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  OutlinedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.neutral800,
+                      side: const BorderSide(color: AppColors.dividerGray),
+                      backgroundColor: AppColors.pureWhite,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    ),
+                    child: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.w700)),
+                  ),
+                  const SizedBox(width: 10),
+                  ElevatedButton(
+                    onPressed: _isLoading ? null : _saveEmployee,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryGreen,
+                      foregroundColor: AppColors.pureWhite,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      elevation: 0,
+                    ),
+                    child: _isLoading 
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(AppColors.pureWhite),
+                          ),
+                        )
+                      : const Text('Save', style: TextStyle(fontWeight: FontWeight.w800)),
+                  ),
+                ],
               ),
-              _field(
-                child: TextField(
-                  controller: accountHolderController,
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Save employee method
+  Future<void> _saveEmployee() async {
+    // Validate form
+    if (!_validateForm()) {
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final employeeId = await _generateEmployeeId();
+      
+      final employeeData = {
+        'employee_id': employeeId,
+        'full_name': fullnameController.text.trim(),
+        'email': emailController.text.trim(),
+        'password': passwordController.text,
+        'phone': mobileController.text.trim(),
+        'role': _convertRoleToBackend(selectedRole!),
+        'position': positionController.text.trim(),
+        'department': departmentController.text.trim(),
+        'division': divisionController.text.trim(),
+        'gender': selectedGender?.toLowerCase(),
+        'date_of_birth': selectedDate?.toIso8601String(),
+        'contract_type': selectedContractType,
+        'last_education': selectedEducation,
+      };
+
+      final response = await ApiService.instance.post(
+        '/auth/register',
+        data: employeeData,
+      );
+
+      if (response.success) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Employee ${fullnameController.text} created successfully!'),
+              backgroundColor: AppColors.primaryGreen,
+            ),
+          );
+          Navigator.pop(context, true); // Return true to indicate success
+        }
+      } else {
+        _showError(response.message ?? 'Failed to create employee');
+      }
+    } catch (e) {
+      _showError('Failed to create employee: ${e.toString()}');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  bool _validateForm() {
+    if (fullnameController.text.trim().isEmpty) {
+      _showError('Please enter full name');
+      return false;
+    }
+    if (emailController.text.trim().isEmpty) {
+      _showError('Please enter email');
+      return false;
+    }
+    if (passwordController.text.isEmpty) {
+      _showError('Please enter password');
+      return false;
+    }
+    if (selectedRole == null) {
+      _showError('Please select a role');
+      return false;
+    }
+    if (mobileController.text.trim().isEmpty) {
+      _showError('Please enter mobile number');
+      return false;
+    }
+    if (positionController.text.trim().isEmpty) {
+      _showError('Please enter position');
+      return false;
+    }
+    if (departmentController.text.trim().isEmpty) {
+      _showError('Please enter department');
+      return false;
+    }
+    return true;
+  }
+
+  Future<String> _generateEmployeeId() async {
+    final role = selectedRole!;
+    String prefix;
+    
+    switch (role) {
+      case 'Admin':
+        prefix = 'ADM';
+        break;
+      case 'Employee':
+        prefix = 'EMP';
+        break;
+      case 'Account Officer':
+        prefix = 'AC';
+        break;
+      case 'Security':
+        prefix = 'SCR';
+        break;
+      case 'Office Boy':
+        prefix = 'OB';
+        break;
+      default:
+        prefix = 'EMP';
+    }
+
+    // Generate next ID number (this should ideally check existing IDs from backend)
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final idNumber = (timestamp % 1000).toString().padLeft(3, '0');
+    
+    return '$prefix$idNumber';
+  }
+
+  String _convertRoleToBackend(String role) {
+    switch (role) {
+      case 'Admin':
+        return 'admin';
+      case 'Employee':
+        return 'employee';
+      case 'Account Officer':
+        return 'account_officer';
+      case 'Security':
+        return 'security';
+      case 'Office Boy':
+        return 'office_boy';
+      default:
+        return 'employee';
+    }
+  }
+
+  void _showError(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: AppColors.errorRed,
+        ),
+      );
+    }
+  }
                   decoration: _inputDec("Account Holder’s Name", 'Bank Number Account Holder Name'),
                 ),
               ),

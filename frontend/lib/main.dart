@@ -8,6 +8,8 @@ import 'core/services/firestore_letter_service.dart';
 
 import 'data/providers/auth_provider.dart';
 import 'data/providers/attendance_provider.dart';
+import 'firebase_options.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 import 'modules/auth/login_page.dart';
 import 'modules/auth/forgot-pass_page.dart';
@@ -70,10 +72,10 @@ Future<void> main() async {
   } catch (_) {}
   
   // Initialize Firebase
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   await FirestoreLetterService.initialize();
-  
-  // Initialize API service and load stored token
-  await ApiService.instance.initializeToken();
   
   // Request camera permission on app startup (for mobile platforms)
   await requestCameraPermissionOnStartup();
@@ -130,7 +132,7 @@ class MyApp extends StatelessWidget {
         '/admin/profile': (_) => const ProfilePage(),
 
         '/user/dashboard': (_) => const user_dash.UserDashboardPage(),
-        '/user/attendance': (_) => const user_att.AttendancePage(),
+        '/user/attendance': (_) => const user_att.UserAttendancePage(),
         '/user/attendance/form': (_) => const AttendanceFormPage(type: 'Clock In'),
         '/user/assignment': (_) => const user_assign.UserAssignmentPage(),
         '/user/letter': (_) => const user_letters.UserLettersPage(),

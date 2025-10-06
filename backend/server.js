@@ -63,21 +63,31 @@ app.use(cors({
     
     const allowedOrigins = [
       'http://localhost:3000', 
+      'http://localhost:3030', // Flutter web default port
       'http://localhost:8080',
       'http://localhost:8081',
       'http://10.0.2.2:3000', // Android emulator
       'http://127.0.0.1:3000',
+      'http://127.0.0.1:8080', // Flutter web localhost
+      'http://127.0.0.1:3030', // Flutter web localhost
       process.env.FRONTEND_URL
     ].filter(Boolean);
     
+    console.log(`🔍 CORS Check - Origin: ${origin}`);
+    
     if (allowedOrigins.indexOf(origin) !== -1) {
+      console.log(`✅ CORS Allowed: ${origin}`);
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      console.log(`❌ CORS Rejected: ${origin}`);
+      callback(null, true); // Allow all for development
     }
   },
   credentials: true,
-  optionsSuccessStatus: 200, // Some legacy browsers choke on 204
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With'],
+  exposedHeaders: ['Content-Range', 'X-Content-Range'],
+  optionsSuccessStatus: 200,
   preflightContinue: false
 }));
 

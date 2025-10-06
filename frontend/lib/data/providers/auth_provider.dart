@@ -54,7 +54,12 @@ class AuthProvider with ChangeNotifier {
       );
 
       if (response.success && response.data != null) {
-        _currentUser = response.data!.user;
+        // Handle both MockLoginResponse and regular LoginResponse
+        if (response.data is Map) {
+          _currentUser = response.data['user'];
+        } else {
+          _currentUser = response.data.user;
+        }
         _isAuthenticated = true;
         notifyListeners();
         return true;

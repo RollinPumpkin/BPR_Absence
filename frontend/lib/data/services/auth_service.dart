@@ -1,19 +1,28 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/api_response.dart';
-import '../models/user.dart';
+import '../models/user.dart' hide LoginResponse;
 import '../constants/api_constants.dart';
 import 'api_service.dart';
+import 'mock_auth_service.dart';
 
 class AuthService {
   final ApiService _apiService = ApiService.instance;
+  final MockAuthService _mockService = MockAuthService.instance;
+  
+  // Development flag - set to true to use mock service
+  static const bool useMockService = false;
 
   // Initialize the auth service
   Future<void> initialize() async {
-    await _apiService.initializeToken();
+    if (useMockService) {
+      await _mockService.initialize();
+    } else {
+      await _apiService.initializeToken();
+    }
   }
 
   // Check if user is authenticated
-  bool get isAuthenticated => _apiService.isAuthenticated;
+  bool get isAuthenticated => useMockService ? _mockService.isAuthenticated : _apiService.isAuthenticated;
 
   // Validate and refresh token
   Future<bool> validateAndRefreshToken() async {
@@ -29,23 +38,21 @@ class AuthService {
   }
 
   // Login
-  Future<ApiResponse<LoginResponse>> login({
+  Future<ApiResponse> login({
     required String email,
     required String password,
   }) async {
-    final response = await _apiService.post<LoginResponse>(
+    if (useMockService) {
+      return await _mockService.login(email: email, password: password);
+    }
+    
+    final response = await _apiService.post(
       ApiConstants.auth.login,
       data: {
         'email': email,
         'password': password,
       },
-      fromJson: (json) => LoginResponse.fromJson(json),
     );
-
-    // Save token if login successful
-    if (response.success && response.data?.token != null) {
-      await _apiService.setToken(response.data!.token);
-    }
 
     return response;
   }
@@ -77,6 +84,10 @@ class AuthService {
 
   // Logout
   Future<ApiResponse<String>> logout() async {
+    if (useMockService) {
+      return await _mockService.logout();
+    }
+    
     final response = await _apiService.post<String>(
       ApiConstants.auth.logout,
       fromJson: (json) => json?.toString() ?? 'Logged out successfully',
@@ -98,6 +109,9 @@ class AuthService {
 
   // Get current user profile
   Future<ApiResponse<User>> getCurrentUser() async {
+    if (useMockService) {
+      return await _mockService.getCurrentUser();
+    }
     return await _apiService.get<User>(
       ApiConstants.auth.profile,
       fromJson: (json) => User.fromJson(json),
@@ -169,16 +183,19 @@ class AuthService {
   }
 
   // Refresh token
-  Future<ApiResponse<LoginResponse>> refreshToken() async {
-    final response = await _apiService.post<LoginResponse>(
-      ApiConstants.auth.refreshToken,
-      fromJson: (json) => LoginResponse.fromJson(json),
-    );
-
-    // Update token if refresh successful
-    if (response.success && response.data?.token != null) {
-      await _apiService.setToken(response.data!.token);
+  Future<ApiResponse> refreshToken() async {
+    if (useMockService) {
+      // Mock refresh - just return success
+      return ApiResponse(
+        success: true,
+        message: 'Token refreshed successfully',
+        data: 'mock_refreshed_token',
+      );
     }
+    
+    final response = await _apiService.post(
+      ApiConstants.auth.refreshToken,
+    );
 
     return response;
   }

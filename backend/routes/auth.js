@@ -43,7 +43,7 @@ router.post('/register', validateRegister, async (req, res) => {
     }
 
     // Allowed roles
-    const allowedRoles = ['employee', 'account_officer', 'security', 'office_boy'];
+    const allowedRoles = ['employee', 'admin', 'super_admin', 'account_officer', 'security', 'office_boy'];
     let userRole = role;
     if (!allowedRoles.includes(userRole)) {
       userRole = 'employee'; // default
@@ -212,14 +212,23 @@ router.post('/login', validateLogin, async (req, res) => {
     // Remove password from response
     delete user.password;
 
-    res.json({
+    const response = {
       success: true,
       message: 'Login successful',
       data: {
         user,
         token
       }
-    });
+    };
+
+    console.log(`📤 Sending response:`, JSON.stringify(response, null, 2));
+    
+    // Add explicit headers for Flutter
+    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Content-Type', 'application/json');
+    
+    res.status(200).json(response);
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({

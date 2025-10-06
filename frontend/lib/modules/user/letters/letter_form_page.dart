@@ -853,18 +853,58 @@ class _LetterFormPageState extends State<LetterFormPage> {
         additionalInfo: null,
       );
 
-      // Submit to Firestore
-      final success = await FirestoreLetterService.addLetter(letter);
-
-      if (success) {
-        _showSuccessMessage('Letter submitted successfully!');
-        Navigator.pop(context, true); // Pass true to indicate success
-      } else {
-        _showErrorMessage('Failed to submit letter. Please try again.');
-      }
+      // Submit directly to Firestore
+      print('🔍 Debug: About to submit letter: ${letter.subject}');
+      print('🔍 Debug: Recipient ID: ${letter.recipientId}');
+      print('🔍 Debug: User Email: $userEmail');
+      
+      // Convert letter to Firestore format and add directly
+      final firestore = FirebaseFirestore.instance;
+      
+      // Use employee_id as primary identifier for data separation
+      final primaryUserId = employeeId ?? userId ?? actualUserId;
+      
+      print('🔍 Debug: Form - employeeId: $employeeId');
+      print('🔍 Debug: Form - userId: $userId'); 
+      print('🔍 Debug: Form - actualUserId: $actualUserId');
+      print('🔍 Debug: Form - primaryUserId (final): $primaryUserId');
+      
+      final letterData = {
+        'letterNumber': letter.letterNumber,
+        'letterType': letter.letterType,
+        'subject': letter.subject,
+        'content': letter.content,
+        'user_id': primaryUserId, // Primary field for querying user's letters
+        'recipientId': letter.recipientId,
+        'recipientName': letter.recipientName,
+        'recipientEmployeeId': primaryUserId, // Keep consistent with user_id
+        'recipientDepartment': letter.recipientDepartment,
+        'recipientEmail': userEmail ?? '',
+        'senderId': letter.senderId,
+        'senderName': letter.senderName,
+        'senderPosition': letter.senderPosition,
+        'status': letter.status,
+        'priority': letter.priority,
+        'createdAt': Timestamp.fromDate(letter.createdAt),
+        'updatedAt': Timestamp.fromDate(letter.updatedAt),
+        'validUntil': validUntilDate != null ? Timestamp.fromDate(validUntilDate!) : null,
+      };
+      
+      print('🔍 Debug: Saving letter with user_id: $primaryUserId');
+      print('🔍 Debug: Letter data: ${letterData['subject']} - ${letterData['status']}');
+      
+      final docRef = await firestore.collection('letters').add(letterData);
+      print('🔍 Debug: Letter added successfully to Firestore with ID: ${docRef.id}');
+      print('🔍 Debug: Letter subject: ${letterData['subject']}');
+      print('🔍 Debug: Letter user_id: ${letterData['user_id']}');
+      print('🔍 Debug: Letter status: ${letterData['status']}');
+      
+      _showSuccessMessage('Letter submitted successfully!');
+      Navigator.pop(context, true); // Pass true to indicate success
     } catch (e) {
-      print('Error submitting letter: $e');
-      _showErrorMessage('An error occurred while submitting the letter.');
+      print('🔍 Debug: Error submitting letter: $e');
+      print('🔍 Debug: Error type: ${e.runtimeType}');
+      _showErrorMessage('An error occurred while submitting the letter: $e');
     } finally {
       setState(() {
         _isLoading = false;

@@ -24,25 +24,31 @@ class _AttendanceStatsState extends State<AttendanceStats> {
 
   Future<void> _loadMonthlyStats() async {
     try {
+      print('🔍 Debug AttendanceStats: Loading monthly stats...');
       setState(() {
         _isLoading = true;
         _error = null;
       });
 
       final response = await _attendanceService.getMonthlySummary();
+      print('🔍 Debug AttendanceStats: Response success: ${response.isSuccess}');
+      print('🔍 Debug AttendanceStats: Stats data: ${response.data?.stats}');
       
       if (response.isSuccess && response.data != null) {
+        print('🔍 Debug AttendanceStats: Present: ${response.data!.stats.present}, Late: ${response.data!.stats.late}, Absent: ${response.data!.stats.absent}, Leave: ${response.data!.stats.leave}');
         setState(() {
           _stats = response.data!.stats;
           _isLoading = false;
         });
       } else {
+        print('🔍 Debug AttendanceStats: Failed - ${response.message}');
         setState(() {
           _error = response.message ?? 'Failed to load attendance data';
           _isLoading = false;
         });
       }
     } catch (e) {
+      print('🔍 Debug AttendanceStats: Exception - $e');
       setState(() {
         _error = 'Error loading attendance data: ${e.toString()}';
         _isLoading = false;
