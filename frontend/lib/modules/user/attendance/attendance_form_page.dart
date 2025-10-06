@@ -1,5 +1,16 @@
+<<<<<<< HEAD
 import 'dart:async';
 import 'dart:io';
+=======
+import 'package:flutter/material.dart';
+import 'package:frontend/core/constants/colors.dart';
+import 'package:frontend/core/services/location_service.dart';
+import 'package:frontend/data/services/attendance_service.dart';
+import 'package:intl/intl.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
+>>>>>>> b8402430cf2554874c13106363cb57eb110c9177
 import 'dart:typed_data';
 import 'dart:convert';
 import 'package:flutter/material.dart';
@@ -573,8 +584,55 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
       );
       ui.FrameInfo frameInfo = await codec.getNextFrame();
       
+<<<<<<< HEAD
       final byteData = await frameInfo.image.toByteData(format: ui.ImageByteFormat.png);
       return byteData!.buffer.asUint8List();
+=======
+      // Try to access camera - this will trigger browser permission popup
+      final ImagePicker picker = ImagePicker();
+      final XFile? photo = await picker.pickImage(
+        source: ImageSource.camera,
+        maxWidth: 1920,
+        maxHeight: 1080,
+        imageQuality: 85,
+      );
+
+      if (photo != null) {
+        print('📷 Web - Camera permission granted, processing photo...');
+        
+        // Process the captured photo
+        final Uint8List originalBytes = await photo.readAsBytes();
+        double originalSizeKB = originalBytes.length / 1024;
+        print('📷 Original image: ${originalSizeKB.toStringAsFixed(1)} KB');
+
+        // Resize image to 200KB target
+        print('📷 Starting image compression...');
+        final Uint8List compressedBytes = await _resizeImageToTarget(originalBytes, targetSizeKB: 200);
+        
+        print('📷 Setting state with compressed image...');
+        setState(() {
+          capturedImageFile = photo;
+          capturedImageBytes = compressedBytes;
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('📷 Camera access granted! Photo captured successfully.'),
+            backgroundColor: AppColors.primaryGreen,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      } else {
+        print('📷 Web - Camera access denied or cancelled');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('📷 Camera access denied. Please allow camera permission in your browser.'),
+            backgroundColor: AppColors.errorRed,
+            duration: Duration(seconds: 4),
+          ),
+        );
+      }
+>>>>>>> b8402430cf2554874c13106363cb57eb110c9177
     } catch (e) {
       print('Error compressing image: $e');
       return imageBytes;

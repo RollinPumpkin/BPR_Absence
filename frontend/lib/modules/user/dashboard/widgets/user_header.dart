@@ -176,7 +176,11 @@ class _UserHeaderState extends State<UserHeader> {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
+<<<<<<< HEAD
         builder: (context) => AttendanceFormPage(type: type),
+=======
+        builder: (context) => const AttendanceFormPage(),
+>>>>>>> b8402430cf2554874c13106363cb57eb110c9177
       ),
     );
     
