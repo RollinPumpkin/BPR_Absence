@@ -33,9 +33,6 @@ class _UserLettersPageState extends State<UserLettersPage> {
       bottomNavigationBar: CustomBottomNavRouter(
         currentIndex: 3,
         items: UserNavItems.items,
-        style: SimpleNavStyle.preset().copyWith(
-          indicatorColor: AppColors.primaryRed,
-        ),
       ),
     );
   }

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:frontend/core/constants/colors.dart';
 import 'package:frontend/core/widgets/custom_bottom_nav_router.dart';
 import 'package:frontend/modules/user/shared/user_nav_items.dart';
 
@@ -21,7 +20,7 @@ class UserDashboardPage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             /// Header with integrated clock card
-            const UserHeader(),
+            UserHeader(),
 
             const SizedBox(height: 20),
 
@@ -41,9 +40,6 @@ class UserDashboardPage extends StatelessWidget {
       bottomNavigationBar: CustomBottomNavRouter(
         currentIndex: 0,
         items: UserNavItems.items,
-        style: SimpleNavStyle.preset().copyWith(
-          indicatorColor: AppColors.primaryRed,
-        ),
       ),
     );
   }

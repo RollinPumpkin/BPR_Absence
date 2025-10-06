@@ -6,6 +6,164 @@ const upload = require('../middleware/upload');
 const router = express.Router();
 const db = getFirestore();
 
+// Get all users (Admin only)
+router.get('/', auth, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.user.role !== 'admin' && req.user.role !== 'account_officer') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Admin privileges required.'
+      });
+    }
+
+    const {
+      page = 1,
+      limit = 20,
+      search,
+      department,
+      status = 'active',
+      role
+    } = req.query;
+
+    let usersRef = db.collection('users');
+
+    // Apply basic query
+    usersRef = usersRef.orderBy('created_at', 'desc');
+
+    const snapshot = await usersRef.get();
+    let users = [];
+
+    snapshot.forEach(doc => {
+      const userData = doc.data();
+      const { password, ...userProfile } = userData;
+      
+      // Convert timestamps
+      if (userProfile.created_at && typeof userProfile.created_at.toDate === 'function') {
+        userProfile.created_at = userProfile.created_at.toDate();
+      }
+      if (userProfile.updated_at && typeof userProfile.updated_at.toDate === 'function') {
+        userProfile.updated_at = userProfile.updated_at.toDate();
+      }
+
+      users.push({
+        id: doc.id,
+        ...userProfile
+      });
+    });
+
+    // Apply filters in memory
+    let filteredUsers = users;
+
+    if (status && status !== 'all') {
+      filteredUsers = filteredUsers.filter(user => user.status === status);
+    }
+
+    if (department) {
+      filteredUsers = filteredUsers.filter(user => user.department === department);
+    }
+
+    if (role) {
+      filteredUsers = filteredUsers.filter(user => user.role === role);
+    }
+
+    if (search) {
+      const searchTerm = search.toLowerCase();
+      filteredUsers = filteredUsers.filter(user => 
+        user.full_name?.toLowerCase().includes(searchTerm) ||
+        user.email?.toLowerCase().includes(searchTerm) ||
+        user.employee_id?.toLowerCase().includes(searchTerm) ||
+        user.department?.toLowerCase().includes(searchTerm)
+      );
+    }
+
+    // Apply pagination
+    const startIndex = (parseInt(page) - 1) * parseInt(limit);
+    const endIndex = startIndex + parseInt(limit);
+    const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
+
+    res.json({
+      success: true,
+      data: {
+        users: paginatedUsers,
+        pagination: {
+          current_page: parseInt(page),
+          total_pages: Math.ceil(filteredUsers.length / parseInt(limit)),
+          total_records: filteredUsers.length,
+          limit: parseInt(limit),
+          has_next_page: endIndex < filteredUsers.length,
+          has_prev_page: parseInt(page) > 1
+        },
+        filters: {
+          search,
+          department,
+          status,
+          role
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Get users error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get users'
+    });
+  }
+});
+
+// Get user by ID (Admin only)
+router.get('/:userId', auth, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.user.role !== 'admin' && req.user.role !== 'account_officer') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Admin privileges required.'
+      });
+    }
+
+    const { userId } = req.params;
+    
+    const userDoc = await db.collection('users').doc(userId).get();
+    
+    if (!userDoc.exists) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    const userData = userDoc.data();
+    const { password, ...userProfile } = userData;
+
+    // Convert timestamps
+    if (userProfile.created_at && typeof userProfile.created_at.toDate === 'function') {
+      userProfile.created_at = userProfile.created_at.toDate();
+    }
+    if (userProfile.updated_at && typeof userProfile.updated_at.toDate === 'function') {
+      userProfile.updated_at = userProfile.updated_at.toDate();
+    }
+
+    res.json({
+      success: true,
+      data: {
+        user: {
+          id: userId,
+          ...userProfile
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Get user by ID error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get user'
+    });
+  }
+});
+
 // Get user profile
 router.get('/profile', auth, async (req, res) => {
   try {
@@ -45,14 +203,18 @@ router.put('/profile', auth, async (req, res) => {
   try {
     const { full_name, phone, department, position } = req.body;
 
-    const userRef = db.collection('users').doc(req.user.userId);
-    await userRef.update({
-      full_name,
-      phone,
-      department,
-      position,
+    // Build update object with only defined fields
+    const updateData = {
       updated_at: getServerTimestamp()
-    });
+    };
+
+    if (full_name !== undefined) updateData.full_name = full_name;
+    if (phone !== undefined) updateData.phone = phone;
+    if (department !== undefined) updateData.department = department;
+    if (position !== undefined) updateData.position = position;
+
+    const userRef = db.collection('users').doc(req.user.userId);
+    await userRef.update(updateData);
 
     res.json({
       success: true,

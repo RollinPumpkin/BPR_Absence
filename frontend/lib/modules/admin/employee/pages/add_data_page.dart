@@ -1,3 +1,4 @@
+
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
@@ -12,8 +13,9 @@ class AddEmployeePage extends StatefulWidget {
 
 class _AddEmployeePageState extends State<AddEmployeePage> {
   // Controllers
-  final TextEditingController firstNameController = TextEditingController();
-  final TextEditingController lastNameController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController fullnameController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
   final TextEditingController mobileController = TextEditingController();
   final TextEditingController placeOfBirthController = TextEditingController();
   final TextEditingController positionController = TextEditingController();
@@ -22,6 +24,7 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
   final TextEditingController accountNumberController = TextEditingController();
   final TextEditingController divisionController = TextEditingController();
   final TextEditingController _dobController = TextEditingController();
+  final TextEditingController departmentController = TextEditingController();
 
   // Dropdown values
   String? selectedGender;
@@ -29,14 +32,20 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
   String? selectedBank;
   String? selectedEducation;
   String? selectedWarningLetter;
+  String? selectedRole;
+  final List<String> roleOptions = ['Employee', 'Account Officer', 'Security', 'Office Boy'];
 
   // Date of Birth
   DateTime? selectedDate;
+  
+  // Password visibility
+  bool _isPasswordVisible = false;
 
   @override
   void dispose() {
-    firstNameController.dispose();
-    lastNameController.dispose();
+  emailController.dispose();
+  fullnameController.dispose();
+  passwordController.dispose();
     mobileController.dispose();
     placeOfBirthController.dispose();
     positionController.dispose();
@@ -45,6 +54,7 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
     accountNumberController.dispose();
     divisionController.dispose();
     _dobController.dispose();
+    departmentController.dispose();
     super.dispose();
   }
 
@@ -154,16 +164,45 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
 
               _field(
                 child: TextField(
-                  controller: firstNameController,
+                  controller: fullnameController,
                   keyboardType: TextInputType.name,
-                  decoration: _inputDec('First Name', 'Enter the First Name'),
+                  decoration: _inputDec('Full Name', 'Enter the Full Name'),
                 ),
               ),
               _field(
                 child: TextField(
-                  controller: lastNameController,
-                  keyboardType: TextInputType.name,
-                  decoration: _inputDec('Last Name', 'Enter the Last Name'),
+                  controller: emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: _inputDec('Email', 'Enter the Email', prefixIcon: const Icon(Icons.email, size: 18)),
+                ),
+              ),
+              _field(
+                child: TextField(
+                  controller: passwordController,
+                  obscureText: !_isPasswordVisible,
+                  decoration: _inputDec('Password', 'Enter the Password', 
+                    prefixIcon: const Icon(Icons.lock, size: 18),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                        size: 18,
+                        color: AppColors.neutral500,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _isPasswordVisible = !_isPasswordVisible;
+                        });
+                      },
+                    ),
+                  ),
+                ),
+              ),
+              _field(
+                child: _dropdown(
+                  label: 'Role',
+                  value: selectedRole,
+                  items: roleOptions,
+                  onChanged: (v) => setState(() => selectedRole = v),
                 ),
               ),
               _field(
@@ -234,6 +273,12 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
                 ),
               ),
               _field(
+                child: TextField(
+                  controller: departmentController,
+                  decoration: _inputDec('Department', 'Enter the Department'),
+                ),
+              ),
+              _field(
                 child: _dropdown(
                   label: 'Last Education',
                   value: selectedEducation,
@@ -281,7 +326,7 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
                 child: _dropdown(
                   label: 'Warning Letter Type',
                   value: selectedWarningLetter,
-                  items: const ['SP1', 'SP2', 'SP3'],
+                  items: const ['None', 'SP1', 'SP2', 'SP3'],
                   onChanged: (v) => setState(() => selectedWarningLetter = v),
                 ),
               ),
