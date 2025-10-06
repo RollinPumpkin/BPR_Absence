@@ -4,6 +4,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'core/no_animations.dart';
+import 'core/services/firestore_letter_service.dart';
 
 import 'data/providers/auth_provider.dart';
 import 'data/providers/attendance_provider.dart';
@@ -68,6 +69,9 @@ Future<void> main() async {
     await initializeDateFormatting('id_ID', null);
   } catch (_) {}
   
+  // Initialize Firebase
+  await FirestoreLetterService.initialize();
+  
   // Initialize API service and load stored token
   await ApiService.instance.initializeToken();
   
@@ -127,7 +131,7 @@ class MyApp extends StatelessWidget {
 
         '/user/dashboard': (_) => const user_dash.UserDashboardPage(),
         '/user/attendance': (_) => const user_att.UserAttendancePage(),
-        '/user/attendance/form': (_) => const AttendanceFormPage(),
+        '/user/attendance/form': (_) => const AttendanceFormPage(type: 'Clock In'),
         '/user/assignment': (_) => const user_assign.UserAssignmentPage(),
         '/user/letter': (_) => const user_letters.UserLettersPage(),
         '/user/profile': (_) => const user_profile.UserProfilePage(),

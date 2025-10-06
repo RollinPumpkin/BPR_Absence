@@ -7,6 +7,7 @@ class MyLetterCard extends StatelessWidget {
   final String date;
   final String status;
   final Color statusColor;
+  final VoidCallback? onTap;
 
   const MyLetterCard({
     super.key,
@@ -15,11 +16,14 @@ class MyLetterCard extends StatelessWidget {
     required this.date,
     required this.status,
     required this.statusColor,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.pureWhite,
@@ -130,6 +134,7 @@ class MyLetterCard extends StatelessWidget {
         ],
       ),
     );
+  }
   }
 
   void _showLetterDetails(BuildContext context) {

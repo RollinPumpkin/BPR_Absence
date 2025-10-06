@@ -48,6 +48,9 @@ dependencies:
   geocoding:
   permission_handler:
   google_maps_flutter:
+  firebase_core: ^2.24.2
+  cloud_firestore: ^4.13.6
+  firebase_auth: ^4.15.3
   table_calendar:
   excel:
   file_saver:
@@ -55,7 +58,6 @@ dependencies:
   cupertino_icons:
   url_launcher: ^6.2.5
   google_sign_in: ^6.2.1
-  firebase_auth: ^4.19.4
 
 dev_dependencies:
   flutter_test:

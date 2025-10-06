@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/core/constants/colors.dart';
+import '../../letters/letter_form_page.dart';
 
 class LetterTypeCard extends StatelessWidget {
   final String title;
   final String description;
   final IconData icon;
   final Color color;
+  final VoidCallback? onFormComplete;
 
   const LetterTypeCard({
     super.key,
@@ -13,6 +15,7 @@ class LetterTypeCard extends StatelessWidget {
     required this.description,
     required this.icon,
     required this.color,
+    this.onFormComplete,
   });
 
   @override
@@ -85,82 +88,17 @@ class LetterTypeCard extends StatelessWidget {
     );
   }
 
-  void _showLetterForm(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text("Submit $title"),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                decoration: const InputDecoration(
-                  labelText: "Subject",
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                maxLines: 5,
-                decoration: const InputDecoration(
-                  labelText: "Message",
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 16),
-              if (title.contains("Leave")) ...[
-                TextFormField(
-                  decoration: const InputDecoration(
-                    labelText: "Start Date",
-                    border: OutlineInputBorder(),
-                    suffixIcon: Icon(Icons.calendar_today),
-                  ),
-                  readOnly: true,
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  decoration: const InputDecoration(
-                    labelText: "End Date",
-                    border: OutlineInputBorder(),
-                    suffixIcon: Icon(Icons.calendar_today),
-                  ),
-                  readOnly: true,
-                ),
-                const SizedBox(height: 16),
-              ],
-              Row(
-                children: [
-                  Icon(Icons.attach_file, color: Colors.grey.shade600),
-                  const SizedBox(width: 8),
-                  Text(
-                    "Attach Document (Optional)",
-                    style: TextStyle(color: Colors.grey.shade600),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text("Letter submitted successfully!"),
-                  backgroundColor: AppColors.primaryGreen,
-                ),
-              );
-            },
-            child: const Text("Submit"),
-          ),
-        ],
+  void _showLetterForm(BuildContext context) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const LetterFormPage(),
       ),
     );
+    
+    // If the form was completed successfully, notify parent
+    if (result == true && onFormComplete != null) {
+      onFormComplete!();
+    }
   }
 }
