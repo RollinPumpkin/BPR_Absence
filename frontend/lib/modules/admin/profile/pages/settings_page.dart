@@ -17,6 +17,7 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.backgroundGray, // Fixed pink background
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),

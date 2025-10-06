@@ -140,6 +140,8 @@ class _UserLettersPageState extends State<UserLettersPage> {
               _buildFilterTab("Waiting approval"),
               const SizedBox(width: 12),
               _buildFilterTab("Approved"),
+              const SizedBox(width: 12),
+              _buildFilterTab("Rejected"),
             ],
           ),
         ],
@@ -310,7 +312,7 @@ class _UserLettersPageState extends State<UserLettersPage> {
   Widget _buildStatusIndicator(String status) {
     Color statusColor;
     switch (status.toLowerCase()) {
-      case 'Waiting approval':
+      case 'waiting approval':
         statusColor = AppColors.primaryBlue;
         break;
       case 'approved':

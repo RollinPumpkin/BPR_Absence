@@ -3,7 +3,7 @@ import 'package:frontend/core/constants/colors.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
-import '../../attendance/user_attendance_form_page.dart';
+import '../../attendance/attendance_form_page.dart';
 
 class UserHeader extends StatefulWidget {
   const UserHeader({super.key});
@@ -176,7 +176,7 @@ class _UserHeaderState extends State<UserHeader> {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => UserAttendanceFormPage(type: type),
+        builder: (context) => const AttendanceFormPage(),
       ),
     );
     
