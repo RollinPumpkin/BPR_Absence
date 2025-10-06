@@ -11,6 +11,7 @@ class Assignment {
   final String priority;
   final String status;
   final String createdBy;
+  final String? employeeId; // Add employee_id field
   final DateTime? createdAt;
 
   Assignment({
@@ -21,6 +22,7 @@ class Assignment {
     required this.priority,
     required this.status,
     required this.createdBy,
+    this.employeeId,
     this.createdAt,
   });
 
@@ -33,6 +35,7 @@ class Assignment {
       priority: json['priority'],
       status: json['status'],
       createdBy: json['createdBy'],
+      employeeId: json['employee_id'], // Parse employee_id
       createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
     );
   }
@@ -46,6 +49,7 @@ class Assignment {
       'priority': priority,
       'status': status,
       'createdBy': createdBy,
+      'employee_id': employeeId, // Include employee_id in JSON
       'createdAt': createdAt?.toIso8601String(),
     };
   }

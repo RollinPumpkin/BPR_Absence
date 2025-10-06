@@ -1,10 +1,10 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:frontend/core/constants/colors.dart';
-import 'package:dio/dio.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../data/services/api_service.dart';
+import '../../data/providers/auth_provider.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -26,8 +26,6 @@ class _LoginPageState extends State<LoginPage>
   late AnimationController _animController;
   late Animation<double> _fadeAnim;
   late Animation<Offset> _slideAnim;
-
-  final Dio _dio = Dio();
 
   @override
   void initState() {
@@ -105,38 +103,14 @@ class _LoginPageState extends State<LoginPage>
       final identifier = _emailController.text.trim();
       final password = _passwordController.text;
 
-      // Call backend authentication
-      final response = await _dio.post(
-        'http://localhost:3000/api/auth/login',
-        data: {
-          'email': identifier, // Backend expects 'email' field but accepts email/phone/employee_id
-          'password': password,
-        },
-        options: Options(
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        ),
+      // Use Firebase Authentication Provider
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final success = await authProvider.login(
+        email: identifier,
+        password: password,
       );
 
-      if (response.statusCode == 200) {
-        final data = response.data['data'];
-        final user = data['user'];
-        final token = data['token'];
-
-        // Save user data and token
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('token', token);
-        await prefs.setString('user_id', user['id']);
-        await prefs.setString('user_role', user['role']);
-        await prefs.setString('user_email', user['email']);
-        await prefs.setString('user_name', user['full_name']);
-        await prefs.setString('employee_id', user['employee_id']);
-        await prefs.setBool('is_logged_in', true);
-
-        // IMPORTANT: Set token in ApiService for authenticated requests
-        await ApiService.instance.setToken(token);
-
+      if (success && authProvider.currentUser != null) {
         // Save credentials if remember me is checked
         await _saveCredentials();
 
@@ -149,32 +123,29 @@ class _LoginPageState extends State<LoginPage>
           );
 
           // Route based on user role
-          if (user['role'] == 'admin' || user['role'] == 'account_officer') {
+          final userRole = authProvider.currentUser!.role;
+          if (userRole == 'admin' || userRole == 'account_officer') {
             Navigator.pushReplacementNamed(context, '/admin/dashboard');
           } else {
             Navigator.pushReplacementNamed(context, '/user/dashboard');
           }
         }
+      } else {
+        final errorMessage = authProvider.errorMessage ?? 'Invalid email/employee ID or password';
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(errorMessage),
+              backgroundColor: AppColors.errorRed,
+            ),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
-        String errorMessage = 'Login failed';
-        
-        if (e is DioException) {
-          if (e.response?.statusCode == 401) {
-            errorMessage = 'Invalid email or password';
-          } else if (e.response?.statusCode == 500) {
-            errorMessage = 'Server error. Please try again later.';
-          } else if (e.response?.data != null && e.response?.data['message'] != null) {
-            errorMessage = e.response?.data['message'];
-          }
-        } else {
-          errorMessage = 'Network error. Please check your connection.';
-        }
-
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(errorMessage),
+            content: Text('Login failed: ${e.toString()}'),
             backgroundColor: AppColors.errorRed,
           ),
         );

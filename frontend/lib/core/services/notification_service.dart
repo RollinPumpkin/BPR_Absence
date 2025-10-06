@@ -33,22 +33,41 @@ class NotificationService {
     }
   }
   
-  // Get notification setting from SharedPreferences
+  // Get notification setting from SharedPreferences with employee_id
   static Future<bool> getNotificationSetting() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      return prefs.getBool(_notificationEnabledKey) ?? false;
+      final employeeId = prefs.getString('employee_id') ?? '';
+      
+      // Use employee-specific key if available, otherwise fallback to general key
+      String key = employeeId.isNotEmpty 
+          ? '${_notificationEnabledKey}_$employeeId'
+          : _notificationEnabledKey;
+      
+      return prefs.getBool(key) ?? false;
     } catch (e) {
       print('Error getting notification setting: $e');
       return false;
     }
   }
   
-  // Update notification setting in SharedPreferences
+  // Update notification setting in SharedPreferences with employee_id
   static Future<void> setNotificationSetting(bool enabled) async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      final employeeId = prefs.getString('employee_id') ?? '';
+      
+      // Use employee-specific key if available, otherwise fallback to general key
+      String key = employeeId.isNotEmpty 
+          ? '${_notificationEnabledKey}_$employeeId'
+          : _notificationEnabledKey;
+      
+      await prefs.setBool(key, enabled);
+      
+      // Also save to general key for backward compatibility
       await prefs.setBool(_notificationEnabledKey, enabled);
+      
+      print('💾 Notification setting saved for employee: $employeeId, enabled: $enabled');
       
       // If user enables notifications, check if permission is granted
       if (enabled) {

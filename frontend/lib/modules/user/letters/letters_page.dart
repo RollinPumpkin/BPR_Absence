@@ -79,13 +79,32 @@ class _UserLettersPageState extends State<UserLettersPage> {
                 ),
               ),
               GestureDetector(
-                onTap: () {
-                  Navigator.push(
+                onTap: () async {
+                  final result = await Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => const LetterFormPage(),
                     ),
                   );
+                  
+                  // Refresh data if letter was submitted successfully
+                  if (result == true) {
+                    print('🔍 Debug: Letter submitted successfully, refreshing data...');
+                    print('🔍 Debug: Current selected filter: $selectedFilter');
+                    
+                    // Show loading state and refresh data
+                    setState(() {
+                      _isLoading = true;
+                    });
+                    
+                    // Small delay to ensure Firestore has processed the new data
+                    await Future.delayed(Duration(milliseconds: 500));
+                    await _loadLetters();
+                    
+                    print('🔍 Debug: Refresh completed, total letters loaded: ${_letters.length}');
+                  } else {
+                    print('🔍 Debug: Navigation result was not true: $result');
+                  }
                 },
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -397,6 +416,7 @@ class _UserLettersPageState extends State<UserLettersPage> {
   }
 
   Future<void> _loadLetters() async {
+    print('🔍 Debug: === Starting _loadLetters() ===');
     setState(() {
       _isLoading = true;
       _error = null;
@@ -409,10 +429,11 @@ class _UserLettersPageState extends State<UserLettersPage> {
       final userId = prefs.getString('user_id');
       final employeeId = prefs.getString('employee_id');
       
-      print('🔍 Debug: Loading letters...');
+      print('🔍 Debug: Loading letters for user...');
       print('🔍 Debug: User Email: $userEmail');
       print('🔍 Debug: User ID: $userId');
       print('🔍 Debug: Employee ID: $employeeId');
+      print('🔍 Debug: Selected Filter: $selectedFilter');
       
       if (userId == null && employeeId == null && userEmail == null) {
         throw Exception('User info not found. Please log in again.');
@@ -420,6 +441,28 @@ class _UserLettersPageState extends State<UserLettersPage> {
       
       // Try multiple approaches to get letters
       List<Map<String, dynamic>> letters = [];
+      
+      // First, let's check what's actually in Firestore
+      print('🔍 Debug: === Checking all letters in Firestore ===');
+      final allLettersSnapshot = await FirebaseFirestore.instance
+          .collection('letters')
+          .orderBy('createdAt', descending: true)
+          .limit(10)
+          .get();
+      
+      print('🔍 Debug: Found ${allLettersSnapshot.docs.length} total letters in Firestore:');
+      for (var doc in allLettersSnapshot.docs) {
+        final data = doc.data();
+        print('  - ID: ${doc.id}');
+        print('    Subject: ${data['subject']}');
+        print('    user_id: ${data['user_id']}');
+        print('    recipientId: ${data['recipientId']}');
+        print('    recipientEmployeeId: ${data['recipientEmployeeId']}');
+        print('    recipientEmail: ${data['recipientEmail']}');
+        print('    status: ${data['status']}');
+        print('    createdAt: ${data['createdAt']}');
+        print('---');
+      }
       
       // Approach 1: Try by employeeId first (most specific)
       if (employeeId != null) {
@@ -442,6 +485,14 @@ class _UserLettersPageState extends State<UserLettersPage> {
         print('🔍 Debug: Found ${letters.length} letters by email');
       }
       
+      // Approach 3.5: Try by user_id field (new submission format)
+      if (letters.isEmpty && (employeeId != null || userId != null)) {
+        final searchId = employeeId ?? userId;
+        print('🔍 Debug: Trying to fetch by user_id field: $searchId');
+        letters = await _getLettersByUserIdField(searchId!);
+        print('🔍 Debug: Found ${letters.length} letters by user_id field');
+      }
+      
       // Approach 4: If still no results, try to get all letters and filter
       if (letters.isEmpty) {
         print('🔍 Debug: Trying to fetch all letters and filter...');
@@ -460,6 +511,11 @@ class _UserLettersPageState extends State<UserLettersPage> {
       for (var letter in letters) {
         print('  - ${letter['title']} (${letter['status']})');
       }
+      
+      // Debug: Check what's in the current filter
+      print('🔍 Debug: Current filter: $selectedFilter');
+      final filteredCount = _getFilteredLetters().length;
+      print('🔍 Debug: Filtered letters count: $filteredCount');
     } catch (e) {
       print('🔍 Debug: Error loading letters: $e');
       setState(() {
@@ -526,6 +582,28 @@ class _UserLettersPageState extends State<UserLettersPage> {
     }
   }
 
+  Future<List<Map<String, dynamic>>> _getLettersByUserIdField(String userId) async {
+    try {
+      final firestore = FirebaseFirestore.instance;
+      final querySnapshot = await firestore
+          .collection('letters')
+          .where('user_id', isEqualTo: userId)
+          .orderBy('createdAt', descending: true)
+          .get();
+
+      print('🔍 Debug: Query by user_id="$userId" returned ${querySnapshot.docs.length} documents');
+      
+      return querySnapshot.docs.map((doc) {
+        final data = doc.data();
+        print('🔍 Debug: Found letter: ${data['subject']} with user_id: ${data['user_id']}');
+        return _convertFirestoreDataToLetter(doc.id, data);
+      }).toList();
+    } catch (e) {
+      print('Error fetching letters by user_id field: $e');
+      return [];
+    }
+  }
+
   Future<List<Map<String, dynamic>>> _getAllLettersAndFilter(String? email, String? userId, String? employeeId) async {
     try {
       final firestore = FirebaseFirestore.instance;
@@ -573,6 +651,8 @@ class _UserLettersPageState extends State<UserLettersPage> {
 
     // Map status values
     String status = data['status'] ?? 'waiting_approval';
+    print('🔍 Debug: Converting letter ${data['subject']} - Original status: ${data['status']}, Mapped status: $status');
+    
     if (status == 'waiting_approval') {
       status = 'Waiting Approval';
     } else if (status == 'approved') {
@@ -581,7 +661,7 @@ class _UserLettersPageState extends State<UserLettersPage> {
       status = 'Rejected';
     }
 
-    return {
+    final convertedLetter = {
       'id': docId,
       'title': data['subject'] ?? 'No Subject',
       'date': formattedDate,
@@ -592,12 +672,25 @@ class _UserLettersPageState extends State<UserLettersPage> {
       'email': data['recipientEmail'],
       'employeeId': data['recipientEmployeeId'],
     };
+    
+    print('🔍 Debug: Converted letter: ${convertedLetter['title']} - Final status: ${convertedLetter['status']}');
+    return convertedLetter;
   }
 
   List<Map<String, dynamic>> _getFilteredLetters() {
-    return _letters.where((letter) {
-      return letter['status'].toLowerCase() == selectedFilter.toLowerCase();
+    print('🔍 Debug: Filtering ${_letters.length} letters with filter: "$selectedFilter"');
+    
+    final filtered = _letters.where((letter) {
+      final letterStatus = letter['status'].toLowerCase();
+      final filterStatus = selectedFilter.toLowerCase();
+      final matches = letterStatus == filterStatus;
+      
+      print('🔍 Debug: Letter "${letter['title']}" status "$letterStatus" matches filter "$filterStatus": $matches');
+      return matches;
     }).toList();
+    
+    print('🔍 Debug: Filter result: ${filtered.length} letters match');
+    return filtered;
   }
 
   List<Map<String, dynamic>> _getAllLetters() {

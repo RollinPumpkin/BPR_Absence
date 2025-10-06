@@ -12,6 +12,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:frontend/core/constants/colors.dart';
 import 'package:frontend/core/services/location_service.dart';
 import 'package:frontend/data/services/attendance_service.dart';
@@ -43,14 +44,30 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
   String selectedAbsentType = 'Clock In';
   DateTime? startDate;
   DateTime? endDate;
-  final List<String> absentTypes = [
+  bool isUserClockedIn = false; // Track if user is currently clocked in
+  
+  // Separate options for Clock In and Clock Out
+  final List<String> clockInTypes = [
     'Clock In',
-    'Clock Out',
     'Absent',
+  ];
+  
+  final List<String> clockOutTypes = [
+    'Clock Out',
     'Annual Leave',
     'Sick Leave',
   ];
+  
   late Timer _timer;
+  
+  // Determine available options based on current clock status
+  List<String> get availableOptions {
+    if (isUserClockedIn) {
+      return clockOutTypes;
+    } else {
+      return clockInTypes;
+    }
+  }
   String currentTime = '';
   String currentDate = '';
   final TextEditingController _notesController = TextEditingController();
@@ -66,7 +83,95 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
     _getCurrentLocation();
     // Initialize camera permission (for web, this will be set to true automatically)
     _requestCameraPermission();
+    _checkUserClockStatus(); // Check current clock status
     _initializeDatesBasedOnType();
+  }
+  
+  // Check if user is currently clocked in
+  Future<void> _checkUserClockStatus() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final employeeId = prefs.getString('employee_id') ?? '';
+      final userId = prefs.getString('user_id') ?? ''; // Fallback
+      
+      if (employeeId.isEmpty && userId.isEmpty) {
+        print('❌ No employee_id or user_id found in SharedPreferences');
+        setState(() {
+          isUserClockedIn = false;
+          selectedAbsentType = clockInTypes.first;
+        });
+        return;
+      }
+
+      // Get today's date
+      final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+      
+      // Check Firestore for today's attendance record - prefer employee_id
+      Query attendanceQuery = FirebaseFirestore.instance.collection('attendance');
+      
+      if (employeeId.isNotEmpty) {
+        attendanceQuery = attendanceQuery.where('employee_id', isEqualTo: employeeId);
+        print('📊 Checking attendance with employee_id: $employeeId');
+      } else {
+        attendanceQuery = attendanceQuery.where('user_id', isEqualTo: userId);
+        print('📊 Checking attendance with user_id: $userId (fallback)');
+      }
+      
+      final results = await attendanceQuery
+          .where('date', isEqualTo: today)
+          .orderBy('created_at', descending: true)
+          .limit(1)
+          .get();
+
+      bool isCurrentlyClockedIn = false;
+      
+      if (results.docs.isNotEmpty) {
+        final attendanceData = results.docs.first.data() as Map<String, dynamic>;
+        final checkInTime = attendanceData['check_in_time'];
+        final checkOutTime = attendanceData['check_out_time'];
+        
+        // User is clocked in if there's a check_in_time but no check_out_time
+        isCurrentlyClockedIn = checkInTime != null && checkOutTime == null;
+        
+        print('📊 Found attendance record for today:');
+        print('🕐 Check in time: $checkInTime');
+        print('🕑 Check out time: $checkOutTime');
+      } else {
+        print('📊 No attendance record found for today');
+      }
+      
+      setState(() {
+        isUserClockedIn = isCurrentlyClockedIn;
+        selectedAbsentType = isUserClockedIn ? clockOutTypes.first : clockInTypes.first;
+      });
+      
+      print('📊 User clock status: ${isUserClockedIn ? "Clocked In" : "Clocked Out"}');
+      print('📋 Default selected type: $selectedAbsentType');
+      
+    } catch (e) {
+      print('❌ Error checking clock status from Firestore: $e');
+      setState(() {
+        isUserClockedIn = false;
+        selectedAbsentType = clockInTypes.first;
+      });
+    }
+  }
+  
+  // Update clock status after successful submission
+  void _updateClockStatus() {
+    setState(() {
+      if (selectedAbsentType == 'Clock In') {
+        isUserClockedIn = true;
+        selectedAbsentType = clockOutTypes.first; // Set to first clock out option
+      } else if (clockOutTypes.contains(selectedAbsentType)) {
+        isUserClockedIn = false;
+        selectedAbsentType = clockInTypes.first; // Set to first clock in option
+      }
+      // Reset dates when status changes
+      _initializeDatesBasedOnType();
+    });
+    print('📊 Clock status updated: ${isUserClockedIn ? "Clocked In" : "Clocked Out"}');
+    print('📋 New selected type: $selectedAbsentType');
   }
 
   @override
@@ -350,51 +455,25 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
       print('📷 Platform: ${kIsWeb ? "Web" : "Mobile"}');
       print('📷 Has camera permission: $hasCameraPermission');
       
-      Uint8List? photoBytes;
+      final picker = ImagePicker();
       
-      if (kIsWeb) {
-        // Try web camera capture first
-        photoBytes = await _captureFromWebCamera();
-        
-        if (photoBytes == null) {
-          // Fallback to image picker
-          print('📷 Fallback to image picker...');
-          final picker = ImagePicker();
-          final photo = await picker.pickImage(
-            source: ImageSource.camera,
-            maxWidth: 1200,
-            maxHeight: 1200,
-            imageQuality: 80,
-          );
-          
-          if (photo != null) {
-            photoBytes = await photo.readAsBytes();
-          }
-        }
-      } else {
-        // Mobile platform - use image picker
-        final picker = ImagePicker();
-        final photo = await picker.pickImage(
-          source: ImageSource.camera,
-          maxWidth: 1200,
-          maxHeight: 1200,
-          imageQuality: 80,
-        );
-        
-        if (photo != null) {
-          photoBytes = await photo.readAsBytes();
-          setState(() {
-            capturedImageFile = photo;
-          });
-        }
-      }
+      // Use camera directly for both web and mobile with square ratio
+      final photo = await picker.pickImage(
+        source: ImageSource.camera,
+        maxWidth: 800,
+        maxHeight: 800,
+        imageQuality: 85,
+        preferredCameraDevice: CameraDevice.front, // Use front camera for selfie
+      );
 
-      print('📷 Photo capture result: ${photoBytes != null ? "Success" : "Cancelled"}');
+      print('📷 Photo capture result: ${photo != null ? "Success" : "Cancelled"}');
 
-      if (photoBytes != null) {
-        final compressedBytes = await _compressImage(photoBytes);
+      if (photo != null) {
+        final photoBytes = await photo.readAsBytes();
+        final compressedBytes = await _compressImageToSquare(photoBytes);
         
         setState(() {
+          capturedImageFile = photo;
           capturedImageBytes = compressedBytes;
         });
 
@@ -564,6 +643,58 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
     );
   }
 
+  Future<Uint8List> _compressImageToSquare(Uint8List imageBytes) async {
+    try {
+      // Decode the image first
+      ui.Codec codec = await ui.instantiateImageCodec(imageBytes);
+      ui.FrameInfo frameInfo = await codec.getNextFrame();
+      ui.Image originalImage = frameInfo.image;
+      
+      // Calculate square size (use the smaller dimension)
+      int originalWidth = originalImage.width;
+      int originalHeight = originalImage.height;
+      int squareSize = originalWidth < originalHeight ? originalWidth : originalHeight;
+      
+      // Target size for square image
+      int targetSize = 400; // 400x400 pixels for better performance
+      
+      // Create square canvas
+      final recorder = ui.PictureRecorder();
+      final canvas = Canvas(recorder);
+      
+      // Calculate crop position to center the image
+      double sourceX = (originalWidth - squareSize) / 2;
+      double sourceY = (originalHeight - squareSize) / 2;
+      
+      // Draw the cropped and resized image
+      canvas.drawImageRect(
+        originalImage,
+        Rect.fromLTWH(sourceX, sourceY, squareSize.toDouble(), squareSize.toDouble()),
+        Rect.fromLTWH(0, 0, targetSize.toDouble(), targetSize.toDouble()),
+        Paint(),
+      );
+      
+      // Convert to image
+      final picture = recorder.endRecording();
+      final squareImage = await picture.toImage(targetSize, targetSize);
+      
+      // Convert to bytes
+      final ByteData? byteData = await squareImage.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData != null) {
+        final compressedBytes = byteData.buffer.asUint8List();
+        print('📷 Image compressed to square: ${targetSize}x${targetSize}, size: ${compressedBytes.length} bytes');
+        return compressedBytes;
+      }
+      
+      // Fallback to original compression if square processing fails
+      return await _compressImage(imageBytes);
+    } catch (e) {
+      print('❌ Error creating square image: $e');
+      // Fallback to original compression
+      return await _compressImage(imageBytes);
+    }
+  }
+
   Future<Uint8List> _compressImage(Uint8List imageBytes) async {
     try {
       // Compress the image using ui.instantiateImageCodec
@@ -629,11 +760,16 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
     final userId = prefs.getString('user_id') ?? '';
     
     if (selectedAbsentType == 'Clock In') {
+      // Set clock in time and clear clock out time for the day
+      await prefs.setString('clock_in_time', currentTime);
       await prefs.setString('clock_in_${userId}_$today', currentTime);
+      await prefs.remove('clock_out_time'); // Clear clock out
       print('✅ Clock In time saved: $currentTime');
-    } else if (selectedAbsentType == 'Clock Out') {
+    } else if (clockOutTypes.contains(selectedAbsentType)) {
+      // Set clock out time
+      await prefs.setString('clock_out_time', currentTime);
       await prefs.setString('clock_out_${userId}_$today', currentTime);
-      print('✅ Clock Out time saved: $currentTime');
+      print('✅ Clock Out time saved: $currentTime for type: $selectedAbsentType');
     }
   }
 
@@ -693,6 +829,9 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
       if (response.success) {
         // Save clock in/out time to SharedPreferences for dashboard display
         await _saveTimeToSharedPreferences();
+        
+        // Update clock status based on the submitted type
+        _updateClockStatus();
         
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -870,6 +1009,68 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
             
             const SizedBox(height: 20),
             
+            // Clock Status Indicator
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: isUserClockedIn ? AppColors.primaryGreen.withOpacity(0.1) : AppColors.primaryBlue.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: isUserClockedIn ? AppColors.primaryGreen : AppColors.primaryBlue,
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    isUserClockedIn ? Icons.check_circle : Icons.access_time,
+                    color: isUserClockedIn ? AppColors.primaryGreen : AppColors.primaryBlue,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    isUserClockedIn ? 'Currently Clocked In' : 'Ready to Clock In',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: isUserClockedIn ? AppColors.primaryGreen : AppColors.primaryBlue,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+            // DEBUG: Toggle Clock Status Button (for testing)
+            const SizedBox(height: 8),
+            Container(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  setState(() {
+                    isUserClockedIn = !isUserClockedIn;
+                    selectedAbsentType = isUserClockedIn ? clockOutTypes.first : clockInTypes.first;
+                    _initializeDatesBasedOnType();
+                  });
+                  print('🔄 DEBUG: Clock status toggled to ${isUserClockedIn ? "Clocked In" : "Clocked Out"}');
+                  print('📋 DEBUG: Selected type: $selectedAbsentType');
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orange,
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                ),
+                child: Text(
+                  'DEBUG: Toggle to ${isUserClockedIn ? "Clock Out Mode" : "Clock In Mode"}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+            
+            const SizedBox(height: 20),
+            
             // Absent Type Dropdown
             Container(
               width: double.infinity,
@@ -887,7 +1088,7 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                     style: TextStyle(color: Colors.grey),
                   ),
                   icon: const Icon(Icons.keyboard_arrow_down),
-                  items: absentTypes.map((String type) {
+                  items: availableOptions.map((String type) {
                     Color? backgroundColor;
                     if (type == 'Absent') {
                       backgroundColor = AppColors.primaryYellow;
@@ -912,10 +1113,12 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                     );
                   }).toList(),
                   onChanged: (String? newValue) {
-                    setState(() {
-                      selectedAbsentType = newValue!;
-                      _initializeDatesBasedOnType();
-                    });
+                    if (newValue != null && availableOptions.contains(newValue)) {
+                      setState(() {
+                        selectedAbsentType = newValue;
+                        _initializeDatesBasedOnType();
+                      });
+                    }
                   },
                 ),
               ),
@@ -1078,7 +1281,7 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
               },
               child: Container(
                 width: double.infinity,
-                height: capturedImageFile != null ? 200 : 110,
+                height: 200, // Fixed height for 1:1 preview
                 decoration: BoxDecoration(
                   color: capturedImageFile == null
                       ? AppColors.primaryBlue.withValues(alpha: 0.02)
@@ -1096,21 +1299,22 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                         children: [
                           ClipRRect(
                             borderRadius: BorderRadius.circular(7),
-                            child: kIsWeb
-                                ? Image.memory(
-                                    capturedImageBytes!,
-                                    width: double.infinity,
-                                    height: double.infinity,
-                                    fit: BoxFit.cover,
-                                  )
-                                : capturedImageBytes != null
+                            child: Center(
+                              child: AspectRatio(
+                                aspectRatio: 1.0, // 1:1 aspect ratio
+                                child: kIsWeb
                                     ? Image.memory(
                                         capturedImageBytes!,
-                                        width: double.infinity,
-                                        height: double.infinity,
                                         fit: BoxFit.cover,
                                       )
-                                    : Container(),
+                                    : capturedImageBytes != null
+                                        ? Image.memory(
+                                            capturedImageBytes!,
+                                            fit: BoxFit.cover,
+                                          )
+                                        : Container(),
+                              ),
+                            ),
                           ),
                           Positioned(
                             top: 8,
@@ -1529,7 +1733,7 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
   }
 }
 
-// Dummy attendance service for testing
+// Real attendance service that saves to Firestore
 class DummyAttendanceService {
   Future<DummyAttendanceResponse> submitAttendanceWithImage({
     required String type,
@@ -1541,8 +1745,99 @@ class DummyAttendanceService {
     required XFile? image,
     required String notes,
   }) async {
-    await Future.delayed(const Duration(seconds: 1));
-    return DummyAttendanceResponse(success: true, message: 'Success');
+    try {
+      // Get employee ID from SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final employeeId = prefs.getString('employee_id') ?? '';
+      final userId = prefs.getString('user_id') ?? ''; // Keep user_id as backup
+      
+      if (employeeId.isEmpty) {
+        return DummyAttendanceResponse(success: false, message: 'Employee ID not found');
+      }
+
+      // Prepare data for Firestore
+      final now = DateTime.now();
+      final today = DateFormat('yyyy-MM-dd').format(now);
+      final currentTime = DateFormat('HH:mm:ss').format(now);
+      
+      // Get current attendance record for today (if exists)
+      final attendanceQuery = await FirebaseFirestore.instance
+          .collection('attendance')
+          .where('employee_id', isEqualTo: employeeId)
+          .where('date', isEqualTo: today)
+          .limit(1)
+          .get();
+
+      Map<String, dynamic> attendanceData = {
+        'employee_id': employeeId,
+        'user_id': userId, // Keep for backward compatibility
+        'date': today,
+        'created_at': FieldValue.serverTimestamp(),
+      };
+
+      if (type == 'Clock In') {
+        // Clock In
+        attendanceData.addAll({
+          'check_in_time': currentTime,
+          'check_in_location': {
+            'address': address,
+            'latitude': latitude,
+            'longitude': longitude,
+          },
+        });
+        
+        if (attendanceQuery.docs.isNotEmpty) {
+          // Update existing record
+          await attendanceQuery.docs.first.reference.update(attendanceData);
+        } else {
+          // Create new record
+          await FirebaseFirestore.instance.collection('attendance').add(attendanceData);
+        }
+        
+      } else if (['Clock Out', 'Annual Leave', 'Sick Leave'].contains(type)) {
+        // Clock Out (including leave types)
+        attendanceData.addAll({
+          'check_out_time': currentTime,
+          'check_out_location': {
+            'address': address,
+            'latitude': latitude,
+            'longitude': longitude,
+          },
+          'type': type, // Store the leave type if applicable
+        });
+        
+        if (attendanceQuery.docs.isNotEmpty) {
+          // Update existing record
+          await attendanceQuery.docs.first.reference.update(attendanceData);
+        } else {
+          // This shouldn't happen (clock out without clock in), but handle it
+          attendanceData['check_in_time'] = '00:00:00'; // Default
+          await FirebaseFirestore.instance.collection('attendance').add(attendanceData);
+        }
+        
+      } else if (type == 'Absent') {
+        // Absent - no check in/out times, just mark as absent
+        attendanceData.addAll({
+          'type': 'Absent',
+          'location': {
+            'address': address,
+            'latitude': latitude,
+            'longitude': longitude,
+          },
+        });
+        
+        await FirebaseFirestore.instance.collection('attendance').add(attendanceData);
+      }
+
+      print('✅ Attendance saved to Firestore successfully');
+      print('📊 Type: $type, Date: $today, Time: $currentTime');
+      
+      return DummyAttendanceResponse(success: true, message: 'Attendance saved successfully');
+      
+    } catch (e) {
+      print('❌ Error saving attendance to Firestore: $e');
+      return DummyAttendanceResponse(success: false, message: 'Error: $e');
+    }
   }
 }
 
