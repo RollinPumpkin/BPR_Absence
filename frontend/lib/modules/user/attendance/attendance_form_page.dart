@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-import 'dart:async';
-import 'dart:io';
-=======
 import 'package:flutter/material.dart';
 import 'package:frontend/core/constants/colors.dart';
 import 'package:frontend/core/services/location_service.dart';
@@ -10,7 +6,6 @@ import 'package:intl/intl.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
->>>>>>> b8402430cf2554874c13106363cb57eb110c9177
 import 'dart:typed_data';
 import 'dart:convert';
 import 'package:flutter/material.dart';
@@ -584,10 +579,6 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
       );
       ui.FrameInfo frameInfo = await codec.getNextFrame();
       
-<<<<<<< HEAD
-      final byteData = await frameInfo.image.toByteData(format: ui.ImageByteFormat.png);
-      return byteData!.buffer.asUint8List();
-=======
       // Try to access camera - this will trigger browser permission popup
       final ImagePicker picker = ImagePicker();
       final XFile? photo = await picker.pickImage(
@@ -632,7 +623,6 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
           ),
         );
       }
->>>>>>> b8402430cf2554874c13106363cb57eb110c9177
     } catch (e) {
       print('Error compressing image: $e');
       return imageBytes;
