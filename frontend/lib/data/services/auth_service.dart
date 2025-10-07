@@ -24,6 +24,11 @@ class AuthService {
   // Check if user is authenticated
   bool get isAuthenticated => useMockService ? _mockService.isAuthenticated : _apiService.isAuthenticated;
 
+  // Save token to storage and ApiService
+  Future<void> saveToken(String token) async {
+    await _apiService.setToken(token);
+  }
+
   // Validate and refresh token
   Future<bool> validateAndRefreshToken() async {
     if (!isAuthenticated) return false;

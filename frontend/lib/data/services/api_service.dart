@@ -116,6 +116,9 @@ class ApiService {
     print('🔑 Token initialized: ${_token != null ? "Available" : "Not found"}');
   }
 
+  // Check if user is authenticated (has valid token)
+  bool get isAuthenticated => _token != null && _token!.isNotEmpty;
+
   // Set token and save to storage
   Future<void> setToken(String token) async {
     _token = token;
@@ -536,9 +539,6 @@ class ApiService {
       return false;
     }
   }
-
-  // Check if user is authenticated
-  bool get isAuthenticated => _token != null && _token!.isNotEmpty;
 
   // Get current token
   String? get currentToken => _token;
