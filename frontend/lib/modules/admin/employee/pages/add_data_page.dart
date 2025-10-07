@@ -1,11 +1,10 @@
-
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/core/constants/colors.dart';
-import '../../../data/providers/auth_provider.dart';
-import '../../../data/services/api_service.dart';
+import '../../../../data/providers/auth_provider.dart';
+import '../../../../data/services/api_service.dart';
 
 class AddEmployeePage extends StatefulWidget {
   const AddEmployeePage({super.key});
@@ -107,7 +106,6 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.backgroundGray,
-
       appBar: AppBar(
         backgroundColor: AppColors.pureWhite,
         elevation: 0,
@@ -124,7 +122,6 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Container(
@@ -160,7 +157,7 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
                   const SizedBox(width: 12),
                   ElevatedButton.icon(
                     onPressed: () {
-                      // TODO: implement upload image (pakai image_picker/file_picker bila diperlukan)
+                      // TODO: implement upload image
                     },
                     icon: const Icon(Icons.upload, size: 18),
                     label: const Text('Upload Photo'),
@@ -174,10 +171,8 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
                   ),
                 ],
               ),
-
               const SizedBox(height: 16),
               const _SectionDivider(title: 'Personal Information'),
-
               _field(
                 child: TextField(
                   controller: fullnameController,
@@ -258,10 +253,8 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
                   },
                 ),
               ),
-
               const SizedBox(height: 8),
               const _SectionDivider(title: 'Employment'),
-
               _field(
                 child: TextField(
                   controller: positionController,
@@ -296,9 +289,7 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
                   onChanged: (v) => setState(() => selectedEducation = v),
                 ),
               ),
-
               const SizedBox(height: 20),
-
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
@@ -386,7 +377,7 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
               backgroundColor: AppColors.primaryGreen,
             ),
           );
-          Navigator.pop(context, true); // Return true to indicate success
+          Navigator.pop(context, true);
         }
       } else {
         _showError(response.message ?? 'Failed to create employee');
@@ -458,7 +449,7 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
         prefix = 'EMP';
     }
 
-    // Generate next ID number (this should ideally check existing IDs from backend)
+    // Generate next ID number
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     final idNumber = (timestamp % 1000).toString().padLeft(3, '0');
     
@@ -491,74 +482,6 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
         ),
       );
     }
-  }
-                  decoration: _inputDec("Account Holder’s Name", 'Bank Number Account Holder Name'),
-                ),
-              ),
-              _field(
-                child: TextField(
-                  controller: accountNumberController,
-                  keyboardType: TextInputType.number,
-                  decoration: _inputDec('Account Number', 'Enter the Account Number'),
-                ),
-              ),
-
-              const SizedBox(height: 8),
-              const _SectionDivider(title: 'Other'),
-
-              _field(
-                child: _dropdown(
-                  label: 'Warning Letter Type',
-                  value: selectedWarningLetter,
-                  items: const ['None', 'SP1', 'SP2', 'SP3'],
-                  onChanged: (v) => setState(() => selectedWarningLetter = v),
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  OutlinedButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.neutral800,
-                      side: const BorderSide(color: AppColors.dividerGray),
-                      backgroundColor: AppColors.pureWhite,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    ),
-                    child: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.w700)),
-                  ),
-                  const SizedBox(width: 10),
-                  ElevatedButton(
-                    onPressed: () {
-                      // TODO: Save logic
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Employee saved'),
-                          backgroundColor: AppColors.primaryGreen,
-                        ),
-                      );
-                      Navigator.pop(context);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primaryGreen,
-                      foregroundColor: AppColors.pureWhite,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                      elevation: 0,
-                    ),
-                    child: const Text('Save', style: TextStyle(fontWeight: FontWeight.w800)),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 
   // ===== Helpers =====
