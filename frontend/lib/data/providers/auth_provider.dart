@@ -54,15 +54,70 @@ class AuthProvider with ChangeNotifier {
       );
 
       if (response.success && response.data != null) {
-        // Handle both MockLoginResponse and regular LoginResponse
-        if (response.data is Map) {
-          _currentUser = response.data['user'];
+        // Parse user data and token from response
+        User? user;
+        String? token;
+        
+        if (response.data is Map<String, dynamic>) {
+          // Backend API response format: {user: {...}, token: "..."}
+          final responseData = response.data as Map<String, dynamic>;
+          if (responseData.containsKey('user')) {
+            final userData = responseData['user'];
+            if (userData is Map<String, dynamic>) {
+              user = User.fromJson(userData);
+            }
+          } else {
+            // Try to parse as User directly
+            try {
+              user = User.fromJson(responseData);
+            } catch (e) {
+              print('Failed to parse user data as User: $e');
+            }
+          }
+          
+          // Extract token
+          if (responseData.containsKey('token')) {
+            token = responseData['token'] as String?;
+          }
         } else {
-          _currentUser = response.data.user;
+          // Check if response.data has a 'user' property (for mock responses)
+          try {
+            final userData = response.data.user;
+            if (userData is Map<String, dynamic>) {
+              user = User.fromJson(userData);
+            } else if (userData is User) {
+              user = userData;
+            }
+            
+            // Try to get token
+            try {
+              token = response.data.token as String?;
+            } catch (e) {
+              print('Failed to extract token: $e');
+            }
+          } catch (e) {
+            print('Failed to access user property: $e');
+          }
         }
-        _isAuthenticated = true;
-        notifyListeners();
-        return true;
+        
+        if (user != null) {
+          _currentUser = user;
+          _isAuthenticated = true;
+          
+          // Save token to ApiService if available
+          if (token != null && token.isNotEmpty) {
+            await _authService.saveToken(token);
+            print('✅ Token saved after login: ${token.substring(0, 20)}...');
+          } else {
+            print('⚠️ No token received from login response');
+          }
+          
+          notifyListeners();
+          return true;
+        } else {
+          _setError('Invalid user data received');
+          return false;
+        }
       } else {
         _setError(response.message ?? 'Login failed');
         return false;
