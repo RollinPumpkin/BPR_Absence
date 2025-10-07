@@ -511,19 +511,14 @@ class _UserAssignmentPageState extends State<UserAssignmentPage> {
       // Check if has assignment
       bool hasAssignment = _hasAssignmentOnDate(currentDay);
 
-      // Determine colors based on priority: Selected > Today > HasAssignment > Default
+      // Determine colors based on priority: Today (blue) > Selected (yellow) > HasAssignment > Default
       Color backgroundColor;
       Color textColor;
       FontWeight fontWeight = FontWeight.normal;
       Border? border;
 
-      if (isSelected) {
-        // Selected date has highest priority - blue background
-        backgroundColor = AppColors.primaryBlue;
-        textColor = AppColors.pureWhite;
-        fontWeight = FontWeight.bold;
-      } else if (isToday) {
-        // Today - blue background if no assignment, or blue border if has assignment
+      if (isToday) {
+        // Today has highest priority - always blue background
         if (hasAssignment) {
           backgroundColor = AppColors.errorRed;
           textColor = AppColors.pureWhite;
@@ -532,6 +527,11 @@ class _UserAssignmentPageState extends State<UserAssignmentPage> {
           backgroundColor = AppColors.primaryBlue;
           textColor = AppColors.pureWhite;
         }
+        fontWeight = FontWeight.bold;
+      } else if (isSelected) {
+        // Selected date (not today) - yellow background
+        backgroundColor = AppColors.primaryYellow;
+        textColor = AppColors.pureWhite;
         fontWeight = FontWeight.bold;
       } else if (hasAssignment) {
         // Has assignment - red background
