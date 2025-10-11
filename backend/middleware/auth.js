@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
+const { getAuth } = require('../config/database');
 
-// Cache for decoded tokens to reduce JWT verification overhead
+// Cache for decoded tokens to reduce verification overhead
 const tokenCache = new Map();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
@@ -33,50 +34,86 @@ const auth = (req, res, next) => {
       return next();
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
-    // Cache the decoded token
-    tokenCache.set(token, {
-      decoded: decoded,
-      timestamp: Date.now()
-    });
-    
-    // Clean up expired cache entries periodically
-    if (Math.random() < 0.01) { // 1% chance to trigger cleanup
-      cleanupCache();
-    }
-    
-    req.user = decoded;
-    next();
-
+    // Try Firebase ID token verification first
+    verifyFirebaseToken(token)
+      .then(decoded => {
+        // Cache the decoded token
+        tokenCache.set(token, {
+          decoded: decoded,
+          timestamp: Date.now()
+        });
+        
+        // Clean up expired cache entries periodically
+        if (Math.random() < 0.01) { // 1% chance to trigger cleanup
+          cleanupCache();
+        }
+        
+        req.user = decoded;
+        next();
+      })
+      .catch(firebaseError => {
+        // Fallback to JWT verification for existing tokens
+        try {
+          const decoded = jwt.verify(token, process.env.JWT_SECRET);
+          
+          // Cache the decoded token
+          tokenCache.set(token, {
+            decoded: decoded,
+            timestamp: Date.now()
+          });
+          
+          // Clean up expired cache entries periodically
+          if (Math.random() < 0.01) { // 1% chance to trigger cleanup
+            cleanupCache();
+          }
+          
+          req.user = decoded;
+          next();
+        } catch (jwtError) {
+          console.log('Token verification failed:', {
+            firebase: firebaseError.message,
+            jwt: jwtError.message
+          });
+          
+          return res.status(401).json({
+            success: false,
+            message: 'Access denied. Invalid token.',
+            code: 'INVALID_TOKEN'
+          });
+        }
+      });
   } catch (error) {
-    // Remove from cache if verification fails
-    const token = req.header('Authorization')?.replace('Bearer ', '');
-    if (token) {
-      tokenCache.delete(token);
-    }
-    
-    if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({
-        success: false,
-        message: 'Token expired',
-        code: 'TOKEN_EXPIRED'
-      });
-    } else if (error.name === 'JsonWebTokenError') {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid token',
-        code: 'INVALID_TOKEN'
-      });
-    } else {
-      return res.status(500).json({
-        success: false,
-        message: 'Token verification failed',
-        code: 'VERIFICATION_FAILED'
-      });
-    }
+    console.error('Auth middleware error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error during authentication.',
+      code: 'SERVER_ERROR'
+    });
   }
 };
+
+// Verify Firebase ID token
+async function verifyFirebaseToken(token) {
+  const auth = getAuth();
+  
+  try {
+    const decodedToken = await auth.verifyIdToken(token);
+    
+    // Transform Firebase token to match expected format
+    return {
+      id: decodedToken.uid,
+      userId: decodedToken.uid,  // Add userId field for compatibility
+      firebase_uid: decodedToken.uid,
+      email: decodedToken.email,
+      name: decodedToken.name || decodedToken.email,
+      iat: decodedToken.iat,
+      exp: decodedToken.exp,
+      // Add any other fields needed for compatibility
+    };
+  } catch (error) {
+    throw new Error(`Firebase token verification failed: ${error.message}`);
+  }
+}
 
 // Clean up expired cache entries
 const cleanupCache = () => {

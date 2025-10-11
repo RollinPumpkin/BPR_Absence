@@ -4,29 +4,52 @@ import '../models/user.dart' hide LoginResponse;
 import '../constants/api_constants.dart';
 import 'api_service.dart';
 import 'mock_auth_service.dart';
+import 'firebase_auth_service.dart';
+import 'simple_firebase_auth_service.dart';
 
 class AuthService {
   final ApiService _apiService = ApiService.instance;
   final MockAuthService _mockService = MockAuthService.instance;
+  final FirebaseAuthService _firebaseAuthService = FirebaseAuthService();
+  final SimpleFirebaseAuthService _simpleFirebaseService = SimpleFirebaseAuthService();
   
-  // Development flag - set to true to use mock service
+  // Development flag - set to true to use mock service, false to use Firebase
   static const bool useMockService = false;
+  static const bool useFirebaseAuth = true;
+  static const bool useSimpleFirebase = true; // Use simplified version
 
   // Initialize the auth service
   Future<void> initialize() async {
     if (useMockService) {
       await _mockService.initialize();
+    } else if (useSimpleFirebase) {
+      await _simpleFirebaseService.initialize();
+    } else if (useFirebaseAuth) {
+      await _firebaseAuthService.initialize();
     } else {
       await _apiService.initializeToken();
     }
   }
 
   // Check if user is authenticated
-  bool get isAuthenticated => useMockService ? _mockService.isAuthenticated : _apiService.isAuthenticated;
+  bool get isAuthenticated {
+    if (useMockService) {
+      return _mockService.isAuthenticated;
+    } else if (useSimpleFirebase) {
+      return _simpleFirebaseService.isAuthenticated;
+    } else if (useFirebaseAuth) {
+      return _firebaseAuthService.isAuthenticated;
+    } else {
+      return _apiService.isAuthenticated;
+    }
+  }
 
-  // Save token to storage and ApiService
+  // Save token to storage and ApiService (for Firebase, this saves the ID token)
   Future<void> saveToken(String token) async {
-    await _apiService.setToken(token);
+    if (!useFirebaseAuth) {
+      await _apiService.setToken(token);
+    }
+    // For Firebase Auth, tokens are managed automatically
   }
 
   // Validate and refresh token
@@ -34,6 +57,17 @@ class AuthService {
     if (!isAuthenticated) return false;
     
     try {
+      if (useFirebaseAuth) {
+        // For Firebase Auth, check if user is still authenticated
+        // and refresh the ID token for API calls
+        final idToken = await _firebaseAuthService.getIdToken();
+        if (idToken != null) {
+          await _apiService.setToken(idToken);
+          return true;
+        }
+        return false;
+      }
+      
       // Try to get current user to validate token
       final response = await getCurrentUser();
       return response.success;
@@ -49,6 +83,58 @@ class AuthService {
   }) async {
     if (useMockService) {
       return await _mockService.login(email: email, password: password);
+    } else if (useSimpleFirebase) {
+      final response = await _simpleFirebaseService.login(email: email, password: password);
+      
+      // For compatibility with existing code, return the user data in the expected format
+      if (response.success && response.data != null) {
+        // Get Firebase ID token for API calls
+        final idToken = await _simpleFirebaseService.getIdToken();
+        if (idToken != null) {
+          await _apiService.setToken(idToken);
+        }
+        
+        return ApiResponse(
+          success: true,
+          message: response.message,
+          data: {
+            'user': response.data,
+            'token': idToken ?? '',
+          },
+        );
+      } else {
+        return ApiResponse(
+          success: false,
+          message: response.message,
+          data: null,
+        );
+      }
+    } else if (useFirebaseAuth) {
+      final response = await _firebaseAuthService.login(email: email, password: password);
+      
+      // For compatibility with existing code, return the user data in the expected format
+      if (response.success && response.data != null) {
+        // Get Firebase ID token for API calls
+        final idToken = await _firebaseAuthService.getIdToken();
+        if (idToken != null) {
+          await _apiService.setToken(idToken);
+        }
+        
+        return ApiResponse(
+          success: true,
+          message: response.message,
+          data: {
+            'user': response.data!.toJson(),
+            'token': idToken ?? '',
+          },
+        );
+      } else {
+        return ApiResponse(
+          success: false,
+          message: response.message,
+          data: null,
+        );
+      }
     }
     
     final response = await _apiService.post(
@@ -91,6 +177,9 @@ class AuthService {
   Future<ApiResponse<String>> logout() async {
     if (useMockService) {
       return await _mockService.logout();
+    } else if (useFirebaseAuth) {
+      await _apiService.clearToken(); // Clear any stored token
+      return await _firebaseAuthService.logout();
     }
     
     final response = await _apiService.post<String>(
@@ -116,6 +205,10 @@ class AuthService {
   Future<ApiResponse<User>> getCurrentUser() async {
     if (useMockService) {
       return await _mockService.getCurrentUser();
+    } else if (useSimpleFirebase) {
+      return await _simpleFirebaseService.getCurrentUser();
+    } else if (useFirebaseAuth) {
+      return await _firebaseAuthService.getCurrentUser();
     }
     return await _apiService.get<User>(
       ApiConstants.auth.profile,
