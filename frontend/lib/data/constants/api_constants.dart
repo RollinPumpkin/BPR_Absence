@@ -1,13 +1,24 @@
+import 'server_config.dart';
+
 class ApiConstants {
   // Base URLs
   static const String developmentUrl = 'http://localhost:3000/api';
+  static const String firebaseServerUrl = 'http://localhost:3000/api';
   static const String productionUrl = 'https://your-production-url.com/api';
   
   // Development mode flag
   static const bool isDevelopment = true;
+  static const bool useFirebaseServer = true;
   
-  // Get current base URL based on environment
-  static String get baseUrl => isDevelopment ? developmentUrl : productionUrl;
+  // Get current base URL based on environment and server config
+  static String get baseUrl {
+    if (ServerConfig.isDevelopmentMode && ServerConfig.useFirebaseNpmServer) {
+      return ServerConfig.currentApiUrl;
+    }
+    return isDevelopment 
+      ? (useFirebaseServer ? firebaseServerUrl : developmentUrl) 
+      : productionUrl;
+  }
   
   // Endpoint groups
   static const AuthEndpoints auth = AuthEndpoints();

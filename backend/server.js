@@ -9,6 +9,10 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Firebase Server Configuration
+console.log('🔥 Starting Firebase NPM Server...');
+console.log('📡 Firebase Server will run on port:', PORT);
+
 // Initialize Firebase
 initializeFirebase();
 

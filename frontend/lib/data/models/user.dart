@@ -56,33 +56,42 @@ class User {
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
-    return User(
-      id: json['id'] ?? '',
-      employeeId: json['employee_id'] ?? '',
-      fullName: json['full_name'] ?? '',
-      email: json['email'] ?? '',
-      department: json['department'],
-      position: json['position'],
-      phone: json['phone'],
-      role: json['role'] ?? 'employee',
-      status: json['status'] ?? 'active',
-      isActive: json['is_active'] ?? false,
-      profilePicture: json['profile_picture'],
-      createdAt: _parseDateTime(json['created_at']),
-      updatedAt: _parseDateTime(json['updated_at']),
-      lastLogin: _parseDateTime(json['last_login']),
-      address: json['address'],
-      emergencyContact: json['emergency_contact'],
-      emergencyPhone: json['emergency_phone'],
-      dateOfBirth: _parseDateTime(json['date_of_birth']),
-      gender: json['gender'],
-      maritalStatus: json['marital_status'],
-      nationalId: json['national_id'],
-      bankAccount: json['bank_account'],
-      bankName: json['bank_name'],
-      hireDate: _parseDateTime(json['hire_date']),
-      salary: json['salary']?.toDouble(),
-    );
+    // Debug logging
+    print('🔍 User.fromJson received data: $json');
+    
+    try {
+      return User(
+        id: json['id']?.toString() ?? '',
+        employeeId: json['employee_id']?.toString() ?? '',
+        fullName: json['full_name']?.toString() ?? '',
+        email: json['email']?.toString() ?? '',
+        department: json['department']?.toString(),
+        position: json['position']?.toString(),
+        phone: json['phone']?.toString(),
+        role: json['role']?.toString() ?? 'employee',
+        status: json['status']?.toString() ?? 'active',
+        isActive: json['is_active'] == true || json['is_active'] == 'true',
+        profilePicture: json['profile_picture']?.toString(),
+        createdAt: _parseDateTime(json['created_at']),
+        updatedAt: _parseDateTime(json['updated_at']),
+        lastLogin: _parseDateTime(json['last_login']),
+        address: json['address']?.toString(),
+        emergencyContact: json['emergency_contact']?.toString(),
+        emergencyPhone: json['emergency_phone']?.toString(),
+        dateOfBirth: _parseDateTime(json['date_of_birth']),
+        gender: json['gender']?.toString(),
+        maritalStatus: json['marital_status']?.toString(),
+        nationalId: json['national_id']?.toString(),
+        bankAccount: json['bank_account']?.toString(),
+        bankName: json['bank_name']?.toString(),
+        hireDate: _parseDateTime(json['hire_date']),
+        salary: json['salary'] != null ? (json['salary'] as num).toDouble() : null,
+      );
+    } catch (e) {
+      print('❌ Error in User.fromJson: $e');
+      print('📋 Problematic data: $json');
+      rethrow;
+    }
   }
 
   static DateTime? _parseDateTime(dynamic dateValue) {
@@ -90,6 +99,7 @@ class User {
     
     try {
       if (dateValue is String) {
+        if (dateValue.isEmpty) return null;
         return DateTime.parse(dateValue);
       } else if (dateValue is Map<String, dynamic>) {
         // Handle Firebase Timestamp
@@ -98,10 +108,19 @@ class User {
             dateValue['_seconds'] * 1000 + (dateValue['_nanoseconds'] ~/ 1000000)
           );
         }
+        // Handle Firestore Timestamp format
+        if (dateValue.containsKey('seconds')) {
+          return DateTime.fromMillisecondsSinceEpoch(
+            dateValue['seconds'] * 1000 + (dateValue['nanoseconds'] ~/ 1000000)
+          );
+        }
+      } else if (dateValue is num) {
+        // Handle timestamp as number
+        return DateTime.fromMillisecondsSinceEpoch(dateValue.toInt());
       }
       return null;
     } catch (e) {
-      print('Error parsing date: $e');
+      print('⚠️ Error parsing date: $e for value: $dateValue');
       return null;
     }
   }

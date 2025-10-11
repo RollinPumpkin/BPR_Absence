@@ -12,7 +12,7 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyCKaOBxr8z7Yo96mP3bQ9h4FE0jQz8Z_Cw',
+    apiKey: 'AIzaSyDVVNuLnEnHhJcBBOspa4usflMgpOv_FDU',
     appId: '1:548959984167:web:8d2c8b4a5f3e7d9e2f1a3b',
     messagingSenderId: '548959984167',
     projectId: 'bpr-absens',
