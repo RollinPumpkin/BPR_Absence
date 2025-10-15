@@ -33,6 +33,13 @@ class ApiService {
     ));
 
     _setupInterceptors();
+    // Don't call _loadToken here since constructor can't be async
+  }
+
+  // Initialize API service - should be called in main.dart
+  static Future<void> initialize() async {
+    final instance = ApiService.instance;
+    await instance._loadToken();
   }
 
   void _setupInterceptors() {
@@ -42,7 +49,8 @@ class ApiService {
         // Add auth token if available
         if (_token != null) {
           options.headers['Authorization'] = 'Bearer $_token';
-          print('🔑 Token added to request: ${_token?.substring(0, 20)}...');
+          print('🔑 Token being used: ${_token?.substring(0, 50)}...${_token?.substring(_token!.length - 20)}');
+          print('🔑 Token length: ${_token!.length}');
         } else {
           print('⚠️ No token available for request: ${options.method} ${options.path}');
         }
@@ -117,6 +125,18 @@ class ApiService {
   }
 
   // Check if user is authenticated (has valid token)
+  // Load token from storage on app start
+  Future<void> _loadToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    _token = prefs.getString('token');
+    if (_token != null) {
+      print('🔑 Token loaded from storage: ${_token!.substring(0, 50)}...');
+      print('🔑 Token length: ${_token!.length}');
+    } else {
+      print('⚠️ No token found in storage');
+    }
+  }
+
   bool get isAuthenticated => _token != null && _token!.isNotEmpty;
 
   // Set token and save to storage

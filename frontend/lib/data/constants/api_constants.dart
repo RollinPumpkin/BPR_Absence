@@ -110,18 +110,18 @@ class LetterEndpoints {
 class UserEndpoints {
   const UserEndpoints();
   
-  String get list => '/users';
-  String get create => '/users/create';
-  String get activate => '/users/activate';
-  String get deactivate => '/users/deactivate';
-  String get resetPassword => '/users/reset-password';
-  String get byDepartment => '/users/by-department';
-  String get byRole => '/users/by-role';
-  String get search => '/users/search';
-  String get statistics => '/users/statistics';
-  String get export => '/users/export';
-  String get bulkUpdate => '/users/bulk-update';
-  String get profileSummary => '/users/profile-summary';
+  String get list => '/admin/users';
+  String get create => '/users/admin/create-employee';
+  String get activate => '/admin/users/activate';
+  String get deactivate => '/admin/users/deactivate';
+  String get resetPassword => '/admin/users/reset-password';
+  String get byDepartment => '/admin/users/by-department';
+  String get byRole => '/admin/users/by-role';
+  String get search => '/admin/users/search';
+  String get statistics => '/admin/users/statistics';
+  String get export => '/admin/users/export';
+  String get bulkUpdate => '/admin/users/bulk-update';
+  String get profileSummary => '/admin/users/profile-summary';
 }
 
 class DashboardEndpoints {

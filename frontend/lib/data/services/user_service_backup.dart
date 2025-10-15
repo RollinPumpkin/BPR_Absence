@@ -27,14 +27,6 @@ class UserService {
     if (role != null) queryParams['role'] = role;
     if (isActive != null) queryParams['is_active'] = isActive;
 
-    print('🔧 UserService.getAllUsers called with params:');
-    print('   - page: $page, limit: $limit');
-    print('   - search: "$search"');
-    print('   - department: $department');
-    print('   - position: $position');
-    print('   - role: $role');
-    print('   - isActive: $isActive');
-
     return await _apiService.get<ListResponse<User>>(
       ApiConstants.users.list,
       queryParameters: queryParams,

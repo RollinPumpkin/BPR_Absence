@@ -14,14 +14,19 @@ router.get('/users', auth, adminAuth, async (req, res) => {
     const { page = 1, limit = 10, search = '' } = req.query;
     const offset = (page - 1) * limit;
 
+    console.log('🔍 Users API called with params:', { page, limit, search });
+
     let usersRef = db.collection('users');
     
     // Apply search filter if provided
     if (search) {
+      console.log('🔍 Applying search filter:', search);
       // Firebase doesn't support complex OR queries like SQL, so we'll get all users and filter in memory
       // For better performance in production, consider using Algolia or implementing separate search indexes
       const snapshot = await usersRef.get();
       const allUsers = [];
+      
+      console.log('📊 Total users in database:', snapshot.size);
       
       snapshot.forEach(doc => {
         const userData = doc.data();
@@ -31,14 +36,27 @@ router.get('/users', auth, adminAuth, async (req, res) => {
         delete user.password;
         
         // Check if user matches search criteria
-        if (
-          user.full_name?.toLowerCase().includes(search.toLowerCase()) ||
-          user.email?.toLowerCase().includes(search.toLowerCase()) ||
-          user.employee_id?.toLowerCase().includes(search.toLowerCase())
-        ) {
+        const fullNameMatch = user.full_name?.toLowerCase().includes(search.toLowerCase());
+        const emailMatch = user.email?.toLowerCase().includes(search.toLowerCase());
+        const empIdMatch = user.employee_id?.toLowerCase().includes(search.toLowerCase());
+        
+        if (fullNameMatch || emailMatch || empIdMatch) {
+          console.log('✅ Match found:', {
+            id: user.id,
+            name: user.full_name,
+            email: user.email,
+            empId: user.employee_id,
+            matchType: {
+              fullName: fullNameMatch,
+              email: emailMatch,
+              empId: empIdMatch
+            }
+          });
           allUsers.push(user);
         }
       });
+      
+      console.log('🎯 Search results:', allUsers.length, 'users found');
       
       // Sort by created_at (newest first)
       allUsers.sort((a, b) => {
