@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:frontend/core/constants/colors.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
+import 'package:frontend/data/providers/auth_provider.dart';
 import 'dart:async';
 import '../../attendance/attendance_form_page.dart';
 
@@ -70,6 +72,19 @@ class _UserHeaderState extends State<UserHeader> {
       _hasClockIn = false;
       _hasClockOut = false;
     });
+  }
+
+  String _getGreeting(int hour) {
+    if (hour >= 5 && hour < 12) return "Good Morning";
+    if (hour >= 12 && hour < 16) return "Good Afternoon";
+    if (hour >= 16 && hour < 19) return "Good Evening";
+    return "Good Night";
+  }
+
+  String _getFirstName(String fullName) {
+    if (fullName.isEmpty) return "User";
+    final parts = fullName.split(' ');
+    return parts.first;
   }
 
   Future<void> _loadAttendanceData() async {
@@ -373,28 +388,38 @@ class _UserHeaderState extends State<UserHeader> {
               
               const SizedBox(height: 20),
               
-              // Greeting
-              const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Good Morning, Puma',
-                    style: TextStyle(
-                      color: AppColors.pureWhite,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    'Have a Great Day!',
-                    style: TextStyle(
-                      color: AppColors.pureWhite,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w400,
-                    ),
-                  ),
-                ],
+              // Greeting - Dynamic berdasarkan waktu dan user login
+              Consumer<AuthProvider>(
+                builder: (context, authProvider, _) {
+                  final currentUser = authProvider.currentUser;
+                  final fullName = currentUser?.fullName ?? "User";
+                  final firstName = _getFirstName(fullName);
+                  final hour = DateTime.now().hour;
+                  final greeting = _getGreeting(hour);
+                  
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '$greeting, $firstName',
+                        style: const TextStyle(
+                          color: AppColors.pureWhite,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Have a Great Day!',
+                        style: TextStyle(
+                          color: AppColors.pureWhite,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
               
               const SizedBox(height: 25),

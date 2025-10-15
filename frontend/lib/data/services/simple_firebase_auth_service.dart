@@ -140,13 +140,15 @@ class SimpleFirebaseAuthService {
   Future<Map<String, dynamic>?> _getUserFromFirestore(User firebaseUser) async {
     try {
       print('🔍 Looking for user in Firestore...');
+      print('🔍 Firebase UID: ${firebaseUser.uid}');
+      print('🔍 Email: ${firebaseUser.email}');
       
-      // Try to find by Firebase UID
+      // Force fresh query with cache disabled
       QuerySnapshot query = await _firestore!
           .collection('users')
           .where('firebase_uid', isEqualTo: firebaseUser.uid)
           .limit(1)
-          .get();
+          .get(const GetOptions(source: Source.server)); // Force server fetch
       
       if (query.docs.isNotEmpty) {
         print('✅ Found user by Firebase UID');
@@ -154,7 +156,10 @@ class SimpleFirebaseAuthService {
         final data = doc.data() as Map<String, dynamic>;
         data['id'] = doc.id; // Add document ID
         
-        print('📋 User data: ${data['full_name']} (${data['role']})');
+        print('📋 FRESH User data from SERVER: ${data['full_name']} (${data['role']})');
+        print('📄 Document ID: ${doc.id}');
+        print('📄 Role field value: "${data['role']}"');
+        print('📄 Updated at: ${data['updated_at']}');
         return data;
       }
       
@@ -164,7 +169,7 @@ class SimpleFirebaseAuthService {
           .collection('users')
           .where('email', isEqualTo: firebaseUser.email)
           .limit(1)
-          .get();
+          .get(const GetOptions(source: Source.server)); // Force server fetch
       
       if (query.docs.isNotEmpty) {
         print('✅ Found user by email');
@@ -179,7 +184,9 @@ class SimpleFirebaseAuthService {
         });
         
         print('✅ Updated user with Firebase UID');
-        print('📋 User data: ${data['full_name']} (${data['role']})');
+        print('📋 FRESH User data from SERVER: ${data['full_name']} (${data['role']})');
+        print('📄 Document ID: ${doc.id}');
+        print('📄 Role field value: "${data['role']}"');
         return data;
       }
       
@@ -223,16 +230,67 @@ class SimpleFirebaseAuthService {
     try {
       final prefs = await SharedPreferences.getInstance();
       
+      // Clear all user-related data
       await prefs.remove('user_id');
       await prefs.remove('employee_id');
       await prefs.remove('user_email');
       await prefs.remove('user_name');
       await prefs.remove('user_role');
+      await prefs.remove('token');
       
-      print('🧹 User data cleared from SharedPreferences');
+      // Clear any other cached data
+      final allKeys = prefs.getKeys();
+      for (String key in allKeys) {
+        if (key.startsWith('user_') || key.startsWith('clock_') || key.contains('cache')) {
+          await prefs.remove(key);
+          print('🧹 Removed cached key: $key');
+        }
+      }
+      
+      print('🧹 All user data cleared from SharedPreferences');
       
     } catch (e) {
       print('❌ Error clearing user preferences: $e');
+    }
+  }
+
+  // Force complete logout and cache clear
+  Future<ApiResponse<String>> forceLogout() async {
+    try {
+      print('🔄 Force logout initiated...');
+      
+      // Sign out from Firebase
+      if (_auth?.currentUser != null) {
+        await _auth!.signOut();
+        print('✅ Firebase signOut completed');
+      }
+      
+      // Clear all SharedPreferences
+      await _clearUserFromPreferences();
+      
+      // Clear Firestore cache (if possible)
+      try {
+        await _firestore?.clearPersistence();
+        print('✅ Firestore cache cleared');
+      } catch (e) {
+        print('⚠️ Could not clear Firestore cache: $e');
+      }
+      
+      print('✅ Force logout completed');
+      
+      return ApiResponse<String>(
+        success: true,
+        message: 'Force logout successful - please refresh the page',
+        data: 'Force logout completed',
+      );
+    } catch (e) {
+      print('❌ Force logout error: $e');
+      
+      return ApiResponse<String>(
+        success: false,
+        message: 'Force logout failed: $e',
+        data: null,
+      );
     }
   }
 

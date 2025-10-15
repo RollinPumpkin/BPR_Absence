@@ -2,8 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
-import 'dart:html' as html;
-import 'dart:js' as js;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
@@ -388,48 +386,12 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
     return null;
   }
 
+  // Web camera capture method - not needed for mobile
   Future<Uint8List?> _captureFromWebCamera() async {
     if (!kIsWeb) return null;
     
     try {
-      print('📷 Attempting to access web camera directly...');
-      
-      // Call JavaScript function to access camera
-      final completer = Completer<Uint8List?>();
-      
-      // Access camera through getUserMedia
-      final mediaDevices = html.window.navigator.mediaDevices;
-      if (mediaDevices != null) {
-        final stream = await mediaDevices.getUserMedia({'video': true});
-        
-        // Create video element
-        final video = html.VideoElement();
-        video.srcObject = stream;
-        video.autoplay = true;
-        
-        // Wait for video to be ready
-        await video.onLoadedMetadata.first;
-        
-        // Create canvas to capture frame
-        final canvas = html.CanvasElement(width: 1200, height: 1200);
-        final ctx = canvas.context2D;
-        
-        // Draw video frame to canvas
-        ctx.drawImageScaled(video, 0, 0, canvas.width!, canvas.height!);
-        
-        // Stop camera stream
-        stream.getTracks().forEach((track) => track.stop());
-        
-        // Convert canvas to blob
-        final blob = await canvas.toBlob('image/jpeg', 0.8);
-        final reader = html.FileReader();
-        reader.readAsArrayBuffer(blob);
-        await reader.onLoad.first;
-        
-        final result = reader.result as List<int>;
-        return Uint8List.fromList(result);
-      }
-      
+      print('📷 Web camera not implemented for mobile build');
       return null;
     } catch (e) {
       print('📷 Web camera capture error: $e');

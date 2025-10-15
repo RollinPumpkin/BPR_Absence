@@ -1,19 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/core/constants/colors.dart';
+import 'package:frontend/data/models/assignment.dart';
 import '../../pages/detail_assignment_page.dart';
 
 class AssignmentCard extends StatelessWidget {
-  final String title;
-  final String description;
-  final String status;
-  final String date;
+  final Assignment assignment;
 
   const AssignmentCard({
     super.key,
-    required this.title,
-    required this.description,
-    required this.status,
-    required this.date,
+    required this.assignment,
   });
 
   Color _statusColor(String s) {
@@ -27,7 +22,7 @@ class AssignmentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = _statusColor(status);
+    final c = _statusColor(assignment.status);
 
     return Material(
       color: AppColors.pureWhite,
@@ -62,7 +57,7 @@ class AssignmentCard extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      title,
+                      assignment.title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -73,30 +68,32 @@ class AssignmentCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  _StatusChip(text: status, color: c),
+                  _StatusChip(text: assignment.status, color: c),
                 ],
               ),
               const SizedBox(height: 8),
 
               // Description
               Text(
-                description,
+                assignment.description,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   fontSize: 13.5,
-                  color: AppColors.neutral800,
                   height: 1.45,
+                  color: AppColors.neutral800,
                   fontWeight: FontWeight.w500,
                 ),
               ),
               const SizedBox(height: 12),
 
-              // Date
+              // Date + Priority row
               Row(
                 children: [
                   const Icon(Icons.calendar_today, size: 14, color: AppColors.neutral500),
                   const SizedBox(width: 6),
                   Text(
-                    date,
+                    assignment.formattedDueDate,
                     style: const TextStyle(
                       fontSize: 12.5,
                       color: AppColors.neutral500,
@@ -104,29 +101,20 @@ class AssignmentCard extends StatelessWidget {
                     ),
                   ),
                   const Spacer(),
-                  // View pill (opsional, bikin hidup)
-                  InkWell(
-                    borderRadius: BorderRadius.circular(20),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const DetailAssignmentPage()),
-                      );
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryYellow.withOpacity(.12),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: AppColors.primaryYellow),
-                      ),
-                      child: const Text(
-                        'View',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.primaryYellow,
-                        ),
+                  // Priority chip
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: assignment.priorityColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: assignment.priorityColor.withOpacity(0.3)),
+                    ),
+                    child: Text(
+                      assignment.priority.toUpperCase(),
+                      style: TextStyle(
+                        color: assignment.priorityColor,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 10,
                       ),
                     ),
                   ),

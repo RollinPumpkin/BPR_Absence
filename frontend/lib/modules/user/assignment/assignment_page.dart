@@ -3,6 +3,7 @@ import 'package:frontend/core/constants/colors.dart';
 import 'package:frontend/core/widgets/custom_bottom_nav_router.dart';
 import 'package:frontend/modules/user/shared/user_nav_items.dart';
 import 'package:frontend/data/services/assignment_service.dart';
+import 'package:frontend/data/models/assignment.dart';
 import 'package:intl/intl.dart';
 import 'assignment_detail_page.dart';
 

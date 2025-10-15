@@ -5,6 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const { getFirestore, getServerTimestamp, formatDate } = require('../config/database');
 const auth = require('../middleware/auth');
+const requireAdminRole = require('../middleware/requireAdminRole');
 const { validateAttendance } = require('../middleware/validation');
 
 const router = express.Router();
@@ -187,7 +188,7 @@ router.get('/', auth, async (req, res) => {
     } = req.query;
 
     const userId = req.user.userId;
-    const isAdmin = req.user.role === 'admin' || req.user.role === 'account_officer';
+    const isAdmin = req.user.role === 'admin' || req.user.role === 'account_officer' || req.user.role === 'super_admin';
 
     let attendanceRef = db.collection('attendance');
 
@@ -1342,101 +1343,8 @@ router.get('/insights', auth, async (req, res) => {
   }
 });
 
-// Admin: Get all attendance records
-router.get('/admin/all', auth, async (req, res) => {
-  try {
-    // Check if user is admin
-    if (req.user.role !== 'admin' && req.user.role !== 'account_officer') {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied. Admin privileges required.'
-      });
-    }
-
-    const {
-      page = 1,
-      limit = 50,
-      start_date,
-      end_date,
-      user_id,
-      department,
-      status
-    } = req.query;
-
-    let attendanceRef = db.collection('attendance');
-
-    // Apply filters
-    if (start_date) {
-      attendanceRef = attendanceRef.where('date', '>=', start_date);
-    }
-    if (end_date) {
-      attendanceRef = attendanceRef.where('date', '<=', end_date);
-    }
-    if (user_id) {
-      attendanceRef = attendanceRef.where('user_id', '==', user_id);
-    }
-    if (status) {
-      attendanceRef = attendanceRef.where('status', '==', status);
-    }
-
-    attendanceRef = attendanceRef.orderBy('date', 'desc');
-
-    const snapshot = await attendanceRef.get();
-    const attendanceRecords = [];
-
-    for (const doc of snapshot.docs) {
-      const attendanceData = { id: doc.id, ...doc.data() };
-
-      // Get user details
-      if (attendanceData.user_id) {
-        try {
-          const userDoc = await db.collection('users').doc(attendanceData.user_id).get();
-          if (userDoc.exists) {
-            const userData = userDoc.data();
-            attendanceData.user_name = userData.full_name;
-            attendanceData.employee_id = userData.employee_id;
-            attendanceData.department = userData.department;
-            attendanceData.position = userData.position;
-          }
-        } catch (error) {
-          console.error('Error fetching user details:', error);
-        }
-      }
-
-      // Apply department filter if specified
-      if (department && attendanceData.department !== department) {
-        continue;
-      }
-
-      attendanceRecords.push(attendanceData);
-    }
-
-    // Apply pagination
-    const startIndex = (parseInt(page) - 1) * parseInt(limit);
-    const endIndex = startIndex + parseInt(limit);
-    const paginatedRecords = attendanceRecords.slice(startIndex, endIndex);
-
-    res.json({
-      success: true,
-      data: {
-        attendance: paginatedRecords,
-        pagination: {
-          current_page: parseInt(page),
-          total_pages: Math.ceil(attendanceRecords.length / parseInt(limit)),
-          total_records: attendanceRecords.length,
-          limit: parseInt(limit)
-        }
-      }
-    });
-
-  } catch (error) {
-    console.error('Admin get all attendance error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to get attendance records'
-    });
-  }
-});
+// Admin: Get all attendance records - REMOVED (duplicate endpoint)
+// Using the new enhanced endpoint with requireAdminRole middleware instead
 
 // Admin: Attendance statistics
 router.get('/admin/statistics', auth, async (req, res) => {
@@ -1576,6 +1484,1055 @@ router.get('/admin/statistics', auth, async (req, res) => {
       success: false,
       message: 'Failed to get attendance statistics'
     });
+  }
+});
+
+// ==================== NEW ENHANCED ATTENDANCE FEATURES ====================
+
+// Bulk attendance update (Admin only)
+router.post('/admin/bulk-update', auth, async (req, res) => {
+  try {
+    // Check admin privileges
+    const isAdmin = req.user.role === 'admin' || req.user.role === 'account_officer' || req.user.role === 'super_admin';
+    if (!isAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Admin privileges required.'
+      });
+    }
+
+    const { updates } = req.body; // Array of {user_id, date, status, reason}
+
+    if (!updates || !Array.isArray(updates) || updates.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Updates array is required and cannot be empty'
+      });
+    }
+
+    const batch = db.batch();
+    const results = [];
+
+    for (const update of updates) {
+      const { user_id, date, status, reason } = update;
+
+      if (!user_id || !date || !status) {
+        results.push({
+          user_id,
+          date,
+          success: false,
+          error: 'Missing required fields: user_id, date, status'
+        });
+        continue;
+      }
+
+      try {
+        // Check if attendance record exists
+        const attendanceQuery = await db.collection('attendance')
+          .where('user_id', '==', user_id)
+          .where('date', '==', date)
+          .get();
+
+        let docRef;
+        if (!attendanceQuery.empty) {
+          // Update existing record
+          docRef = attendanceQuery.docs[0].ref;
+          batch.update(docRef, {
+            status,
+            admin_updated: true,
+            admin_updated_by: req.user.userId,
+            admin_update_reason: reason || 'Bulk update by admin',
+            updated_at: getServerTimestamp()
+          });
+        } else {
+          // Create new record
+          docRef = db.collection('attendance').doc();
+          batch.set(docRef, {
+            user_id,
+            date,
+            status,
+            admin_created: true,
+            admin_created_by: req.user.userId,
+            admin_create_reason: reason || 'Created by admin via bulk update',
+            created_at: getServerTimestamp(),
+            updated_at: getServerTimestamp()
+          });
+        }
+
+        results.push({
+          user_id,
+          date,
+          success: true,
+          action: attendanceQuery.empty ? 'created' : 'updated'
+        });
+
+      } catch (error) {
+        results.push({
+          user_id,
+          date,
+          success: false,
+          error: error.message
+        });
+      }
+    }
+
+    await batch.commit();
+
+    const successCount = results.filter(r => r.success).length;
+    const failureCount = results.filter(r => !r.success).length;
+
+    res.json({
+      success: true,
+      message: `Bulk update completed. ${successCount} successful, ${failureCount} failed.`,
+      data: {
+        total_updates: updates.length,
+        successful: successCount,
+        failed: failureCount,
+        results
+      }
+    });
+
+  } catch (error) {
+    console.error('Bulk attendance update error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to perform bulk attendance update'
+    });
+  }
+});
+
+// Export attendance data (Admin only)
+router.get('/admin/export', auth, async (req, res) => {
+  try {
+    // Check admin privileges
+    const isAdmin = req.user.role === 'admin' || req.user.role === 'account_officer' || req.user.role === 'super_admin';
+    if (!isAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Admin privileges required.'
+      });
+    }
+
+    const { start_date, end_date, format = 'json', department } = req.query;
+
+    // Set default date range if not provided
+    const startDate = start_date || moment().startOf('month').format('YYYY-MM-DD');
+    const endDate = end_date || moment().endOf('month').format('YYYY-MM-DD');
+
+    let attendanceRef = db.collection('attendance')
+      .where('date', '>=', startDate)
+      .where('date', '<=', endDate)
+      .orderBy('date', 'desc');
+
+    const snapshot = await attendanceRef.get();
+    const attendanceData = [];
+
+    for (const doc of snapshot.docs) {
+      const attendance = { id: doc.id, ...doc.data() };
+
+      // Get user details
+      if (attendance.user_id) {
+        try {
+          const userDoc = await db.collection('users').doc(attendance.user_id).get();
+          if (userDoc.exists) {
+            const userData = userDoc.data();
+            attendance.user_name = userData.full_name;
+            attendance.employee_id = userData.employee_id;
+            attendance.department = userData.department;
+            attendance.position = userData.position;
+            attendance.email = userData.email;
+
+            // Filter by department if specified
+            if (department && userData.department !== department) {
+              continue;
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching user details:', error);
+        }
+      }
+
+      attendanceData.push(attendance);
+    }
+
+    if (format === 'csv') {
+      // Convert to CSV format
+      const csvHeaders = [
+        'Date', 'Employee ID', 'Employee Name', 'Department', 'Position',
+        'Check In', 'Check Out', 'Status', 'Total Hours', 'Overtime Hours',
+        'Location', 'Notes'
+      ];
+
+      const csvRows = attendanceData.map(record => [
+        record.date || '',
+        record.employee_id || '',
+        record.user_name || '',
+        record.department || '',
+        record.position || '',
+        record.check_in_time || '',
+        record.check_out_time || '',
+        record.status || '',
+        record.total_hours_worked || '',
+        record.overtime_hours || '',
+        record.check_in_location || '',
+        (record.notes || '').replace(/,/g, ';') // Replace commas to avoid CSV issues
+      ]);
+
+      const csvContent = [csvHeaders.join(','), ...csvRows.map(row => row.join(','))].join('\n');
+
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename=attendance_export_${startDate}_${endDate}.csv`);
+      res.send(csvContent);
+    } else {
+      // Return JSON format
+      res.json({
+        success: true,
+        data: {
+          attendance: attendanceData,
+          export_info: {
+            format,
+            start_date: startDate,
+            end_date: endDate,
+            department: department || 'All',
+            total_records: attendanceData.length,
+            exported_at: new Date().toISOString()
+          }
+        }
+      });
+    }
+
+  } catch (error) {
+    console.error('Export attendance error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to export attendance data'
+    });
+  }
+});
+
+// Generate attendance report with advanced analytics
+router.get('/admin/report', auth, async (req, res) => {
+  try {
+    // Check admin privileges
+    const isAdmin = req.user.role === 'admin' || req.user.role === 'account_officer' || req.user.role === 'super_admin';
+    if (!isAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Admin privileges required.'
+      });
+    }
+
+    const { 
+      start_date, 
+      end_date, 
+      department,
+      report_type = 'summary' // summary, detailed, trends
+    } = req.query;
+
+    const startDate = start_date || moment().startOf('month').format('YYYY-MM-DD');
+    const endDate = end_date || moment().endOf('month').format('YYYY-MM-DD');
+
+    // Get attendance data
+    let attendanceRef = db.collection('attendance')
+      .where('date', '>=', startDate)
+      .where('date', '<=', endDate);
+
+    const snapshot = await attendanceRef.get();
+    
+    // Get all users for context
+    const usersSnapshot = await db.collection('users').get();
+    const usersMap = new Map();
+    
+    usersSnapshot.forEach(doc => {
+      const userData = doc.data();
+      usersMap.set(doc.id, {
+        id: doc.id,
+        full_name: userData.full_name,
+        employee_id: userData.employee_id,
+        department: userData.department,
+        position: userData.position,
+        status: userData.status
+      });
+    });
+
+    const attendanceRecords = [];
+    const departmentStats = {};
+    const dailyStats = {};
+
+    snapshot.forEach(doc => {
+      const attendance = { id: doc.id, ...doc.data() };
+      const user = usersMap.get(attendance.user_id);
+      
+      if (user) {
+        attendance.user_details = user;
+        
+        // Filter by department if specified
+        if (department && user.department !== department) {
+          return;
+        }
+        
+        attendanceRecords.push(attendance);
+
+        // Department statistics
+        const dept = user.department || 'Unknown';
+        if (!departmentStats[dept]) {
+          departmentStats[dept] = {
+            total_records: 0,
+            present: 0,
+            late: 0,
+            absent: 0,
+            employees: new Set()
+          };
+        }
+        
+        departmentStats[dept].total_records++;
+        departmentStats[dept].employees.add(attendance.user_id);
+        
+        if (attendance.status === 'present') departmentStats[dept].present++;
+        if (attendance.status === 'late') departmentStats[dept].late++;
+        if (attendance.status === 'absent') departmentStats[dept].absent++;
+
+        // Daily statistics
+        const date = attendance.date;
+        if (!dailyStats[date]) {
+          dailyStats[date] = {
+            total: 0,
+            present: 0,
+            late: 0,
+            absent: 0,
+            employees: new Set()
+          };
+        }
+        
+        dailyStats[date].total++;
+        dailyStats[date].employees.add(attendance.user_id);
+        if (attendance.status === 'present') dailyStats[date].present++;
+        if (attendance.status === 'late') dailyStats[date].late++;
+        if (attendance.status === 'absent') dailyStats[date].absent++;
+      }
+    });
+
+    // Convert Sets to counts for department stats
+    Object.keys(departmentStats).forEach(dept => {
+      departmentStats[dept].unique_employees = departmentStats[dept].employees.size;
+      delete departmentStats[dept].employees;
+    });
+
+    // Convert Sets to counts for daily stats
+    Object.keys(dailyStats).forEach(date => {
+      dailyStats[date].unique_employees = dailyStats[date].employees.size;
+      delete dailyStats[date].employees;
+    });
+
+    const report = {
+      report_info: {
+        type: report_type,
+        period: { start_date: startDate, end_date: endDate },
+        department: department || 'All',
+        generated_at: new Date().toISOString(),
+        generated_by: req.user.userId
+      },
+      summary: {
+        total_records: attendanceRecords.length,
+        total_employees: usersMap.size,
+        active_employees: Array.from(usersMap.values()).filter(u => u.status === 'active').length,
+        attendance_rate: attendanceRecords.length > 0 ? 
+          ((attendanceRecords.filter(r => r.status === 'present' || r.status === 'late').length / attendanceRecords.length) * 100).toFixed(2) : 0
+      },
+      department_breakdown: departmentStats,
+      daily_breakdown: dailyStats
+    };
+
+    if (report_type === 'detailed') {
+      report.detailed_records = attendanceRecords;
+    }
+
+    if (report_type === 'trends') {
+      // Calculate trends
+      const sortedDates = Object.keys(dailyStats).sort();
+      report.trends = {
+        attendance_trend: sortedDates.map(date => ({
+          date,
+          attendance_rate: dailyStats[date].total > 0 ? 
+            (((dailyStats[date].present + dailyStats[date].late) / dailyStats[date].total) * 100).toFixed(2) : 0,
+          total_employees: dailyStats[date].unique_employees
+        })),
+        weekly_summary: {}
+      };
+    }
+
+    res.json({
+      success: true,
+      data: { report }
+    });
+
+  } catch (error) {
+    console.error('Generate attendance report error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to generate attendance report'
+    });
+  }
+});
+
+// Mark employee absent (Admin only)
+router.post('/admin/mark-absent', auth, async (req, res) => {
+  try {
+    // Check admin privileges
+    const isAdmin = req.user.role === 'admin' || req.user.role === 'account_officer' || req.user.role === 'super_admin';
+    if (!isAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Admin privileges required.'
+      });
+    }
+
+    const { user_id, date, reason } = req.body;
+
+    if (!user_id || !date) {
+      return res.status(400).json({
+        success: false,
+        message: 'User ID and date are required'
+      });
+    }
+
+    // Check if user exists
+    const userDoc = await db.collection('users').doc(user_id).get();
+    if (!userDoc.exists) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Check if attendance record already exists
+    const attendanceQuery = await db.collection('attendance')
+      .where('user_id', '==', user_id)
+      .where('date', '==', date)
+      .get();
+
+    if (!attendanceQuery.empty) {
+      return res.status(400).json({
+        success: false,
+        message: 'Attendance record already exists for this date'
+      });
+    }
+
+    // Create absent record
+    const attendanceData = {
+      user_id,
+      date,
+      status: 'absent',
+      admin_marked: true,
+      admin_marked_by: req.user.userId,
+      admin_mark_reason: reason || 'Marked absent by admin',
+      created_at: getServerTimestamp(),
+      updated_at: getServerTimestamp()
+    };
+
+    const docRef = await db.collection('attendance').add(attendanceData);
+
+    // Create notification for the user
+    try {
+      await db.collection('notifications').add({
+        user_id: user_id,
+        title: 'Attendance Marked',
+        message: `You have been marked absent for ${date}. ${reason ? `Reason: ${reason}` : ''}`,
+        type: 'attendance',
+        reference_id: docRef.id,
+        reference_type: 'attendance',
+        is_read: false,
+        priority: 'normal',
+        created_at: getServerTimestamp()
+      });
+    } catch (notifError) {
+      console.error('Failed to create notification:', notifError);
+    }
+
+    res.json({
+      success: true,
+      message: 'Employee marked absent successfully',
+      data: {
+        attendance_id: docRef.id,
+        user_id,
+        date,
+        status: 'absent',
+        reason
+      }
+    });
+
+  } catch (error) {
+    console.error('Mark absent error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to mark employee absent'
+    });
+  }
+});
+
+// Get attendance conflicts and issues (Admin only)
+router.get('/admin/conflicts', auth, async (req, res) => {
+  try {
+    // Check admin privileges
+    const isAdmin = req.user.role === 'admin' || req.user.role === 'account_officer' || req.user.role === 'super_admin';
+    if (!isAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Admin privileges required.'
+      });
+    }
+
+    const { start_date, end_date } = req.query;
+    const startDate = start_date || moment().startOf('month').format('YYYY-MM-DD');
+    const endDate = end_date || moment().endOf('month').format('YYYY-MM-DD');
+
+    const attendanceSnapshot = await db.collection('attendance')
+      .where('date', '>=', startDate)
+      .where('date', '<=', endDate)
+      .get();
+
+    const conflicts = [];
+    const userRecords = new Map();
+
+    // Group records by user and date
+    attendanceSnapshot.forEach(doc => {
+      const record = { id: doc.id, ...doc.data() };
+      const key = `${record.user_id}_${record.date}`;
+      
+      if (!userRecords.has(key)) {
+        userRecords.set(key, []);
+      }
+      userRecords.get(key).push(record);
+    });
+
+    // Find conflicts and issues
+    for (const [key, records] of userRecords) {
+      const [user_id, date] = key.split('_');
+      
+      // Multiple records for same user/date
+      if (records.length > 1) {
+        // Get user details
+        try {
+          const userDoc = await db.collection('users').doc(user_id).get();
+          const userData = userDoc.exists ? userDoc.data() : {};
+          
+          conflicts.push({
+            type: 'duplicate_records',
+            user_id,
+            user_name: userData.full_name || 'Unknown',
+            employee_id: userData.employee_id || 'Unknown',
+            date,
+            count: records.length,
+            records: records,
+            severity: 'high'
+          });
+        } catch (error) {
+          console.error('Error fetching user for conflict:', error);
+        }
+      }
+
+      // Check for timing issues
+      const record = records[0];
+      if (record.check_in_time && record.check_out_time) {
+        const checkIn = moment(record.check_in_time, 'HH:mm:ss');
+        const checkOut = moment(record.check_out_time, 'HH:mm:ss');
+        
+        // Check if check-out is before check-in
+        if (checkOut.isBefore(checkIn)) {
+          try {
+            const userDoc = await db.collection('users').doc(user_id).get();
+            const userData = userDoc.exists ? userDoc.data() : {};
+            
+            conflicts.push({
+              type: 'invalid_timing',
+              user_id,
+              user_name: userData.full_name || 'Unknown',
+              employee_id: userData.employee_id || 'Unknown',
+              date,
+              issue: 'Check-out time is before check-in time',
+              check_in: record.check_in_time,
+              check_out: record.check_out_time,
+              severity: 'medium'
+            });
+          } catch (error) {
+            console.error('Error fetching user for timing issue:', error);
+          }
+        }
+
+        // Check for extremely long work hours (>16 hours)
+        const workMinutes = checkOut.diff(checkIn, 'minutes');
+        if (workMinutes > 16 * 60) {
+          try {
+            const userDoc = await db.collection('users').doc(user_id).get();
+            const userData = userDoc.exists ? userDoc.data() : {};
+            
+            conflicts.push({
+              type: 'excessive_hours',
+              user_id,
+              user_name: userData.full_name || 'Unknown',
+              employee_id: userData.employee_id || 'Unknown',
+              date,
+              issue: 'Work hours exceed 16 hours',
+              check_in: record.check_in_time,
+              check_out: record.check_out_time,
+              hours_worked: (workMinutes / 60).toFixed(2),
+              severity: 'medium'
+            });
+          } catch (error) {
+            console.error('Error fetching user for excessive hours:', error);
+          }
+        }
+      }
+    }
+
+    res.json({
+      success: true,
+      data: {
+        conflicts,
+        summary: {
+          total_conflicts: conflicts.length,
+          high_severity: conflicts.filter(c => c.severity === 'high').length,
+          medium_severity: conflicts.filter(c => c.severity === 'medium').length,
+          low_severity: conflicts.filter(c => c.severity === 'low').length,
+          period: { start_date: startDate, end_date: endDate }
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Get attendance conflicts error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get attendance conflicts'
+    });
+  }
+});
+
+// ========== ADMIN DASHBOARD ENDPOINTS ==========
+// Admin Dashboard Summary for Attendance
+router.get('/admin/dashboard', auth, requireAdminRole, async (req, res) => {
+  try {
+    const today = moment().format('YYYY-MM-DD');
+    const startOfMonth = moment().startOf('month').format('YYYY-MM-DD');
+    const endOfMonth = moment().endOf('month').format('YYYY-MM-DD');
+
+    // Get all users for total employee count
+    const usersSnapshot = await db.collection('users').get();
+    const totalEmployees = usersSnapshot.size;
+
+    // Get today's attendance
+    const todayAttendanceSnapshot = await db.collection('attendance')
+      .where('date', '==', today)
+      .get();
+
+    const todayAttendance = todayAttendanceSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const presentToday = todayAttendance.filter(a => a.status === 'present').length;
+    const absentToday = todayAttendance.filter(a => a.status === 'absent').length;
+    const lateToday = todayAttendance.filter(a => a.status === 'late').length;
+
+    // Get monthly attendance statistics
+    const monthlyAttendanceSnapshot = await db.collection('attendance')
+      .where('date', '>=', startOfMonth)
+      .where('date', '<=', endOfMonth)
+      .get();
+
+    const monthlyAttendance = monthlyAttendanceSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    // Calculate monthly statistics
+    const monthlyStats = monthlyAttendance.reduce((acc, record) => {
+      acc.total++;
+      acc[record.status] = (acc[record.status] || 0) + 1;
+      return acc;
+    }, { total: 0, present: 0, absent: 0, late: 0 });
+
+    // Get attendance rate by employee for current month
+    const employeeAttendance = {};
+    monthlyAttendance.forEach(record => {
+      if (!employeeAttendance[record.employee_id]) {
+        employeeAttendance[record.employee_id] = {
+          total: 0,
+          present: 0,
+          absent: 0,
+          late: 0
+        };
+      }
+      employeeAttendance[record.employee_id].total++;
+      employeeAttendance[record.employee_id][record.status]++;
+    });
+
+    // Calculate attendance rates
+    const attendanceRates = Object.entries(employeeAttendance).map(([employeeId, stats]) => ({
+      employee_id: employeeId,
+      attendance_rate: ((stats.present / stats.total) * 100).toFixed(2),
+      total_days: stats.total,
+      present_days: stats.present,
+      absent_days: stats.absent,
+      late_days: stats.late
+    }));
+
+    // Get recent attendance records
+    const recentAttendanceSnapshot = await db.collection('attendance')
+      .orderBy('timestamp', 'desc')
+      .limit(10)
+      .get();
+
+    const recentAttendance = [];
+    for (const doc of recentAttendanceSnapshot.docs) {
+      const attendance = { id: doc.id, ...doc.data() };
+      
+      // Get user details
+      try {
+        const userDoc = await db.collection('users').doc(attendance.employee_id).get();
+        if (userDoc.exists) {
+          const userData = userDoc.data();
+          attendance.user_name = userData.name || 'Unknown';
+          attendance.user_email = userData.email;
+        }
+      } catch (error) {
+        console.error('Error fetching user for attendance:', error);
+        attendance.user_name = 'Unknown';
+      }
+      
+      recentAttendance.push(attendance);
+    }
+
+    res.json({
+      success: true,
+      data: {
+        summary: {
+          total_employees: totalEmployees,
+          today: {
+            present: presentToday,
+            absent: absentToday,
+            late: lateToday,
+            attendance_rate: totalEmployees > 0 ? ((presentToday / totalEmployees) * 100).toFixed(2) : '0.00'
+          },
+          monthly: {
+            total_records: monthlyStats.total,
+            present: monthlyStats.present,
+            absent: monthlyStats.absent,
+            late: monthlyStats.late,
+            attendance_rate: monthlyStats.total > 0 ? ((monthlyStats.present / monthlyStats.total) * 100).toFixed(2) : '0.00'
+          }
+        },
+        employee_rates: attendanceRates.sort((a, b) => b.attendance_rate - a.attendance_rate),
+        recent_attendance: recentAttendance
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching attendance dashboard:', error);
+    res.status(500).json({ success: false, message: 'Gagal mengambil data dashboard absensi' });
+  }
+});
+
+// Get All Attendance Records with Advanced Filtering (Admin)
+router.get('/admin/all', auth, requireAdminRole, async (req, res) => {
+  try {
+    const { 
+      status, 
+      employee_id, 
+      date_from, 
+      date_to, 
+      search, 
+      page = 1, 
+      limit = 20,
+      sort_by = 'date',
+      sort_order = 'desc'
+    } = req.query;
+
+    let query = db.collection('attendance');
+
+    // Apply filters
+    if (status && status !== 'all') {
+      query = query.where('status', '==', status);
+    }
+
+    if (employee_id) {
+      query = query.where('employee_id', '==', employee_id);
+    }
+
+    if (date_from || date_to) {
+      if (date_from) {
+        query = query.where('date', '>=', date_from);
+      }
+      if (date_to) {
+        query = query.where('date', '<=', date_to);
+      }
+    }
+
+    // Execute query without sorting first (to avoid Firestore index issues)
+    const snapshot = await query.get();
+    let attendance = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+
+    // Apply search filter (after fetching, as Firestore doesn't support full-text search)
+    if (search) {
+      const searchLower = search.toLowerCase();
+      attendance = attendance.filter(record => 
+        (record.employee_id && record.employee_id.toLowerCase().includes(searchLower)) ||
+        (record.status && record.status.toLowerCase().includes(searchLower)) ||
+        (record.date && record.date.includes(search)) ||
+        (record.notes && record.notes.toLowerCase().includes(searchLower))
+      );
+    }
+
+    // Get user details for each attendance record
+    const attendanceWithUsers = [];
+    for (const record of attendance) {
+      try {
+        const userDoc = await db.collection('users').doc(record.employee_id).get();
+        if (userDoc.exists) {
+          const userData = userDoc.data();
+          record.user_name = userData.name || 'Unknown';
+          record.user_email = userData.email;
+          record.user_role = userData.role;
+        } else {
+          record.user_name = 'Unknown';
+          record.user_email = 'N/A';
+          record.user_role = 'N/A';
+        }
+      } catch (error) {
+        console.error('Error fetching user for attendance:', error);
+        record.user_name = 'Error loading user';
+      }
+      attendanceWithUsers.push(record);
+    }
+
+    // Apply sorting in memory
+    const orderDirection = sort_order === 'asc' ? 1 : -1;
+    attendanceWithUsers.sort((a, b) => {
+      let aVal = a[sort_by];
+      let bVal = b[sort_by];
+      
+      // Handle null/undefined values
+      if (aVal == null && bVal == null) return 0;
+      if (aVal == null) return 1;
+      if (bVal == null) return -1;
+      
+      // Handle date strings
+      if (sort_by === 'date' || sort_by === 'timestamp') {
+        aVal = new Date(aVal);
+        bVal = new Date(bVal);
+        return (aVal - bVal) * orderDirection;
+      }
+      
+      // Handle strings
+      if (typeof aVal === 'string' && typeof bVal === 'string') {
+        return aVal.localeCompare(bVal) * orderDirection;
+      }
+      
+      // Handle numbers
+      return (aVal - bVal) * orderDirection;
+    });
+
+    // Apply pagination
+    const startIndex = (parseInt(page) - 1) * parseInt(limit);
+    const endIndex = startIndex + parseInt(limit);
+    const paginatedAttendance = attendanceWithUsers.slice(startIndex, endIndex);
+
+    // Calculate pagination info
+    const totalRecords = attendanceWithUsers.length;
+    const totalPages = Math.ceil(totalRecords / parseInt(limit));
+
+    res.json({
+      success: true,
+      data: {
+        attendance: paginatedAttendance,
+        pagination: {
+          current_page: parseInt(page),
+          total_pages: totalPages,
+          total_records: totalRecords,
+          per_page: parseInt(limit),
+          has_next: parseInt(page) < totalPages,
+          has_prev: parseInt(page) > 1
+        },
+        filters_applied: {
+          status: status || 'all',
+          employee_id: employee_id || null,
+          date_from: date_from || null,
+          date_to: date_to || null,
+          search: search || null,
+          sort_by,
+          sort_order
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching all attendance records:', error);
+    console.error('Error details:', error.message);
+    console.error('Stack trace:', error.stack);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Gagal mengambil data absensi',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// Bulk Update Attendance Status (Admin)
+router.post('/admin/bulk-update', auth, requireAdminRole, async (req, res) => {
+  try {
+    const { attendance_ids, new_status, admin_notes } = req.body;
+
+    if (!attendance_ids || !Array.isArray(attendance_ids) || attendance_ids.length === 0) {
+      return res.status(400).json({ success: false, message: 'ID absensi harus berupa array dan tidak boleh kosong' });
+    }
+
+    if (!new_status || !['present', 'absent', 'late'].includes(new_status)) {
+      return res.status(400).json({ success: false, message: 'Status baru tidak valid' });
+    }
+
+    const updatePromises = attendance_ids.map(async (attendanceId) => {
+      try {
+        const attendanceDoc = await db.collection('attendance').doc(attendanceId).get();
+        if (!attendanceDoc.exists) {
+          throw new Error(`Attendance with ID ${attendanceId} not found`);
+        }
+
+        const updateData = {
+          status: new_status,
+          admin_updated: true,
+          admin_updated_by: req.user.uid,
+          admin_updated_at: getServerTimestamp(),
+          updated_at: getServerTimestamp()
+        };
+
+        if (admin_notes) {
+          updateData.admin_notes = admin_notes;
+        }
+
+        await db.collection('attendance').doc(attendanceId).update(updateData);
+        return { id: attendanceId, success: true };
+      } catch (error) {
+        console.error(`Error updating attendance ${attendanceId}:`, error);
+        return { id: attendanceId, success: false, error: error.message };
+      }
+    });
+
+    const results = await Promise.all(updatePromises);
+    const successful = results.filter(r => r.success);
+    const failed = results.filter(r => !r.success);
+
+    res.json({
+      success: true,
+      message: `Berhasil mengupdate ${successful.length} absensi${failed.length > 0 ? `, gagal ${failed.length}` : ''}`,
+      data: {
+        successful_updates: successful.length,
+        failed_updates: failed.length,
+        new_status,
+        admin_notes,
+        results
+      }
+    });
+  } catch (error) {
+    console.error('Error in bulk update attendance:', error);
+    res.status(500).json({ success: false, message: 'Gagal melakukan bulk update absensi' });
+  }
+});
+
+// Generate Attendance Report (Admin)
+router.get('/admin/report', auth, requireAdminRole, async (req, res) => {
+  try {
+    const { 
+      date_from, 
+      date_to, 
+      employee_id, 
+      format = 'json',
+      include_summary = 'true'
+    } = req.query;
+
+    if (!date_from || !date_to) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Parameter date_from dan date_to harus diisi' 
+      });
+    }
+
+    let query = db.collection('attendance')
+      .where('date', '>=', date_from)
+      .where('date', '<=', date_to);
+
+    if (employee_id) {
+      query = query.where('employee_id', '==', employee_id);
+    }
+
+    const snapshot = await query.orderBy('date', 'asc').orderBy('timestamp', 'asc').get();
+    const attendanceRecords = [];
+
+    // Get user details and build report
+    for (const doc of snapshot.docs) {
+      const record = { id: doc.id, ...doc.data() };
+      
+      try {
+        const userDoc = await db.collection('users').doc(record.employee_id).get();
+        if (userDoc.exists) {
+          const userData = userDoc.data();
+          record.user_name = userData.name || 'Unknown';
+          record.user_email = userData.email;
+          record.user_role = userData.role;
+        }
+      } catch (error) {
+        console.error('Error fetching user for report:', error);
+        record.user_name = 'Unknown';
+      }
+      
+      attendanceRecords.push(record);
+    }
+
+    let response = {
+      success: true,
+      data: {
+        report_period: {
+          from: date_from,
+          to: date_to
+        },
+        records: attendanceRecords,
+        total_records: attendanceRecords.length
+      }
+    };
+
+    // Add summary if requested
+    if (include_summary === 'true') {
+      const summary = attendanceRecords.reduce((acc, record) => {
+        acc.total++;
+        acc[record.status] = (acc[record.status] || 0) + 1;
+        return acc;
+      }, { total: 0, present: 0, absent: 0, late: 0 });
+
+      // Calculate employee-wise summary
+      const employeeSummary = {};
+      attendanceRecords.forEach(record => {
+        if (!employeeSummary[record.employee_id]) {
+          employeeSummary[record.employee_id] = {
+            employee_name: record.user_name,
+            total: 0,
+            present: 0,
+            absent: 0,
+            late: 0
+          };
+        }
+        employeeSummary[record.employee_id].total++;
+        employeeSummary[record.employee_id][record.status]++;
+      });
+
+      // Calculate attendance rates
+      Object.keys(employeeSummary).forEach(empId => {
+        const emp = employeeSummary[empId];
+        emp.attendance_rate = emp.total > 0 ? ((emp.present / emp.total) * 100).toFixed(2) : '0.00';
+      });
+
+      response.data.summary = {
+        overall: summary,
+        by_employee: employeeSummary
+      };
+    }
+
+    res.json(response);
+  } catch (error) {
+    console.error('Error generating attendance report:', error);
+    res.status(500).json({ success: false, message: 'Gagal membuat laporan absensi' });
   }
 });
 

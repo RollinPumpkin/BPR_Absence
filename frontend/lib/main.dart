@@ -36,6 +36,22 @@ import 'modules/user/letters/letters_page.dart' as user_letters;
 import 'modules/user/profile/profile_page.dart' as user_profile;
 import 'data/services/api_service.dart';
 
+class _CustomNavigatorObserver extends NavigatorObserver {
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    super.didPush(route, previousRoute);
+    print('🧭 NAVIGATION PUSH: ${route.settings.name}');
+    print('🧭 NAVIGATION STACK TRACE: ${StackTrace.current}');
+  }
+
+  @override
+  void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
+    super.didReplace(newRoute: newRoute, oldRoute: oldRoute);
+    print('🧭 NAVIGATION REPLACE: ${oldRoute?.settings.name} → ${newRoute?.settings.name}');
+    print('🧭 NAVIGATION STACK TRACE: ${StackTrace.current}');
+  }
+}
+
 Future<void> requestCameraPermissionOnStartup() async {
   if (!kIsWeb) {
     try {
@@ -64,7 +80,6 @@ Future<void> requestCameraPermissionOnStartup() async {
     print('📷 App Startup - Web platform, camera permission handled by browser');
   }
 }
-
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
@@ -96,6 +111,9 @@ class MyApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         title: 'BPR Absence',
         scrollBehavior: const AppScrollBehavior(),
+        navigatorObservers: [
+          _CustomNavigatorObserver(),
+        ],
         theme: ThemeData(
           useMaterial3: true,
           fontFamily: 'Roboto',

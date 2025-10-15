@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
+import 'package:frontend/data/models/assignment.dart';
 import '../../pages/add_assignment_step1_page.dart';
 import 'assignment_card.dart';
 import 'package:frontend/core/constants/colors.dart';
 
 class MonthlyAssignmentUI extends StatefulWidget {
-  const MonthlyAssignmentUI({super.key});
+  final List<Assignment> assignments;
+  
+  const MonthlyAssignmentUI({
+    super.key,
+    required this.assignments,
+  });
 
   @override
   State<MonthlyAssignmentUI> createState() => _MonthlyAssignmentUIState();
@@ -14,6 +20,27 @@ class MonthlyAssignmentUI extends StatefulWidget {
 class _MonthlyAssignmentUIState extends State<MonthlyAssignmentUI> {
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
+  List<Assignment> _selectedDayAssignments = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedDay = DateTime.now();
+    _updateSelectedDayAssignments();
+  }
+
+  void _updateSelectedDayAssignments() {
+    if (_selectedDay == null) {
+      _selectedDayAssignments = [];
+      return;
+    }
+    
+    _selectedDayAssignments = widget.assignments.where((assignment) {
+      return assignment.dueDate.year == _selectedDay!.year &&
+             assignment.dueDate.month == _selectedDay!.month &&
+             assignment.dueDate.day == _selectedDay!.day;
+    }).toList();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,6 +60,7 @@ class _MonthlyAssignmentUIState extends State<MonthlyAssignmentUI> {
             setState(() {
               _selectedDay = selectedDay;
               _focusedDay = focusedDay;
+              _updateSelectedDayAssignments();
             });
           },
           headerStyle: HeaderStyle(
@@ -78,26 +106,57 @@ class _MonthlyAssignmentUIState extends State<MonthlyAssignmentUI> {
         ),
         const SizedBox(height: 16),
 
-        // List Assignment
-        const Text(
-          "Assignments",
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        // List Assignment for selected day
+        Row(
+          children: [
+            const Text(
+              "Assignments",
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const Spacer(),
+            if (_selectedDay != null)
+              Text(
+                "${_selectedDay!.day}/${_selectedDay!.month}/${_selectedDay!.year}",
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppColors.neutral500,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+          ],
         ),
         const SizedBox(height: 12),
 
-        const AssignmentCard(
-          title: "Go To Bromo",
-          description: "Team building activity at Bromo mountain.",
-          status: "Assigned",
-          date: "27 Agustus 2023",
-        ),
-        const SizedBox(height: 12),
-        const AssignmentCard(
-          title: "Go To Malang",
-          description: "Business trip to Malang.",
-          status: "Assigned",
-          date: "30 Agustus 2023",
-        ),
+        // Show assignments for selected day
+        if (_selectedDayAssignments.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: AppColors.pureWhite,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.dividerGray),
+            ),
+            child: const Center(
+              child: Column(
+                children: [
+                  Icon(Icons.assignment_outlined, size: 48, color: AppColors.neutral400),
+                  SizedBox(height: 8),
+                  Text(
+                    'No assignments for this date',
+                    style: TextStyle(
+                      color: AppColors.neutral500,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else
+          ..._selectedDayAssignments.map((assignment) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: AssignmentCard(assignment: assignment),
+              )).toList(),
       ],
     );
   }

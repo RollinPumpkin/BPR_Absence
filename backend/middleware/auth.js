@@ -7,7 +7,9 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 const auth = (req, res, next) => {
   try {
+    console.log('🔍 Auth middleware called for:', req.method, req.path);
     const authHeader = req.header('Authorization');
+    console.log('🔑 Authorization header:', authHeader ? 'Present' : 'Missing');
     
     if (!authHeader) {
       return res.status(401).json({
@@ -55,6 +57,7 @@ const auth = (req, res, next) => {
         // Fallback to JWT verification for existing tokens
         try {
           const decoded = jwt.verify(token, process.env.JWT_SECRET);
+          console.log('✅ JWT verification successful:', JSON.stringify(decoded, null, 2));
           
           // Cache the decoded token
           tokenCache.set(token, {
@@ -70,7 +73,7 @@ const auth = (req, res, next) => {
           req.user = decoded;
           next();
         } catch (jwtError) {
-          console.log('Token verification failed:', {
+          console.log('❌ Token verification failed:', {
             firebase: firebaseError.message,
             jwt: jwtError.message
           });

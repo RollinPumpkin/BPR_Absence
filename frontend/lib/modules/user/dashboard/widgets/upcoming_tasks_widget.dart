@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:frontend/core/constants/colors.dart';
 import 'package:frontend/data/services/assignment_service.dart';
 import 'package:frontend/data/services/debug_service.dart';
+import 'package:frontend/data/models/assignment.dart';
 import 'package:intl/intl.dart';
 import 'package:dio/dio.dart';
 

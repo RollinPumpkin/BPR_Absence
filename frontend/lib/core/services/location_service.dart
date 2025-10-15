@@ -1,9 +1,26 @@
+import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class LocationService {
   static Future<bool> requestLocationPermission() async {
+    if (kIsWeb) {
+      // For web, we handle permission through browser geolocation API
+      try {
+        // Test if we can get location (this will trigger permission prompt)
+        await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high,
+          timeLimit: const Duration(seconds: 10),
+        );
+        return true;
+      } catch (e) {
+        print('Web location permission denied: $e');
+        return false;
+      }
+    }
+    
+    // Mobile implementation
     // Check if location services are enabled
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {

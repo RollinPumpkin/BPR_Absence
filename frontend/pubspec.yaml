@@ -30,33 +30,53 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  provider:
-  get:
-  dio:
-  http:
-  shared_preferences:
-  intl:
-  google_fonts:
+  
+  # Core dependencies - cross-platform
+  provider: ^6.1.2
+  get: ^4.6.6
+  dio: ^5.4.3+1
+  http: ^1.2.1
+  shared_preferences: ^2.2.3
+  intl: ^0.19.0
+  google_fonts: ^6.2.1
+  
+  # UI/UX - cross-platform
+  cupertino_icons: ^1.0.6
   fluttertoast: ^8.2.8
-  image_picker:
-  path_provider:
-  file_picker:
-  qr_flutter:
-  mobile_scanner:
-  fl_chart:
-  geolocator:
-  geocoding:
-  permission_handler:
-  google_maps_flutter:
-  firebase_core: ^2.24.2
-  cloud_firestore: ^4.13.6
-  firebase_auth: ^4.15.3
-  table_calendar:
-  excel:
-  file_saver:
-  open_file:
-  cupertino_icons:
   url_launcher: ^6.2.5
+  
+  # Firebase - using latest compatible versions for web
+  firebase_core: ^3.6.0
+  cloud_firestore: ^5.4.4
+  firebase_auth: ^5.3.1
+  
+  # Platform-aware packages
+  image_picker: ^1.0.7
+  file_picker: ^8.0.0+1
+  geolocator: ^10.1.0
+  geocoding: ^3.0.0
+  permission_handler: ^11.3.1
+  
+  # Charts and UI
+  fl_chart: ^0.68.0
+  table_calendar: ^3.0.9
+  
+  # QR and scanning
+  qr_flutter: ^4.1.0
+  mobile_scanner: ^4.0.1
+  
+  # File handling
+  path_provider: ^2.1.2
+  excel: ^4.0.2
+  file_saver: ^0.2.9
+  open_file: ^3.3.2
+  
+  # Maps - Leaflet for web, Google Maps for mobile
+  flutter_map: ^6.1.0  # Leaflet-based mapping
+  latlong2: ^0.9.1     # For coordinate handling (updated for flutter_map compatibility)
+  google_maps_flutter: ^2.5.3  # For mobile platforms
+  
+  # Google Sign In
   google_sign_in: ^6.2.1
 
 dev_dependencies:

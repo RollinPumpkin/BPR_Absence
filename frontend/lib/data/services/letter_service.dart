@@ -298,6 +298,81 @@ class LetterService {
     );
   }
 
+  // ==================== ADMIN APPROVAL METHODS ====================
+
+  // Get pending letters for admin approval
+  Future<ApiResponse<List<Letter>>> getPendingLetters({
+    int page = 1,
+    int limit = 20,
+    String? letterType,
+  }) async {
+    final queryParams = <String, dynamic>{
+      'page': page,
+      'limit': limit,
+    };
+
+    if (letterType != null) queryParams['letter_type'] = letterType;
+
+    return await _apiService.get<List<Letter>>(
+      '/letters/pending',
+      queryParameters: queryParams,
+      fromJson: (json) {
+        if (json['data'] != null && json['data']['letters'] is List) {
+          return (json['data']['letters'] as List)
+              .map((item) => Letter.fromJson(item))
+              .toList();
+        }
+        return <Letter>[];
+      },
+    );
+  }
+
+  // Approve letter request
+  Future<ApiResponse<Map<String, dynamic>>> approveLetter(
+    String letterId, {
+    String? reason,
+  }) async {
+    return await _apiService.put<Map<String, dynamic>>(
+      '/letters/$letterId/status',
+      data: {
+        'status': 'approved',
+        'reason': reason ?? 'Letter request approved',
+      },
+      fromJson: (json) => json as Map<String, dynamic>,
+    );
+  }
+
+  // Reject letter request
+  Future<ApiResponse<Map<String, dynamic>>> rejectLetter(
+    String letterId, {
+    String? reason,
+  }) async {
+    return await _apiService.put<Map<String, dynamic>>(
+      '/letters/$letterId/status',
+      data: {
+        'status': 'rejected',
+        'reason': reason ?? 'Letter request rejected',
+      },
+      fromJson: (json) => json as Map<String, dynamic>,
+    );
+  }
+
+  // Update letter status (generic method)
+  Future<ApiResponse<Map<String, dynamic>>> updateLetterStatus(
+    String letterId,
+    String status, {
+    String? reason,
+  }) async {
+    return await _apiService.put<Map<String, dynamic>>(
+      '/letters/$letterId/status',
+      data: {
+        'status': status,
+        'reason': reason,
+      },
+      fromJson: (json) => json as Map<String, dynamic>,
+    );
+  }
+
   // Export letters
   Future<ApiResponse<String>> exportLetters({
     required String startDate,
