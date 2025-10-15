@@ -2,58 +2,7 @@ import 'package:dio/dio.dart';
 import 'dart:convert';
 import 'api_service.dart';
 import '../constants/api_constants.dart';
-
-class Assignment {
-  final String id;
-  final String title;
-  final String description;
-  final DateTime dueDate;
-  final String priority;
-  final String status;
-  final String createdBy;
-  final String? employeeId; // Add employee_id field
-  final DateTime? createdAt;
-
-  Assignment({
-    required this.id,
-    required this.title,
-    required this.description,
-    required this.dueDate,
-    required this.priority,
-    required this.status,
-    required this.createdBy,
-    this.employeeId,
-    this.createdAt,
-  });
-
-  factory Assignment.fromJson(Map<String, dynamic> json) {
-    return Assignment(
-      id: json['id'],
-      title: json['title'],
-      description: json['description'],
-      dueDate: DateTime.parse(json['dueDate']),
-      priority: json['priority'],
-      status: json['status'],
-      createdBy: json['createdBy'],
-      employeeId: json['employee_id'], // Parse employee_id
-      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'title': title,
-      'description': description,
-      'dueDate': dueDate.toIso8601String(),
-      'priority': priority,
-      'status': status,
-      'createdBy': createdBy,
-      'employee_id': employeeId, // Include employee_id in JSON
-      'createdAt': createdAt?.toIso8601String(),
-    };
-  }
-}
+import '../models/assignment.dart';
 
 class AssignmentService {
   final ApiService _apiService = ApiService.instance;
@@ -62,12 +11,16 @@ class AssignmentService {
   Future<bool> testConnection() async {
     try {
       print('🧪 Testing API connection...');
+      print('🧪 Testing URL: ${ApiConstants.baseUrl}${ApiConstants.assignments.test}');
+      
       final response = await _apiService.get<Map<String, dynamic>>(
         ApiConstants.assignments.test,
         fromJson: (data) => data as Map<String, dynamic>,
       );
 
-      print('🧪 Test response: ${response.success}');
+      print('🧪 Test response success: ${response.success}');
+      print('🧪 Test response message: ${response.message}');
+      print('🧪 Test response error: ${response.error}');
       print('🧪 Test data: ${response.data}');
       return response.success;
     } catch (e) {
@@ -76,10 +29,36 @@ class AssignmentService {
     }
   }
 
+  // Debug method to test direct API call
+  Future<void> debugApiCall() async {
+    print('🐛 DEBUG: Starting API debug test...');
+    try {
+      // Test connection first
+      print('🐛 Step 1: Testing connection...');
+      final testResult = await testConnection();
+      print('🐛 Connection test result: $testResult');
+      
+      if (testResult) {
+        print('🐛 Step 2: Testing upcoming assignments...');
+        await getUpcomingAssignments();
+      } else {
+        print('🐛 Connection failed, but continuing with assignment test...');
+        try {
+          await getUpcomingAssignments();
+        } catch (e) {
+          print('🐛 Assignment test also failed: $e');
+        }
+      }
+    } catch (e) {
+      print('🐛 DEBUG API call failed: $e');
+    }
+  }
+
   Future<List<Assignment>> getUpcomingAssignments() async {
     try {
       print('🚀 Fetching upcoming assignments...');
       print('📍 Using endpoint: ${ApiConstants.assignments.upcoming}');
+      print('🌐 Full URL: ${ApiConstants.baseUrl}${ApiConstants.assignments.upcoming}');
       
       // Add more detailed debugging
       print('🔑 Checking if token is available...');

@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import 'stat_card.dart';
+import 'database_stats_widget.dart';
 import 'package:frontend/core/constants/colors.dart';
+import 'package:frontend/data/providers/auth_provider.dart';
 
 class DashboardHeader extends StatelessWidget {
-  final String name; // ditampilkan di sapaan
   final String profileRoute;
   final String avatarUrl;
 
   const DashboardHeader({
     super.key,
-    this.name = "Admin",
     this.profileRoute = '/admin/profile',
     this.avatarUrl = "https://i.pravatar.cc/150?img=3",
   });
@@ -20,6 +21,12 @@ class DashboardHeader extends StatelessWidget {
     if (hour >= 12 && hour < 16) return "Good Afternoon";
     if (hour >= 16 && hour < 19) return "Good Evening";
     return "Good Night";
+  }
+
+  String _getFirstName(String fullName) {
+    if (fullName.isEmpty) return "User";
+    final parts = fullName.split(' ');
+    return parts.first;
   }
 
   @override
@@ -89,20 +96,29 @@ class DashboardHeader extends StatelessWidget {
             builder: (context, _) {
               final h = DateTime.now().hour;
               final greet = _greeting(h);
-              return Text(
-                "$greet, $name\nHave a Great Day!",
-                style: const TextStyle(
-                  color: AppColors.pureWhite,
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  height: 1.4,
-                ),
+              
+              return Consumer<AuthProvider>(
+                builder: (context, authProvider, _) {
+                  final currentUser = authProvider.currentUser;
+                  final fullName = currentUser?.fullName ?? "User";
+                  final firstName = _getFirstName(fullName);
+                  
+                  return Text(
+                    "$greet, $firstName\nHave a Great Day!",
+                    style: const TextStyle(
+                      color: AppColors.pureWhite,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      height: 1.4,
+                    ),
+                  );
+                },
               );
             },
           ),
 
           const SizedBox(height: 20),
-          const _StatsResponsive(),
+          const DatabaseStatsWidget(),
         ],
       ),
     );

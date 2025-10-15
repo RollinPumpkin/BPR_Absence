@@ -75,20 +75,36 @@ class _LoginPageIntegratedState extends State<LoginPageIntegrated>
       
       // Navigate based on user role
       final user = authProvider.currentUser;
+      print('🎯 ROUTING DEBUG: User object: $user');
+      print('🎯 ROUTING DEBUG: User role: ${user?.role}');
+      print('🎯 ROUTING DEBUG: User role type: ${user?.role.runtimeType}');
+      
       if (user != null) {
+        print('🎯 ROUTING DEBUG: Entering switch statement with role: "${user.role}"');
         switch (user.role) {
           case 'admin':
+            print('🎯 ROUTING DEBUG: Matched admin case');
+            Navigator.pushReplacementNamed(context, '/admin/dashboard');
+            break;
+          case 'super_admin':
+            print('🎯 ROUTING DEBUG: Matched super_admin case');
             Navigator.pushReplacementNamed(context, '/admin/dashboard');
             break;
           case 'hr':
+            print('🎯 ROUTING DEBUG: Matched hr case');
             Navigator.pushReplacementNamed(context, '/admin/dashboard');
             break;
           case 'manager':
+            print('🎯 ROUTING DEBUG: Matched manager case');
             Navigator.pushReplacementNamed(context, '/admin/dashboard');
             break;
           default:
+            print('🎯 ROUTING DEBUG: Matched default case - going to user dashboard');
             Navigator.pushReplacementNamed(context, '/user/dashboard');
         }
+        print('🎯 ROUTING DEBUG: Navigation call completed');
+      } else {
+        print('🎯 ROUTING DEBUG: User is null!');
       }
     } else if (mounted) {
       // Show error message
@@ -112,15 +128,31 @@ class _LoginPageIntegratedState extends State<LoginPageIntegrated>
             if (authProvider.isAuthenticated && authProvider.currentUser != null) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 final user = authProvider.currentUser!;
+                print('🎯 POSTFRAME ROUTING DEBUG: User role: "${user.role}"');
+                print('🎯 POSTFRAME ROUTING DEBUG: User role type: ${user.role.runtimeType}');
+                
                 switch (user.role) {
                   case 'admin':
+                    print('🎯 POSTFRAME ROUTING DEBUG: Matched admin case');
+                    Navigator.pushReplacementNamed(context, '/admin/dashboard');
+                    break;
+                  case 'super_admin':
+                    print('🎯 POSTFRAME ROUTING DEBUG: Matched super_admin case');
+                    Navigator.pushReplacementNamed(context, '/admin/dashboard');
+                    break;
                   case 'hr':
+                    print('🎯 POSTFRAME ROUTING DEBUG: Matched hr case');
+                    Navigator.pushReplacementNamed(context, '/admin/dashboard');
+                    break;
                   case 'manager':
+                    print('🎯 POSTFRAME ROUTING DEBUG: Matched manager case');
                     Navigator.pushReplacementNamed(context, '/admin/dashboard');
                     break;
                   default:
+                    print('🎯 POSTFRAME ROUTING DEBUG: Matched default case - going to user dashboard');
                     Navigator.pushReplacementNamed(context, '/user/dashboard');
                 }
+                print('🎯 POSTFRAME ROUTING DEBUG: Navigation call completed');
               });
               return const Center(child: CircularProgressIndicator());
             }

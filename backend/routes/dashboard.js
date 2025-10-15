@@ -575,6 +575,13 @@ router.get('/admin', auth, adminAuth, async (req, res) => {
   }
 });
 
+// Alias for admin dashboard (for backward compatibility)
+router.get('/stats', auth, adminAuth, async (req, res) => {
+  // Forward to admin dashboard endpoint
+  req.url = '/admin';
+  return router.handle(req, res);
+});
+
 // Get admin department-wise statistics
 router.get('/admin/departments', auth, adminAuth, async (req, res) => {
   try {

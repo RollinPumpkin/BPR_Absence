@@ -15,8 +15,8 @@ class AuthService {
   
   // Development flag - set to true to use mock service, false to use Firebase
   static const bool useMockService = false;
-  static const bool useFirebaseAuth = true;
-  static const bool useSimpleFirebase = true; // Use simplified version
+  static const bool useFirebaseAuth = false;
+  static const bool useSimpleFirebase = false; // Use simplified version
 
   // Initialize the auth service
   Future<void> initialize() async {

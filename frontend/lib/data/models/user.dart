@@ -58,17 +58,25 @@ class User {
   factory User.fromJson(Map<String, dynamic> json) {
     // Debug logging
     print('🔍 User.fromJson received data: $json');
+    print('🔍 User.fromJson ROLE field: "${json['role']}" (type: ${json['role'].runtimeType})');
+    print('🔍 User.fromJson EMPLOYEE_ID field: "${json['employee_id']}" (type: ${json['employee_id'].runtimeType})');
     
     try {
+      final parsedEmployeeId = json['employee_id']?.toString() ?? '';
+      final parsedRole = json['role']?.toString() ?? 'employee';
+      
+      print('🔍 User.fromJson PARSED employeeId: "$parsedEmployeeId"');
+      print('🔍 User.fromJson PARSED role: "$parsedRole"');
+      
       return User(
         id: json['id']?.toString() ?? '',
-        employeeId: json['employee_id']?.toString() ?? '',
+        employeeId: parsedEmployeeId,
         fullName: json['full_name']?.toString() ?? '',
         email: json['email']?.toString() ?? '',
         department: json['department']?.toString(),
         position: json['position']?.toString(),
         phone: json['phone']?.toString(),
-        role: json['role']?.toString() ?? 'employee',
+        role: parsedRole,
         status: json['status']?.toString() ?? 'active',
         isActive: json['is_active'] == true || json['is_active'] == 'true',
         profilePicture: json['profile_picture']?.toString(),
@@ -211,13 +219,25 @@ class User {
     );
   }
 
-  bool get isAdmin => role == 'admin' || role == 'account_officer';
+  bool get isAdmin {
+    // Check by role OR by standardized employee ID pattern
+    final hasAdminRole = role == 'admin' || role == 'super_admin';
+    final hasAdminEmployeeId = employeeId.startsWith('SUP') || employeeId.startsWith('ADM');
+    return hasAdminRole || hasAdminEmployeeId;
+  }
+  
+  bool get isSuperAdmin {
+    // Check by role OR by SUP employee ID pattern
+    return role == 'super_admin' || employeeId.startsWith('SUP');
+  }
   bool get isEmployee => role == 'employee';
   
   String get displayRole {
     switch (role) {
       case 'admin':
         return 'Administrator';
+      case 'super_admin':
+        return 'Super Administrator';
       case 'account_officer':
         return 'Account Officer';
       case 'security':

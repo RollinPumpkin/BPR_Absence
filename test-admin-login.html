@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BPR Absence Login Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .admin-info {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .routing-test {
+            background: #e2e3e5;
+            border: 1px solid #d3d3d4;
+            color: #383d41;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 BPR Absence Admin Login Test</h1>
+        
+        <div class="admin-info">
+            <h3>📋 Admin Test Credentials:</h3>
+            <p><strong>Super Admin:</strong> admin@gmail.com / 123456</p>
+            <p><strong>Regular Admin:</strong> test@bpr.com / 123456</p>
+            <p><strong>Employee (for comparison):</strong> user@gmail.com / 123456</p>
+        </div>
+        
+        <div class="form-group">
+            <label for="testUser">Quick Select Test User:</label>
+            <select id="testUser" onchange="selectTestUser()">
+                <option value="">-- Select Test User --</option>
+                <option value="admin@gmail.com">Super Admin (admin@gmail.com)</option>
+                <option value="test@bpr.com">Regular Admin (test@bpr.com)</option>
+                <option value="user@gmail.com">Employee (user@gmail.com)</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="email">Email/Phone/Employee ID:</label>
+            <input type="text" id="email" placeholder="Enter email, phone, or employee ID">
+        </div>
+        
+        <div class="form-group">
+            <label for="password">Password:</label>
+            <input type="password" id="password" placeholder="Enter password">
+        </div>
+        
+        <button onclick="testLogin()">🚀 Test Login & Routing</button>
+        <button onclick="clearResults()">🧹 Clear Results</button>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3000/api';
+        
+        function selectTestUser() {
+            const select = document.getElementById('testUser');
+            const email = document.getElementById('email');
+            const password = document.getElementById('password');
+            
+            if (select.value) {
+                email.value = select.value;
+                password.value = '123456';
+            }
+        }
+        
+        function clearResults() {
+            document.getElementById('result').innerHTML = '';
+        }
+        
+        async function testLogin() {
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            const resultDiv = document.getElementById('result');
+            
+            if (!email || !password) {
+                showResult('❌ Please enter both email and password', 'error');
+                return;
+            }
+            
+            showResult('🔄 Testing login...', 'info');
+            
+            try {
+                // Step 1: Test Login API
+                showResult('🔄 Step 1: Testing login API...', 'info');
+                
+                const loginResponse = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: email,
+                        password: password
+                    })
+                });
+                
+                const loginData = await loginResponse.json();
+                
+                if (!loginResponse.ok) {
+                    showResult(`❌ Login failed: ${loginData.message}`, 'error');
+                    return;
+                }
+                
+                if (!loginData.success) {
+                    showResult(`❌ Login unsuccessful: ${loginData.message}`, 'error');
+                    return;
+                }
+                
+                // Step 2: Analyze User Data
+                const user = loginData.data.user;
+                const token = loginData.data.token;
+                
+                showResult(`✅ Login successful!
+                
+📋 USER DATA:
+Name: ${user.full_name}
+Email: ${user.email}
+Employee ID: ${user.employee_id}
+Role: "${user.role}"
+Status: ${user.status || 'active'}
+Is Active: ${user.is_active}
+
+🔐 TOKEN: ${token ? 'Provided' : 'Missing'}`, 'success');
+                
+                // Step 3: Test Routing Logic
+                const role = user.role;
+                let expectedRoute;
+                let routingCase;
+                
+                switch (role.toLowerCase()) {
+                    case 'super_admin':
+                        expectedRoute = '/admin/dashboard';
+                        routingCase = 'Super Admin → Admin Dashboard';
+                        break;
+                    case 'admin':
+                        expectedRoute = '/admin/dashboard';
+                        routingCase = 'Admin → Admin Dashboard';
+                        break;
+                    case 'hr':
+                        expectedRoute = '/admin/dashboard';
+                        routingCase = 'HR → Admin Dashboard';
+                        break;
+                    case 'manager':
+                        expectedRoute = '/admin/dashboard';
+                        routingCase = 'Manager → Admin Dashboard';
+                        break;
+                    case 'employee':
+                        expectedRoute = '/user/dashboard';
+                        routingCase = 'Employee → User Dashboard';
+                        break;
+                    case 'account_officer':
+                        expectedRoute = '/user/dashboard';
+                        routingCase = 'Account Officer → User Dashboard';
+                        break;
+                    case 'security':
+                        expectedRoute = '/user/dashboard';
+                        routingCase = 'Security → User Dashboard';
+                        break;
+                    case 'office_boy':
+                        expectedRoute = '/user/dashboard';
+                        routingCase = 'Office Boy → User Dashboard';
+                        break;
+                    default:
+                        expectedRoute = '/user/dashboard';
+                        routingCase = 'Default → User Dashboard';
+                }
+                
+                const isAdminRoute = expectedRoute === '/admin/dashboard';
+                const isExpectedForAdmin = email.includes('admin') || email === 'test@bpr.com';
+                
+                let routingResult = '';
+                if (isExpectedForAdmin && isAdminRoute) {
+                    routingResult = '✅ CORRECT: Admin user routes to Admin Dashboard';
+                } else if (isExpectedForAdmin && !isAdminRoute) {
+                    routingResult = '❌ PROBLEM: Admin user routes to User Dashboard!';
+                } else if (!isExpectedForAdmin && !isAdminRoute) {
+                    routingResult = '✅ CORRECT: Employee routes to User Dashboard';
+                } else {
+                    routingResult = '⚠️ UNEXPECTED: Employee routes to Admin Dashboard';
+                }
+                
+                showResult(`
+🎯 ROUTING ANALYSIS:
+Role: "${role}"
+Normalized: "${role.toLowerCase()}"
+Routing Case: ${routingCase}
+Expected Route: ${expectedRoute}
+${routingResult}
+
+🔍 FLUTTER SIMULATION:
+This is what should happen in Flutter:
+1. AuthProvider receives this user data
+2. User.fromJson() parses role = "${role}"
+3. _getRouteByRole("${role}") returns "${expectedRoute}"
+4. Navigator.pushReplacementNamed(context, "${expectedRoute}")
+5. User should see: ${isAdminRoute ? 'ADMIN DASHBOARD' : 'USER DASHBOARD'}`, 'info');
+                
+            } catch (error) {
+                showResult(`❌ Network error: ${error.message}
+                
+🔧 Possible issues:
+- Backend server not running on port 3000
+- CORS issues
+- Network connectivity problems
+                
+💡 Check:
+1. Is backend server running? (node server.js)
+2. Is server accessible at http://localhost:3000?
+3. Are there any console errors?`, 'error');
+            }
+        }
+        
+        function showResult(message, type) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = `<div class="result ${type}">${message}</div>`;
+        }
+        
+        // Auto-load admin credentials for quick testing
+        window.onload = function() {
+            document.getElementById('email').value = 'admin@gmail.com';
+            document.getElementById('password').value = '123456';
+        };
+    </script>
+</body>
+</html>

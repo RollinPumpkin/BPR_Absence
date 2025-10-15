@@ -1,19 +1,54 @@
 import 'package:flutter/material.dart';
 import 'assignment_card.dart';
 import 'package:frontend/core/constants/colors.dart';
+import 'package:frontend/data/models/assignment.dart';
 import 'timeline_rail.dart';
 
 class DailyAssignmentUI extends StatelessWidget {
-  const DailyAssignmentUI({super.key});
+  final List<Assignment> assignments;
+  
+  const DailyAssignmentUI({
+    super.key, 
+    required this.assignments,
+  });
 
   @override
   Widget build(BuildContext context) {
+    // Filter assignments for today
+    final today = DateTime.now();
+    final todayAssignments = assignments.where((assignment) {
+      return assignment.dueDate.year == today.year &&
+             assignment.dueDate.month == today.month &&
+             assignment.dueDate.day == today.day;
+    }).toList();
+
+    if (todayAssignments.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32.0),
+          child: Column(
+            children: [
+              Icon(Icons.assignment_outlined, size: 64, color: AppColors.neutral400),
+              SizedBox(height: 16),
+              Text(
+                'No assignments for today',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: AppColors.neutral500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          '09 AM',
-          style: TextStyle(
+        Text(
+          'Today - ${today.day}/${today.month}/${today.year}',
+          style: const TextStyle(
             fontWeight: FontWeight.w800,
             fontSize: 16,
             color: AppColors.neutral800,
@@ -30,16 +65,15 @@ class DailyAssignmentUI extends StatelessWidget {
           child: ListView.separated(
             physics: const NeverScrollableScrollPhysics(),
             shrinkWrap: true,
-            itemCount: 4,
+            itemCount: todayAssignments.length,
             separatorBuilder: (_, __) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
-              return const AssignmentCard(
-                title: 'Go To Bromo',
-                date: '27 Agustus 2024',
-                description:
-                    'Lorem ipsum dolor sit amet, consectetur adipiscing elit, '
-                    'sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
-                status: 'Assigned',
+              final assignment = todayAssignments[index];
+              return AssignmentCard(
+                title: assignment.title,
+                date: assignment.formattedDueDate,
+                description: assignment.description,
+                status: assignment.status,
               );
             },
           ),

@@ -132,6 +132,166 @@ app.use('/uploads', express.static('uploads', {
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));
+
+// Debug endpoint for JWT token testing
+app.get('/api/debug/token', (req, res) => {
+  try {
+    const jwt = require('jsonwebtoken');
+    console.log('🧪 Debug token endpoint called');
+    
+    const authHeader = req.header('Authorization');
+    if (!authHeader) {
+      return res.json({
+        success: false,
+        message: 'No auth header provided',
+        debug: 'Please provide Authorization header'
+      });
+    }
+    
+    const token = authHeader.replace('Bearer ', '');
+    if (!token) {
+      return res.json({
+        success: false,
+        message: 'No token in header',
+        authHeader: authHeader
+      });
+    }
+    
+    // Try to decode without verification first
+    const decodedUnsafe = jwt.decode(token);
+    console.log('🔍 Decoded token (unsafe):', decodedUnsafe);
+    
+    // Try to verify with secret
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      console.log('✅ Token verified successfully:', decoded);
+      
+      res.json({
+        success: true,
+        message: 'Token verification successful',
+        decoded: decoded,
+        hasRole: !!decoded.role,
+        hasEmployeeId: !!decoded.employeeId,
+        isAdmin: decoded.role === 'super_admin' || decoded.role === 'admin',
+        isAdminEmployeeId: decoded.employeeId?.startsWith('SUP') || decoded.employeeId?.startsWith('ADM')
+      });
+    } catch (jwtError) {
+      console.error('❌ JWT verification failed:', jwtError.message);
+      res.json({
+        success: false,
+        message: 'JWT verification failed',
+        error: jwtError.message,
+        decodedUnsafe: decodedUnsafe
+      });
+    }
+    
+  } catch (error) {
+    console.error('Debug token endpoint error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Debug token endpoint failed',
+      error: error.message
+    });
+  }
+});
+
+// Direct stats endpoint for testing (without auth)
+app.get('/api/debug/stats', async (req, res) => {
+  try {
+    console.log('📊 Debug: Getting employee statistics...');
+    
+    const { getFirestore } = require('./config/database');
+    const db = getFirestore();
+    const usersRef = db.collection('users');
+    const snapshot = await usersRef.get();
+    
+    let stats = {
+      total: 0,
+      active: 0,
+      new: 0,
+      resign: 0
+    };
+    
+    const currentDate = new Date();
+    const threeMonthsAgo = new Date();
+    threeMonthsAgo.setMonth(currentDate.getMonth() - 3);
+    
+    console.log('📅 Current date:', currentDate.toISOString());
+    console.log('📅 Three months ago:', threeMonthsAgo.toISOString());
+    
+    snapshot.forEach(doc => {
+      const userData = doc.data();
+      console.log(`👤 Processing user ${userData.full_name || userData.email}:`, {
+        status: userData.status,
+        is_active: userData.is_active,
+        created_at: userData.created_at
+      });
+      
+      // Count total
+      stats.total++;
+      
+      // Count active (status = 'active' and is_active = true)
+      const isActive = userData.status === 'active' && userData.is_active === true;
+      if (isActive) {
+        stats.active++;
+        console.log(`  ✅ Active user: ${userData.full_name || userData.email}`);
+      }
+      
+      // Count resigned (non-active: status != 'active' OR is_active = false)
+      const isResigned = userData.status !== 'active' || userData.is_active === false;
+      if (isResigned) {
+        stats.resign++;
+        console.log(`  ❌ Resigned user: ${userData.full_name || userData.email} (status: ${userData.status}, is_active: ${userData.is_active})`);
+      }
+      
+      // Count new employees (created in last 1-3 months)
+      if (userData.created_at) {
+        let createdDate;
+        
+        // Handle Firestore timestamp
+        if (typeof userData.created_at.toDate === 'function') {
+          createdDate = userData.created_at.toDate();
+        } else if (userData.created_at instanceof Date) {
+          createdDate = userData.created_at;
+        } else if (typeof userData.created_at === 'string') {
+          createdDate = new Date(userData.created_at);
+        }
+        
+        if (createdDate && createdDate >= threeMonthsAgo && createdDate <= currentDate) {
+          stats.new++;
+          console.log(`  🆕 New user (last 3 months): ${userData.full_name || userData.email} - created: ${createdDate.toISOString()}`);
+        }
+      }
+    });
+    
+    console.log('✅ Employee statistics calculated:', stats);
+    console.log('📊 Summary:');
+    console.log(`  - Total: ${stats.total} employees`);
+    console.log(`  - Active: ${stats.active} employees`);
+    console.log(`  - New (1-3 months): ${stats.new} employees`);
+    console.log(`  - Resigned (non-active): ${stats.resign} employees`);
+    
+    res.json({
+      success: true,
+      message: 'Employee statistics retrieved successfully',
+      data: stats
+    });
+    
+  } catch (error) {
+    console.error('❌ Get employee statistics error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get employee statistics',
+      data: {
+        total: 0,
+        active: 0,
+        new: 0,
+        resign: 0
+      }
+    });
+  }
+});
+
 app.use('/api/users', require('./routes/users'));
 app.use('/api/attendance', require('./routes/attendance'));
 app.use('/api/admin', require('./routes/admin'));

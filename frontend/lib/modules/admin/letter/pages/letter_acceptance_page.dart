@@ -2,6 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:frontend/core/constants/colors.dart';
+import 'package:frontend/data/services/letter_service.dart';
+import 'package:frontend/data/models/letter.dart';
 
 class LetterAcceptancePage extends StatefulWidget {
   const LetterAcceptancePage({super.key});
@@ -15,39 +17,152 @@ class _LetterAcceptancePageState extends State<LetterAcceptancePage> {
     'Januari','Februari','Maret','April','Mei','Juni',
     'Juli','Agustus','September','Oktober','November','Desember'
   ];
-  int _monthIndex = 7; // 0-based (Agustus)
-  int _year = 2025;
+  int _monthIndex = DateTime.now().month - 1; // Current month (0-based)
+  int _year = DateTime.now().year;
 
-  // contoh data (silakan sambungkan ke data asli)
-  final List<Map<String, String>> letters = [
-    {
-      'date': '27 Agustus 2025',
-      'title': 'Surat Sakit',
-      'category': 'Absensi',
-      'desc':
-          'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
-      'status': 'Waiting Approval', // Waiting Approval | Rejected | Approved
-      'file': 'Wa003198373738.img',
-    },
-    {
-      'date': '27 Agustus 2025',
-      'title': 'Surat Sakit',
-      'category': 'Absensi',
-      'desc':
-          'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
-      'status': 'Rejected',
-      'file': 'Wa003198373738.img',
-    },
-    {
-      'date': '27 Agustus 2025',
-      'title': 'Surat Sakit',
-      'category': 'Absensi',
-      'desc':
-          'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
-      'status': 'Waiting Approval',
-      'file': 'Wa003198373738.img',
-    },
-  ];
+  final LetterService _letterService = LetterService();
+  List<Letter> _pendingLetters = [];
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPendingLetters();
+  }
+
+  Future<void> _loadPendingLetters() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final response = await _letterService.getPendingLetters();
+      
+      if (response.success && response.data != null) {
+        setState(() {
+          _pendingLetters = response.data!;
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _errorMessage = response.message ?? 'Failed to load pending letters';
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Error loading pending letters: $e';
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _approveLetter(Letter letter) async {
+    try {
+      final response = await _letterService.approveLetter(letter.id);
+      
+      if (response.success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Letter approved successfully'),
+            backgroundColor: AppColors.primaryGreen,
+          ),
+        );
+        _loadPendingLetters(); // Refresh the list
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to approve letter: ${response.message}'),
+            backgroundColor: AppColors.primaryRed,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error approving letter: $e'),
+          backgroundColor: AppColors.primaryRed,
+        ),
+      );
+    }
+  }
+
+  Future<void> _rejectLetter(Letter letter, String? reason) async {
+    try {
+      final response = await _letterService.rejectLetter(
+        letter.id,
+        reason: reason,
+      );
+      
+      if (response.success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Letter rejected successfully'),
+            backgroundColor: AppColors.primaryRed,
+          ),
+        );
+        _loadPendingLetters(); // Refresh the list
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to reject letter: ${response.message}'),
+            backgroundColor: AppColors.primaryRed,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error rejecting letter: $e'),
+          backgroundColor: AppColors.primaryRed,
+        ),
+      );
+    }
+  }
+
+  void _showRejectDialog(Letter letter) {
+    final TextEditingController reasonController = TextEditingController();
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Reject Letter'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Are you sure you want to reject "${letter.subject}"?'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: reasonController,
+              decoration: const InputDecoration(
+                labelText: 'Reason for rejection (optional)',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 3,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _rejectLetter(letter, reasonController.text.trim());
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryRed,
+            ),
+            child: const Text('Reject'),
+          ),
+        ],
+      ),
+    );
+  }
 
   void _prevMonth() {
     setState(() {
@@ -163,54 +278,80 @@ class _LetterAcceptancePageState extends State<LetterAcceptancePage> {
                       ),
 
                       // daftar item
-                      ListView.separated(
-                        padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
-                        itemCount: letters.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 8),
-                        itemBuilder: (context, i) {
-                          final m = letters[i];
-                          final isFirst = i == 0;
-                          final isLast = i == letters.length - 1;
-                          return _TimelineRow(
-                            isFirst: isFirst,
-                            isLast: isLast,
-                            child: _LetterCard(
-                              date: m['date']!,
-                              title: m['title']!,
-                              category: m['category']!,
-                              description: m['desc']!,
-                              status: m['status']!,
-                              fileName: m['file']!,
-                              onApprove: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Letter approved'),
-                                    backgroundColor: AppColors.primaryGreen,
-                                  ),
-                                );
-                              },
-                              onReject: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Letter rejected'),
-                                    backgroundColor: AppColors.primaryRed,
-                                  ),
-                                );
-                              },
-                              onDownload: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Downloading proof...')),
-                                );
-                              },
-                              onPreview: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Preview proof...')),
-                                );
-                              },
+                      if (_isLoading)
+                        const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(20),
+                            child: CircularProgressIndicator(),
+                          ),
+                        )
+                      else if (_errorMessage != null)
+                        Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(20),
+                            child: Column(
+                              children: [
+                                Text(
+                                  _errorMessage!,
+                                  style: const TextStyle(color: AppColors.primaryRed),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 16),
+                                ElevatedButton(
+                                  onPressed: _loadPendingLetters,
+                                  child: const Text('Retry'),
+                                ),
+                              ],
                             ),
-                          );
-                        },
-                      ),
+                          ),
+                        )
+                      else if (_pendingLetters.isEmpty)
+                        const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(20),
+                            child: Text(
+                              'No pending letters found',
+                              style: TextStyle(color: AppColors.neutral800),
+                            ),
+                          ),
+                        )
+                      else
+                        ListView.separated(
+                          padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
+                          itemCount: _pendingLetters.length,
+                          separatorBuilder: (_, __) => const SizedBox(height: 8),
+                          itemBuilder: (context, i) {
+                            final letter = _pendingLetters[i];
+                            final isFirst = i == 0;
+                            final isLast = i == _pendingLetters.length - 1;
+                            return _TimelineRow(
+                              isFirst: isFirst,
+                              isLast: isLast,
+                              child: _LetterCard(
+                                date: letter.letterDate?.toString().split(' ')[0] ?? letter.createdAt?.toString().split(' ')[0] ?? 'Unknown date',
+                                title: letter.subject,
+                                category: letter.letterType,
+                                description: letter.content,
+                                status: _mapStatusToDisplay(letter.status),
+                                fileName: letter.attachments.isNotEmpty ? letter.attachments.first.filename : 'No attachment',
+                                requesterName: letter.senderName ?? 'Unknown requester',
+                                requesterEmployee: letter.recipientEmployeeId ?? '',
+                                onApprove: () => _approveLetter(letter),
+                                onReject: () => _showRejectDialog(letter),
+                                onDownload: () {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Downloading proof...')),
+                                  );
+                                },
+                                onPreview: () {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Preview proof...')),
+                                  );
+                                },
+                              ),
+                            );
+                          },
+                        ),
                     ],
                   ),
                 ),
@@ -220,6 +361,19 @@ class _LetterAcceptancePageState extends State<LetterAcceptancePage> {
         ),
       ),
     );
+  }
+
+  String _mapStatusToDisplay(String status) {
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return 'Waiting Approval';
+      case 'approved':
+        return 'Approved';
+      case 'rejected':
+        return 'Rejected';
+      default:
+        return status;
+    }
   }
 }
 
@@ -325,6 +479,8 @@ class _LetterCard extends StatelessWidget {
   final String description;
   final String status;
   final String fileName;
+  final String? requesterName;
+  final String? requesterEmployee;
   final VoidCallback onApprove;
   final VoidCallback onReject;
   final VoidCallback onDownload;
@@ -337,6 +493,8 @@ class _LetterCard extends StatelessWidget {
     required this.description,
     required this.status,
     required this.fileName,
+    this.requesterName,
+    this.requesterEmployee,
     required this.onApprove,
     required this.onReject,
     required this.onDownload,

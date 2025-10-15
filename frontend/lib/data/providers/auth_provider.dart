@@ -61,9 +61,14 @@ class AuthProvider with ChangeNotifier {
         if (response.data is Map<String, dynamic>) {
           // Backend API response format: {user: {...}, token: "..."}
           final responseData = response.data as Map<String, dynamic>;
+          print('🔍 AUTH_PROVIDER RAW RESPONSE: $responseData');
+          
           if (responseData.containsKey('user')) {
             final userData = responseData['user'];
+            print('🔍 AUTH_PROVIDER USER DATA: $userData');
             if (userData is Map<String, dynamic>) {
+              print('🔍 AUTH_PROVIDER PARSING userData role: ${userData['role']}');
+              print('🔍 AUTH_PROVIDER PARSING userData employee_id: ${userData['employee_id']}');
               user = User.fromJson(userData);
             }
           } else {
@@ -101,6 +106,14 @@ class AuthProvider with ChangeNotifier {
         }
         
         if (user != null) {
+          print('🎯 AUTH_PROVIDER DEBUG: User object created');
+          print('🎯 AUTH_PROVIDER DEBUG: User name: ${user.fullName}');
+          print('🎯 AUTH_PROVIDER DEBUG: User email: ${user.email}');
+          print('🎯 AUTH_PROVIDER DEBUG: User employee_id: "${user.employeeId}"');
+          print('🎯 AUTH_PROVIDER DEBUG: User role: "${user.role}"');
+          print('🎯 AUTH_PROVIDER DEBUG: User role type: ${user.role.runtimeType}');
+          print('🎯 AUTH_PROVIDER DEBUG: Employee ID type: ${user.employeeId.runtimeType}');
+          
           _currentUser = user;
           _isAuthenticated = true;
           

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:frontend/core/constants/colors.dart';
 import 'package:frontend/core/widgets/custom_bottom_nav_router.dart';
 import 'package:frontend/modules/user/shared/user_nav_items.dart';
+import 'package:frontend/data/services/letter_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
@@ -21,11 +22,15 @@ class _UserLettersPageState extends State<UserLettersPage> {
   bool _isLoading = true;
   String? _error;
   
+  final LetterService _letterService = LetterService();
+  
   @override
   void initState() {
     super.initState();
     _loadLetters();
   }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
@@ -423,99 +428,140 @@ class _UserLettersPageState extends State<UserLettersPage> {
     });
 
     try {
-      // Get current user info from SharedPreferences
-      final prefs = await SharedPreferences.getInstance();
-      final userEmail = prefs.getString('user_email');
-      final userId = prefs.getString('user_id');
-      final employeeId = prefs.getString('employee_id');
-      
-      print('🔍 Debug: Loading letters for user...');
-      print('🔍 Debug: User Email: $userEmail');
-      print('🔍 Debug: User ID: $userId');
-      print('🔍 Debug: Employee ID: $employeeId');
-      print('🔍 Debug: Selected Filter: $selectedFilter');
-      
-      if (userId == null && employeeId == null && userEmail == null) {
-        throw Exception('User info not found. Please log in again.');
-      }
-      
-      // Try multiple approaches to get letters
-      List<Map<String, dynamic>> letters = [];
-      
-      // First, let's check what's actually in Firestore
-      print('🔍 Debug: === Checking all letters in Firestore ===');
-      final allLettersSnapshot = await FirebaseFirestore.instance
-          .collection('letters')
-          .orderBy('createdAt', descending: true)
-          .limit(10)
-          .get();
-      
-      print('🔍 Debug: Found ${allLettersSnapshot.docs.length} total letters in Firestore:');
-      for (var doc in allLettersSnapshot.docs) {
-        final data = doc.data();
-        print('  - ID: ${doc.id}');
-        print('    Subject: ${data['subject']}');
-        print('    user_id: ${data['user_id']}');
-        print('    recipientId: ${data['recipientId']}');
-        print('    recipientEmployeeId: ${data['recipientEmployeeId']}');
-        print('    recipientEmail: ${data['recipientEmail']}');
-        print('    status: ${data['status']}');
-        print('    createdAt: ${data['createdAt']}');
-        print('---');
-      }
-      
-      // Approach 1: Try by employeeId first (most specific)
-      if (employeeId != null) {
-        print('🔍 Debug: Trying to fetch by employeeId...');
-        letters = await _getLettersByEmployeeId(employeeId);
-        print('🔍 Debug: Found ${letters.length} letters by employee ID');
-      }
-      
-      // Approach 2: Try by userId if no results
-      if (letters.isEmpty && userId != null) {
-        print('🔍 Debug: Trying to fetch by userId...');
-        letters = await _getLettersByUserId(userId);
-        print('🔍 Debug: Found ${letters.length} letters by user ID');
-      }
-      
-      // Approach 3: Try by email if still no results
-      if (letters.isEmpty && userEmail != null) {
-        print('🔍 Debug: Trying to fetch by email...');
-        letters = await _getLettersByEmail(userEmail);
-        print('🔍 Debug: Found ${letters.length} letters by email');
-      }
-      
-      // Approach 3.5: Try by user_id field (new submission format)
-      if (letters.isEmpty && (employeeId != null || userId != null)) {
-        final searchId = employeeId ?? userId;
-        print('🔍 Debug: Trying to fetch by user_id field: $searchId');
-        letters = await _getLettersByUserIdField(searchId!);
-        print('🔍 Debug: Found ${letters.length} letters by user_id field');
-      }
-      
-      // Approach 4: If still no results, try to get all letters and filter
-      if (letters.isEmpty) {
-        print('🔍 Debug: Trying to fetch all letters and filter...');
-        letters = await _getAllLettersAndFilter(userEmail, userId, employeeId);
-        print('🔍 Debug: Found ${letters.length} letters after filtering all');
-      }
-      
-      print('🔍 Debug: Final result - Found ${letters.length} letters');
-      
+      // Try to load from API first, fallback to Firebase if needed
+      await _loadLettersFromAPI();
+    } catch (e) {
+      print('🔍 Debug: API loading failed, falling back to Firebase: $e');
+      await _loadLettersFromFirebase();
+    }
+  }
+
+  Future<void> _loadLettersFromAPI() async {
+    print('🔍 Debug: Loading letters from API...');
+    
+    try {
+      // Simple HTTP request to get letters data
+    final response = await _letterService.getReceivedLetters(
+      page: 1,
+      limit: 100,
+    );
+
+    if (response.success && response.data != null) {
+      final letters = response.data!.items.map((letter) {
+        return {
+          'id': letter.id,
+          'subject': letter.subject,
+          'content': letter.content,
+          'status': letter.status,
+          'letter_type': letter.letterType,
+          'priority': letter.priority,
+          'created_at': letter.createdAt,
+          'sender_name': letter.senderName ?? 'Unknown',
+          'sender_position': letter.senderPosition ?? '',
+          'letter_number': letter.letterNumber ?? '',
+        };
+      }).toList();
+
+      print('� Loaded ${letters.length} letters from API');
       setState(() {
         _letters = letters;
         _isLoading = false;
       });
-      
-      print('🔍 Debug: Successfully loaded ${letters.length} letters');
-      for (var letter in letters) {
-        print('  - ${letter['title']} (${letter['status']})');
+      } else {
+        print('❌ Debug: API failed, falling back to Firebase direct query...');
+        
+        // Fallback to Firebase if API fails
+        await _loadLettersFromFirebase();
       }
+    } catch (e) {
+      print('❌ Debug: Error with API, falling back to Firebase: $e');
       
-      // Debug: Check what's in the current filter
-      print('🔍 Debug: Current filter: $selectedFilter');
-      final filteredCount = _getFilteredLetters().length;
-      print('🔍 Debug: Filtered letters count: $filteredCount');
+      // Fallback to Firebase if API fails
+      try {
+        await _loadLettersFromFirebase();
+      } catch (firebaseError) {
+        print('❌ Debug: Firebase fallback also failed: $firebaseError');
+        setState(() {
+          _error = 'Failed to load letters: $firebaseError';
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  // Fallback method using Firebase directly
+  Future<void> _loadLettersFromFirebase() async {
+    try {
+      // Get current user info from SharedPreferences
+    final prefs = await SharedPreferences.getInstance();
+    final userEmail = prefs.getString('user_email');
+    final userId = prefs.getString('user_id');
+    final employeeId = prefs.getString('employee_id');
+    
+    print('🔍 Debug: Loading letters for user...');
+    print('🔍 Debug: User Email: $userEmail');
+    print('🔍 Debug: User ID: $userId');
+    print('🔍 Debug: Employee ID: $employeeId');
+    
+    if (userId == null && employeeId == null && userEmail == null) {
+      throw Exception('User info not found. Please log in again.');
+    }
+    
+    // Try multiple approaches to get letters
+    List<Map<String, dynamic>> letters = [];
+    
+    // Approach 1: Try by employeeId first (most specific)
+    if (employeeId != null) {
+      print('🔍 Debug: Trying to fetch by employeeId...');
+      letters = await _getLettersByEmployeeId(employeeId);
+      print('🔍 Debug: Found ${letters.length} letters by employee ID');
+    }
+    
+    // Approach 2: Try by userId if no results
+    if (letters.isEmpty && userId != null) {
+      print('🔍 Debug: Trying to fetch by userId...');
+      letters = await _getLettersByUserId(userId);
+      print('🔍 Debug: Found ${letters.length} letters by user ID');
+    }
+    
+    // Approach 3: Try by email if still no results
+    if (letters.isEmpty && userEmail != null) {
+      print('🔍 Debug: Trying to fetch by email...');
+      letters = await _getLettersByEmail(userEmail);
+      print('🔍 Debug: Found ${letters.length} letters by email');
+    }
+    
+    // Approach 3.5: Try by user_id field (new submission format)
+    if (letters.isEmpty && (employeeId != null || userId != null)) {
+      final searchId = employeeId ?? userId;
+      print('🔍 Debug: Trying to fetch by user_id field: $searchId');
+      letters = await _getLettersByUserIdField(searchId!);
+      print('🔍 Debug: Found ${letters.length} letters by user_id field');
+    }
+    
+    // Approach 4: If still no results, try to get all letters and filter
+    if (letters.isEmpty) {
+      print('🔍 Debug: Trying to fetch all letters and filter...');
+      letters = await _getAllLettersAndFilter(userEmail, userId, employeeId);
+      print('🔍 Debug: Found ${letters.length} letters after filtering all');
+    }
+    
+    print('🔍 Debug: Final result - Found ${letters.length} letters');
+    
+    setState(() {
+      _letters = letters;
+      _isLoading = false;
+    });
+    
+    print('🔍 Debug: Successfully loaded ${letters.length} letters');
+    for (var letter in letters) {
+      print('  - ${letter['title']} (${letter['status']})');
+    }
+    
+    // Debug: Check what's in the current filter
+    print('🔍 Debug: Current filter: $selectedFilter');
+    final filteredCount = _getFilteredLetters().length;
+    print('🔍 Debug: Filtered letters count: $filteredCount');
     } catch (e) {
       print('🔍 Debug: Error loading letters: $e');
       setState(() {

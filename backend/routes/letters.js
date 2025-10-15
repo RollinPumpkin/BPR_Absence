@@ -3,6 +3,7 @@ const moment = require('moment');
 const { getFirestore, getServerTimestamp } = require('../config/database');
 const auth = require('../middleware/auth');
 const adminAuth = require('../middleware/adminAuth');
+const requireAdminRole = require('../middleware/requireAdminRole');
 const { validateLetter } = require('../middleware/validation');
 
 const router = express.Router();
@@ -26,12 +27,25 @@ router.get('/', auth, async (req, res) => {
       sort_order = 'desc'
     } = req.query;
 
-    const isAdmin = req.user.role === 'admin' || req.user.role === 'account_officer';
+    console.log('📋 Letters API called');
+    console.log('👤 User info:', {
+      userId: req.user.userId,
+      role: req.user.role,
+      employeeId: req.user.employeeId
+    });
+
+    const isAdmin = req.user.role === 'admin' || req.user.role === 'super_admin';
     let lettersRef = db.collection('letters');
 
-    // Filter by user if not admin - simplified query
+    console.log('🔒 Is Admin:', isAdmin);
+
+    // For admin users, get all letters
+    // For regular users, filter by recipient_id
     if (!isAdmin) {
+      console.log('👥 Filtering by recipient_id:', req.user.userId);
       lettersRef = lettersRef.where('recipient_id', '==', req.user.userId);
+    } else {
+      console.log('👑 Admin access - getting all letters');
     }
 
     // Simple ordering without complex where clauses for now
@@ -272,6 +286,131 @@ router.get('/statistics', auth, async (req, res) => {
   }
 });
 
+// Get pending letter requests for admin approval
+router.get('/pending', auth, async (req, res) => {
+  try {
+    console.log('🔍 Pending letters endpoint called');
+    console.log('👤 User from auth middleware:', req.user);
+    
+    // Check if user has admin privileges (both admin and super_admin can access)
+    const isAdmin = req.user.role === 'admin' || req.user.role === 'super_admin';
+    const hasAdminEmployeeId = req.user.employeeId?.startsWith('SUP') || req.user.employeeId?.startsWith('ADM');
+    
+    console.log('🔐 Auth check:', {
+      isAdmin,
+      hasAdminEmployeeId,
+      role: req.user.role,
+      employeeId: req.user.employeeId
+    });
+    
+    if (!isAdmin && !hasAdminEmployeeId) {
+      console.log('❌ Access denied - insufficient privileges');
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Admin privileges required to view pending letters.'
+      });
+    }
+
+    const { 
+      page = 1, 
+      limit = 20,
+      letter_type,
+      sort_by = 'created_at',
+      sort_order = 'desc'
+    } = req.query;
+
+    console.log('📋 Getting pending letter requests for user:', {
+      role: req.user.role,
+      employeeId: req.user.employeeId,
+      userId: req.user.userId
+    });
+
+    // Temporary fix: Remove orderBy to avoid index requirement
+    // TODO: Create Firestore composite index for (status, created_at) to enable ordering
+    let lettersRef = db.collection('letters')
+      .where('status', '==', 'pending')
+      .limit(parseInt(limit));
+
+    console.log('🔍 Executing query without orderBy (temporary fix)...');
+    const snapshot = await lettersRef.get();
+    console.log('📊 Query results:', snapshot.size, 'documents found');
+    
+    const pendingLetters = [];
+    
+    // Get user details for each letter
+    for (const doc of snapshot.docs) {
+      const letterData = { id: doc.id, ...doc.data() };
+      
+      // Filter by letter type if specified
+      if (letter_type && letterData.letter_type !== letter_type) {
+        continue;
+      }
+
+      // Get sender/requester details
+      try {
+        const userDoc = await db.collection('users').doc(letterData.sender_id || letterData.recipient_id).get();
+        if (userDoc.exists) {
+          const userData = userDoc.data();
+          letterData.requester = {
+            id: userDoc.id,
+            full_name: userData.full_name,
+            email: userData.email,
+            employee_id: userData.employee_id,
+            department: userData.department,
+            position: userData.position
+          };
+          
+          // Add senderName and recipientName for easier access in frontend
+          letterData.senderName = userData.full_name;
+          letterData.recipientName = userData.full_name;
+          letterData.recipientEmployeeId = userData.employee_id;
+        }
+      } catch (userError) {
+        console.error('Error fetching user details:', userError);
+      }
+
+      // Convert timestamps
+      if (letterData.created_at && typeof letterData.created_at.toDate === 'function') {
+        letterData.created_at = letterData.created_at.toDate();
+      }
+      if (letterData.updated_at && typeof letterData.updated_at.toDate === 'function') {
+        letterData.updated_at = letterData.updated_at.toDate();
+      }
+
+      pendingLetters.push(letterData);
+    }
+
+    // Sort by created_at descending since we can't use orderBy in query
+    pendingLetters.sort((a, b) => {
+      const dateA = a.created_at ? new Date(a.created_at) : new Date(0);
+      const dateB = b.created_at ? new Date(b.created_at) : new Date(0);
+      return dateB - dateA; // Descending order
+    });
+
+    console.log('✅ Successfully processed and sorted pending letters:', pendingLetters.length);
+
+    res.json({
+      success: true,
+      message: 'Pending letters retrieved successfully',
+      data: {
+        letters: pendingLetters,
+        pagination: {
+          current_page: parseInt(page),
+          total_records: pendingLetters.length,
+          limit: parseInt(limit)
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Get pending letters error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get pending letters'
+    });
+  }
+});
+
 // Get single letter by ID
 router.get('/:id', auth, async (req, res) => {
   try {
@@ -409,7 +548,7 @@ router.post('/', auth, adminAuth, validateLetter, async (req, res) => {
       letter_number: finalLetterNumber,
       letter_date: letter_date || moment().format('YYYY-MM-DD'),
       priority: priority || 'normal',
-      status: 'sent',
+      status: 'pending', // Letter requests start as pending for admin approval
       requires_response: requires_response || false,
       response_deadline: response_deadline || null,
       attachments: attachments || [],
@@ -795,6 +934,1005 @@ router.get('/stats/overview', auth, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to get letter statistics'
+    });
+  }
+});
+
+// ==================== LETTER APPROVAL ENDPOINTS (ADMIN ONLY) ====================
+
+// Update letter status - Approve/Reject letter request (Admin only)
+router.put('/:letterId/status', auth, adminAuth, async (req, res) => {
+  try {
+    const { letterId } = req.params;
+    const { status, reason } = req.body;
+
+    console.log('📋 Updating letter status:', { letterId, status, reason });
+
+    // Validate status
+    const validStatuses = ['pending', 'approved', 'rejected', 'sent', 'read'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid status. Must be one of: ${validStatuses.join(', ')}`
+      });
+    }
+
+    // Get letter document
+    const letterDoc = await db.collection('letters').doc(letterId).get();
+    
+    if (!letterDoc.exists) {
+      return res.status(404).json({
+        success: false,
+        message: 'Letter not found'
+      });
+    }
+
+    const letterData = letterDoc.data();
+
+    // Prepare update data
+    const updateData = {
+      status: status,
+      updated_at: getServerTimestamp()
+    };
+
+    // Add approval/rejection specific fields
+    if (status === 'approved') {
+      updateData.approved_at = getServerTimestamp();
+      updateData.approved_by = req.user.userId;
+      updateData.approval_reason = reason || 'Letter request approved';
+    } else if (status === 'rejected') {
+      updateData.rejected_at = getServerTimestamp();
+      updateData.rejected_by = req.user.userId;
+      updateData.rejection_reason = reason || 'Letter request rejected';
+    }
+
+    // Update letter
+    await db.collection('letters').doc(letterId).update(updateData);
+
+    // Create notification for the requester
+    try {
+      const notificationTitle = status === 'approved' ? 'Letter Request Approved' : 'Letter Request Rejected';
+      const notificationMessage = status === 'approved' 
+        ? `Your ${letterData.letter_type} request has been approved`
+        : `Your ${letterData.letter_type} request has been rejected. Reason: ${reason || 'No reason provided'}`;
+
+      await db.collection('notifications').add({
+        user_id: letterData.sender_id || letterData.recipient_id,
+        title: notificationTitle,
+        message: notificationMessage,
+        type: 'letter_status',
+        reference_id: letterId,
+        reference_type: 'letter',
+        is_read: false,
+        priority: 'normal',
+        created_at: getServerTimestamp()
+      });
+    } catch (notifError) {
+      console.error('Failed to create notification:', notifError);
+    }
+
+    res.json({
+      success: true,
+      message: `Letter ${status} successfully`,
+      data: {
+        letter_id: letterId,
+        status: status,
+        updated_at: new Date().toISOString(),
+        reason: reason
+      }
+    });
+
+  } catch (error) {
+    console.error('Update letter status error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update letter status'
+    });
+  }
+});
+
+// ==================== NEW ENHANCED LETTERS FEATURES FOR ADMIN DASHBOARD ====================
+
+// Bulk approve/reject letters (Admin only)
+router.post('/admin/bulk-action', auth, adminAuth, async (req, res) => {
+  try {
+    const { letter_ids, action, reason } = req.body;
+
+    if (!letter_ids || !Array.isArray(letter_ids) || letter_ids.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Letter IDs array is required and cannot be empty'
+      });
+    }
+
+    if (!['approve', 'reject', 'delete'].includes(action)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid action. Must be approve, reject, or delete'
+      });
+    }
+
+    const batch = db.batch();
+    const results = [];
+
+    for (const letterId of letter_ids) {
+      try {
+        const letterRef = db.collection('letters').doc(letterId);
+        const letterDoc = await letterRef.get();
+
+        if (!letterDoc.exists) {
+          results.push({
+            letter_id: letterId,
+            success: false,
+            error: 'Letter not found'
+          });
+          continue;
+        }
+
+        const letterData = letterDoc.data();
+
+        if (action === 'delete') {
+          // Only allow deletion of pending or rejected letters
+          if (letterData.status === 'sent' || letterData.status === 'read') {
+            results.push({
+              letter_id: letterId,
+              success: false,
+              error: 'Cannot delete sent or read letters'
+            });
+            continue;
+          }
+          batch.delete(letterRef);
+        } else {
+          const status = action === 'approve' ? 'approved' : 'rejected';
+          const updateData = {
+            status: status,
+            updated_at: getServerTimestamp()
+          };
+
+          if (action === 'approve') {
+            updateData.approved_at = getServerTimestamp();
+            updateData.approved_by = req.user.userId;
+            updateData.approval_reason = reason || 'Bulk approval';
+          } else {
+            updateData.rejected_at = getServerTimestamp();
+            updateData.rejected_by = req.user.userId;
+            updateData.rejection_reason = reason || 'Bulk rejection';
+          }
+
+          batch.update(letterRef, updateData);
+
+          // Queue notification (will be created after batch commit)
+          results.push({
+            letter_id: letterId,
+            success: true,
+            action: action,
+            recipient_id: letterData.sender_id || letterData.recipient_id,
+            letter_type: letterData.letter_type,
+            subject: letterData.subject
+          });
+        }
+
+        if (action !== 'delete') {
+          results.push({
+            letter_id: letterId,
+            success: true,
+            action: action
+          });
+        }
+
+      } catch (error) {
+        results.push({
+          letter_id: letterId,
+          success: false,
+          error: error.message
+        });
+      }
+    }
+
+    await batch.commit();
+
+    // Create notifications for successful actions
+    const notificationPromises = results
+      .filter(r => r.success && r.recipient_id)
+      .map(async (r) => {
+        try {
+          const title = r.action === 'approve' ? 'Letter Approved' : 'Letter Rejected';
+          const message = r.action === 'approve' 
+            ? `Your ${r.letter_type} letter "${r.subject}" has been approved`
+            : `Your ${r.letter_type} letter "${r.subject}" has been rejected. ${reason ? `Reason: ${reason}` : ''}`;
+
+          await db.collection('notifications').add({
+            user_id: r.recipient_id,
+            title: title,
+            message: message,
+            type: 'letter_status',
+            reference_id: r.letter_id,
+            reference_type: 'letter',
+            is_read: false,
+            priority: 'normal',
+            created_at: getServerTimestamp()
+          });
+        } catch (notifError) {
+          console.error('Failed to create notification for', r.letter_id, notifError);
+        }
+      });
+
+    await Promise.all(notificationPromises);
+
+    const successCount = results.filter(r => r.success).length;
+    const failureCount = results.filter(r => !r.success).length;
+
+    res.json({
+      success: true,
+      message: `Bulk ${action} completed. ${successCount} successful, ${failureCount} failed.`,
+      data: {
+        total_letters: letter_ids.length,
+        successful: successCount,
+        failed: failureCount,
+        results
+      }
+    });
+
+  } catch (error) {
+    console.error('Bulk letter action error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to perform bulk action on letters'
+    });
+  }
+});
+
+// Get letter templates for admin dashboard
+router.get('/admin/templates', auth, adminAuth, async (req, res) => {
+  try {
+    const { page = 1, limit = 20 } = req.query;
+
+    const templatesSnapshot = await db.collection('letter_templates')
+      .orderBy('name', 'asc')
+      .get();
+
+    const templates = [];
+    templatesSnapshot.forEach(doc => {
+      const templateData = { id: doc.id, ...doc.data() };
+      
+      // Convert timestamps
+      if (templateData.created_at && typeof templateData.created_at.toDate === 'function') {
+        templateData.created_at = templateData.created_at.toDate();
+      }
+      if (templateData.updated_at && typeof templateData.updated_at.toDate === 'function') {
+        templateData.updated_at = templateData.updated_at.toDate();
+      }
+
+      templates.push(templateData);
+    });
+
+    // Apply pagination
+    const startIndex = (parseInt(page) - 1) * parseInt(limit);
+    const endIndex = startIndex + parseInt(limit);
+    const paginatedTemplates = templates.slice(startIndex, endIndex);
+
+    res.json({
+      success: true,
+      data: {
+        templates: paginatedTemplates,
+        pagination: {
+          current_page: parseInt(page),
+          total_pages: Math.ceil(templates.length / parseInt(limit)),
+          total_records: templates.length,
+          limit: parseInt(limit)
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Get letter templates error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get letter templates'
+    });
+  }
+});
+
+// Create/Update letter template (Admin only)
+router.post('/admin/templates', auth, adminAuth, async (req, res) => {
+  try {
+    const { name, letter_type, subject_template, content_template, variables, is_active = true } = req.body;
+
+    if (!name || !letter_type || !content_template) {
+      return res.status(400).json({
+        success: false,
+        message: 'Name, letter type, and content template are required'
+      });
+    }
+
+    const templateData = {
+      name,
+      letter_type,
+      subject_template: subject_template || '',
+      content_template,
+      variables: variables || [],
+      is_active,
+      created_by: req.user.userId,
+      created_at: getServerTimestamp(),
+      updated_at: getServerTimestamp()
+    };
+
+    const docRef = await db.collection('letter_templates').add(templateData);
+
+    res.status(201).json({
+      success: true,
+      message: 'Letter template created successfully',
+      data: {
+        template_id: docRef.id,
+        ...templateData
+      }
+    });
+
+  } catch (error) {
+    console.error('Create letter template error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create letter template'
+    });
+  }
+});
+
+// Update letter template (Admin only)
+router.put('/admin/templates/:id', auth, adminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, letter_type, subject_template, content_template, variables, is_active } = req.body;
+
+    const templateRef = db.collection('letter_templates').doc(id);
+    const templateDoc = await templateRef.get();
+
+    if (!templateDoc.exists) {
+      return res.status(404).json({
+        success: false,
+        message: 'Letter template not found'
+      });
+    }
+
+    const updateData = {
+      updated_at: getServerTimestamp(),
+      updated_by: req.user.userId
+    };
+
+    if (name !== undefined) updateData.name = name;
+    if (letter_type !== undefined) updateData.letter_type = letter_type;
+    if (subject_template !== undefined) updateData.subject_template = subject_template;
+    if (content_template !== undefined) updateData.content_template = content_template;
+    if (variables !== undefined) updateData.variables = variables;
+    if (is_active !== undefined) updateData.is_active = is_active;
+
+    await templateRef.update(updateData);
+
+    res.json({
+      success: true,
+      message: 'Letter template updated successfully'
+    });
+
+  } catch (error) {
+    console.error('Update letter template error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update letter template'
+    });
+  }
+});
+
+// Get letter analytics for admin dashboard
+router.get('/admin/analytics', auth, adminAuth, async (req, res) => {
+  try {
+    const { period = 'month', start_date, end_date } = req.query;
+
+    let startDate, endDate;
+    if (period === 'custom' && start_date && end_date) {
+      startDate = start_date;
+      endDate = end_date;
+    } else {
+      switch (period) {
+        case 'week':
+          startDate = moment().startOf('week').format('YYYY-MM-DD');
+          endDate = moment().endOf('week').format('YYYY-MM-DD');
+          break;
+        case 'year':
+          startDate = moment().startOf('year').format('YYYY-MM-DD');
+          endDate = moment().endOf('year').format('YYYY-MM-DD');
+          break;
+        default:
+          startDate = moment().startOf('month').format('YYYY-MM-DD');
+          endDate = moment().endOf('month').format('YYYY-MM-DD');
+      }
+    }
+
+    // Get all letters for the period
+    const lettersSnapshot = await db.collection('letters')
+      .orderBy('created_at', 'desc')
+      .get();
+
+    const analytics = {
+      period_info: {
+        period,
+        start_date: startDate,
+        end_date: endDate
+      },
+      summary: {
+        total_letters: 0,
+        pending_letters: 0,
+        approved_letters: 0,
+        rejected_letters: 0,
+        sent_letters: 0,
+        read_letters: 0
+      },
+      by_type: {},
+      by_department: {},
+      by_priority: {
+        low: 0,
+        normal: 0,
+        high: 0,
+        urgent: 0
+      },
+      response_analytics: {
+        total_requiring_response: 0,
+        responded: 0,
+        pending_response: 0,
+        overdue_response: 0
+      },
+      trends: {
+        daily_counts: {},
+        weekly_counts: {},
+        monthly_counts: {}
+      }
+    };
+
+    const now = new Date();
+    const startDateObj = new Date(startDate);
+    const endDateObj = new Date(endDate);
+
+    for (const doc of lettersSnapshot.docs) {
+      const letter = doc.data();
+      
+      // Filter by date range
+      const letterDate = letter.created_at?.toDate();
+      if (!letterDate || letterDate < startDateObj || letterDate > endDateObj) {
+        continue;
+      }
+
+      analytics.summary.total_letters++;
+
+      // Status breakdown
+      if (letter.status === 'pending') analytics.summary.pending_letters++;
+      else if (letter.status === 'approved') analytics.summary.approved_letters++;
+      else if (letter.status === 'rejected') analytics.summary.rejected_letters++;
+      else if (letter.status === 'sent') analytics.summary.sent_letters++;
+      else if (letter.status === 'read') analytics.summary.read_letters++;
+
+      // By type
+      const type = letter.letter_type || 'other';
+      analytics.by_type[type] = (analytics.by_type[type] || 0) + 1;
+
+      // By priority
+      const priority = letter.priority || 'normal';
+      analytics.by_priority[priority]++;
+
+      // Get user department for analytics
+      try {
+        const userDoc = await db.collection('users').doc(letter.recipient_id || letter.sender_id).get();
+        if (userDoc.exists) {
+          const dept = userDoc.data().department || 'Unknown';
+          analytics.by_department[dept] = (analytics.by_department[dept] || 0) + 1;
+        }
+      } catch (error) {
+        analytics.by_department['Unknown'] = (analytics.by_department['Unknown'] || 0) + 1;
+      }
+
+      // Response analytics
+      if (letter.requires_response) {
+        analytics.response_analytics.total_requiring_response++;
+        
+        if (letter.response_received) {
+          analytics.response_analytics.responded++;
+        } else {
+          analytics.response_analytics.pending_response++;
+          
+          // Check if overdue
+          if (letter.response_deadline && new Date(letter.response_deadline) < now) {
+            analytics.response_analytics.overdue_response++;
+          }
+        }
+      }
+
+      // Trends
+      const dateKey = moment(letterDate).format('YYYY-MM-DD');
+      const weekKey = moment(letterDate).format('YYYY-[W]WW');
+      const monthKey = moment(letterDate).format('YYYY-MM');
+
+      analytics.trends.daily_counts[dateKey] = (analytics.trends.daily_counts[dateKey] || 0) + 1;
+      analytics.trends.weekly_counts[weekKey] = (analytics.trends.weekly_counts[weekKey] || 0) + 1;
+      analytics.trends.monthly_counts[monthKey] = (analytics.trends.monthly_counts[monthKey] || 0) + 1;
+    }
+
+    // Calculate response rates
+    if (analytics.response_analytics.total_requiring_response > 0) {
+      analytics.response_analytics.response_rate = 
+        ((analytics.response_analytics.responded / analytics.response_analytics.total_requiring_response) * 100).toFixed(2);
+      analytics.response_analytics.overdue_rate = 
+        ((analytics.response_analytics.overdue_response / analytics.response_analytics.total_requiring_response) * 100).toFixed(2);
+    }
+
+    res.json({
+      success: true,
+      data: { analytics }
+    });
+
+  } catch (error) {
+    console.error('Get letter analytics error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get letter analytics'
+    });
+  }
+});
+
+// Export letters data (Admin only)
+router.get('/admin/export', auth, adminAuth, async (req, res) => {
+  try {
+    const { format = 'json', start_date, end_date, status, letter_type } = req.query;
+
+    let lettersRef = db.collection('letters').orderBy('created_at', 'desc');
+
+    const snapshot = await lettersRef.get();
+    const lettersData = [];
+
+    for (const doc of snapshot.docs) {
+      const letter = { id: doc.id, ...doc.data() };
+      
+      // Apply filters
+      if (start_date && letter.created_at?.toDate() < new Date(start_date)) continue;
+      if (end_date && letter.created_at?.toDate() > new Date(end_date)) continue;
+      if (status && letter.status !== status) continue;
+      if (letter_type && letter.letter_type !== letter_type) continue;
+
+      // Get user details
+      try {
+        if (letter.recipient_id) {
+          const userDoc = await db.collection('users').doc(letter.recipient_id).get();
+          if (userDoc.exists) {
+            const userData = userDoc.data();
+            letter.recipient_name = userData.full_name;
+            letter.recipient_employee_id = userData.employee_id;
+            letter.recipient_department = userData.department;
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching user details for export:', error);
+      }
+
+      // Convert timestamps for export
+      if (letter.created_at && typeof letter.created_at.toDate === 'function') {
+        letter.created_at = letter.created_at.toDate().toISOString();
+      }
+      if (letter.updated_at && typeof letter.updated_at.toDate === 'function') {
+        letter.updated_at = letter.updated_at.toDate().toISOString();
+      }
+
+      lettersData.push(letter);
+    }
+
+    if (format === 'csv') {
+      const csvHeaders = [
+        'Letter Number', 'Type', 'Subject', 'Status', 'Priority',
+        'Recipient Name', 'Employee ID', 'Department',
+        'Created Date', 'Requires Response', 'Response Received'
+      ];
+
+      const csvRows = lettersData.map(letter => [
+        letter.letter_number || '',
+        letter.letter_type || '',
+        (letter.subject || '').replace(/,/g, ';'),
+        letter.status || '',
+        letter.priority || '',
+        letter.recipient_name || '',
+        letter.recipient_employee_id || '',
+        letter.recipient_department || '',
+        letter.created_at || '',
+        letter.requires_response ? 'Yes' : 'No',
+        letter.response_received ? 'Yes' : 'No'
+      ]);
+
+      const csvContent = [csvHeaders.join(','), ...csvRows.map(row => row.join(','))].join('\n');
+
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename=letters_export_${new Date().toISOString().split('T')[0]}.csv`);
+      res.send(csvContent);
+    } else {
+      res.json({
+        success: true,
+        data: {
+          letters: lettersData,
+          export_info: {
+            format,
+            total_records: lettersData.length,
+            exported_at: new Date().toISOString(),
+            filters: { start_date, end_date, status, letter_type }
+          }
+        }
+      });
+    }
+
+  } catch (error) {
+    console.error('Export letters error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to export letters data'
+    });
+  }
+});
+
+// Get letters dashboard summary (Admin only)
+router.get('/admin/dashboard-summary', auth, adminAuth, async (req, res) => {
+  try {
+    const today = moment().format('YYYY-MM-DD');
+    const thisWeek = {
+      start: moment().startOf('week').format('YYYY-MM-DD'),
+      end: moment().endOf('week').format('YYYY-MM-DD')
+    };
+    const thisMonth = {
+      start: moment().startOf('month').format('YYYY-MM-DD'),
+      end: moment().endOf('month').format('YYYY-MM-DD')
+    };
+
+    // Get all letters
+    const lettersSnapshot = await db.collection('letters').get();
+    
+    const summary = {
+      total_letters: 0,
+      pending_approval: 0,
+      today_letters: 0,
+      week_letters: 0,
+      month_letters: 0,
+      urgent_letters: 0,
+      overdue_responses: 0,
+      recent_activities: [],
+      status_breakdown: {
+        pending: 0,
+        approved: 0,
+        rejected: 0,
+        sent: 0,
+        read: 0
+      },
+      type_breakdown: {}
+    };
+
+    const now = new Date();
+    const recentActivities = [];
+
+    lettersSnapshot.forEach(doc => {
+      const letter = { id: doc.id, ...doc.data() };
+      summary.total_letters++;
+
+      const letterDate = letter.created_at?.toDate();
+      const letterDateStr = letterDate ? moment(letterDate).format('YYYY-MM-DD') : null;
+
+      // Count by status
+      if (letter.status === 'pending') {
+        summary.pending_approval++;
+        summary.status_breakdown.pending++;
+      } else if (letter.status === 'approved') {
+        summary.status_breakdown.approved++;
+      } else if (letter.status === 'rejected') {
+        summary.status_breakdown.rejected++;
+      } else if (letter.status === 'sent') {
+        summary.status_breakdown.sent++;
+      } else if (letter.status === 'read') {
+        summary.status_breakdown.read++;
+      }
+
+      // Count by time periods
+      if (letterDateStr === today) summary.today_letters++;
+      if (letterDateStr >= thisWeek.start && letterDateStr <= thisWeek.end) summary.week_letters++;
+      if (letterDateStr >= thisMonth.start && letterDateStr <= thisMonth.end) summary.month_letters++;
+
+      // Count urgent letters
+      if (letter.priority === 'urgent' || letter.priority === 'high') {
+        summary.urgent_letters++;
+      }
+
+      // Count overdue responses
+      if (letter.requires_response && !letter.response_received && letter.response_deadline) {
+        if (new Date(letter.response_deadline) < now) {
+          summary.overdue_responses++;
+        }
+      }
+
+      // Type breakdown
+      const type = letter.letter_type || 'other';
+      summary.type_breakdown[type] = (summary.type_breakdown[type] || 0) + 1;
+
+      // Recent activities (last 10 letters)
+      if (recentActivities.length < 10) {
+        recentActivities.push({
+          id: letter.id,
+          type: 'letter',
+          action: `Letter ${letter.status}`,
+          subject: letter.subject,
+          letter_type: letter.letter_type,
+          status: letter.status,
+          priority: letter.priority,
+          created_at: letterDate
+        });
+      }
+    });
+
+    // Sort recent activities by date
+    summary.recent_activities = recentActivities
+      .sort((a, b) => (b.created_at || new Date(0)) - (a.created_at || new Date(0)))
+      .slice(0, 10);
+
+    res.json({
+      success: true,
+      data: { summary }
+    });
+
+  } catch (error) {
+    console.error('Get letters dashboard summary error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get letters dashboard summary'
+    });
+  }
+});
+
+// ==================== ADMIN DASHBOARD ENDPOINTS ====================
+
+// Admin dashboard summary for letters
+router.get('/admin/dashboard/summary', auth, requireAdminRole, async (req, res) => {
+  try {
+    const lettersSnapshot = await db.collection('letters').get();
+    const letters = [];
+    
+    lettersSnapshot.forEach(doc => {
+      letters.push({ id: doc.id, ...doc.data() });
+    });
+
+    const summary = {
+      total_letters: letters.length,
+      pending_approval: letters.filter(l => l.status === 'pending' || l.approval_status === 'pending').length,
+      approved: letters.filter(l => l.approval_status === 'approved').length,
+      rejected: letters.filter(l => l.approval_status === 'rejected').length,
+      draft: letters.filter(l => l.status === 'draft').length,
+      by_type: {}
+    };
+
+    // Count by type
+    letters.forEach(letter => {
+      const type = letter.letter_type || 'other';
+      summary.by_type[type] = (summary.by_type[type] || 0) + 1;
+    });
+
+    // Recent letters (last 10)
+    const recentLetters = letters
+      .sort((a, b) => {
+        const aTime = a.created_at ? a.created_at.toDate() : new Date(0);
+        const bTime = b.created_at ? b.created_at.toDate() : new Date(0);
+        return bTime - aTime;
+      })
+      .slice(0, 10)
+      .map(letter => ({
+        id: letter.id,
+        subject: letter.subject,
+        sender_name: letter.sender_name,
+        recipient_name: letter.recipient_name,
+        status: letter.status,
+        approval_status: letter.approval_status,
+        created_at: letter.created_at
+      }));
+
+    res.json({
+      success: true,
+      message: 'Letters dashboard summary retrieved successfully',
+      data: {
+        summary,
+        recent_letters: recentLetters
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching letters dashboard summary:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching letters dashboard summary',
+      error: error.message
+    });
+  }
+});
+
+// Get all letters for admin with advanced filtering
+router.get('/admin/all', auth, requireAdminRole, async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 20,
+      status,
+      letter_type,
+      approval_status,
+      search,
+      start_date,
+      end_date,
+      sort_by = 'created_at',
+      sort_order = 'desc'
+    } = req.query;
+
+    let query = db.collection('letters');
+
+    // Apply filters
+    if (status && status !== 'all') {
+      query = query.where('status', '==', status);
+    }
+    if (letter_type && letter_type !== 'all') {
+      query = query.where('letter_type', '==', letter_type);
+    }
+    if (approval_status && approval_status !== 'all') {
+      query = query.where('approval_status', '==', approval_status);
+    }
+
+    // Get all matching documents
+    const snapshot = await query.get();
+    let letters = [];
+    
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      letters.push({
+        id: doc.id,
+        ...data,
+        created_at: data.created_at ? data.created_at.toDate() : null,
+        updated_at: data.updated_at ? data.updated_at.toDate() : null
+      });
+    });
+
+    // Apply search filter
+    if (search) {
+      const searchLower = search.toLowerCase();
+      letters = letters.filter(letter =>
+        letter.subject?.toLowerCase().includes(searchLower) ||
+        letter.content?.toLowerCase().includes(searchLower) ||
+        letter.sender_name?.toLowerCase().includes(searchLower) ||
+        letter.recipient_name?.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // Apply date range filter
+    if (start_date || end_date) {
+      const startDate = start_date ? new Date(start_date) : new Date(0);
+      const endDate = end_date ? new Date(end_date) : new Date();
+      
+      letters = letters.filter(letter => {
+        const letterDate = letter.created_at || new Date(0);
+        return letterDate >= startDate && letterDate <= endDate;
+      });
+    }
+
+    // Apply sorting
+    letters.sort((a, b) => {
+      let aValue = a[sort_by];
+      let bValue = b[sort_by];
+      
+      if (aValue instanceof Date && bValue instanceof Date) {
+        return sort_order === 'desc' ? bValue - aValue : aValue - bValue;
+      }
+      
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        const comparison = aValue.localeCompare(bValue);
+        return sort_order === 'desc' ? -comparison : comparison;
+      }
+      
+      return 0;
+    });
+
+    // Apply pagination
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + parseInt(limit);
+    const paginatedLetters = letters.slice(startIndex, endIndex);
+
+    res.json({
+      success: true,
+      message: 'All letters retrieved successfully',
+      data: {
+        letters: paginatedLetters,
+        pagination: {
+          current_page: parseInt(page),
+          per_page: parseInt(limit),
+          total_items: letters.length,
+          total_pages: Math.ceil(letters.length / limit),
+          has_next: endIndex < letters.length,
+          has_prev: page > 1
+        },
+        filters_applied: { status, letter_type, approval_status, search, start_date, end_date }
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching all letters:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching all letters',
+      error: error.message
+    });
+  }
+});
+
+// Bulk approve/reject letters
+router.post('/admin/bulk-action', auth, requireAdminRole, async (req, res) => {
+  try {
+    const { letter_ids, action, reason } = req.body;
+    
+    if (!letter_ids || !Array.isArray(letter_ids) || letter_ids.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Letter IDs are required'
+      });
+    }
+
+    if (!['approve', 'reject'].includes(action)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid action. Must be approve or reject'
+      });
+    }
+
+    const batch = db.batch();
+    const results = [];
+
+    for (const letterId of letter_ids) {
+      const letterRef = db.collection('letters').doc(letterId);
+      const letterDoc = await letterRef.get();
+
+      if (letterDoc.exists) {
+        const updateData = {
+          approval_status: action === 'approve' ? 'approved' : 'rejected',
+          status: action === 'approve' ? 'approved' : 'rejected',
+          approved_by: req.user.userId,
+          approved_at: getServerTimestamp(),
+          updated_at: getServerTimestamp()
+        };
+
+        if (reason) {
+          updateData.approval_reason = reason;
+        }
+
+        batch.update(letterRef, updateData);
+        results.push({
+          letter_id: letterId,
+          status: 'success',
+          action: action
+        });
+      } else {
+        results.push({
+          letter_id: letterId,
+          status: 'error',
+          message: 'Letter not found'
+        });
+      }
+    }
+
+    await batch.commit();
+
+    res.json({
+      success: true,
+      message: `Bulk ${action} completed`,
+      data: {
+        results,
+        action_count: results.filter(r => r.status === 'success').length
+      }
+    });
+
+  } catch (error) {
+    console.error('Error in bulk letter action:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error processing bulk action',
+      error: error.message
     });
   }
 });

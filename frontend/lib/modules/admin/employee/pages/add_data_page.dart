@@ -47,16 +47,31 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
   void _setupRoleOptions() {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final currentUserRole = authProvider.currentUser?.role;
+    final currentEmployeeId = authProvider.currentUser?.employeeId ?? '';
 
-    if (currentUserRole == 'super_admin') {
-      // Super Admin can add: Admin, Employee, Account Officer, Security, Office Boy
-      roleOptions = ['Admin', 'Employee', 'Account Officer', 'Security', 'Office Boy'];
-    } else if (currentUserRole == 'admin') {
+    print('🎯 ADD EMPLOYEE: Current user role = "$currentUserRole"');
+    print('🎯 ADD EMPLOYEE: Current employee ID = "$currentEmployeeId"');
+
+    // Determine if current user has super admin privileges
+    // Either by role or by employee ID pattern (SUP___)
+    final isSuperAdmin = currentUserRole == 'super_admin' || currentEmployeeId.startsWith('SUP');
+    final isAdmin = currentUserRole == 'admin' || currentEmployeeId.startsWith('ADM');
+
+    print('🎯 ADD EMPLOYEE: Is Super Admin = $isSuperAdmin');
+    print('🎯 ADD EMPLOYEE: Is Admin = $isAdmin');
+
+    if (isSuperAdmin) {
+      // Super Admin can add: Super Admin, Admin, Employee, Account Officer, Security, Office Boy
+      roleOptions = ['SUPER ADMIN', 'ADMIN', 'EMPLOYEE', 'ACCOUNT OFFICER', 'SECURITY', 'OFFICE BOY'];
+      print('🎯 ADD EMPLOYEE: Super Admin role options = $roleOptions');
+    } else if (isAdmin) {
       // Admin can add: Employee, Account Officer, Security, Office Boy (no Admin)
-      roleOptions = ['Employee', 'Account Officer', 'Security', 'Office Boy'];
+      roleOptions = ['EMPLOYEE', 'ACCOUNT OFFICER', 'SECURITY', 'OFFICE BOY'];
+      print('🎯 ADD EMPLOYEE: Admin role options = $roleOptions');
     } else {
-      // Default fallback
-      roleOptions = ['Employee'];
+      // Default fallback for other roles
+      roleOptions = ['EMPLOYEE'];
+      print('🎯 ADD EMPLOYEE: Default role options = $roleOptions');
     }
   }
 
@@ -429,27 +444,41 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
     final role = selectedRole!;
     String prefix;
     
+    // Use standardized prefixes based on new employee ID structure
     switch (role) {
-      case 'Admin':
+      case 'SUPER ADMIN':
+        prefix = 'SUP';
+        break;
+      case 'ADMIN':
         prefix = 'ADM';
         break;
-      case 'Employee':
+      case 'EMPLOYEE':
         prefix = 'EMP';
         break;
-      case 'Account Officer':
-        prefix = 'AC';
+      case 'ACCOUNT OFFICER':
+        prefix = 'AO';  // Updated from 'AC' to 'AO'
         break;
-      case 'Security':
+      case 'SECURITY':
         prefix = 'SCR';
         break;
-      case 'Office Boy':
+      case 'OFFICE BOY':
         prefix = 'OB';
         break;
       default:
         prefix = 'EMP';
     }
 
-    // Generate next ID number
+    // Get next sequential number for this role
+    try {
+      final response = await ApiService.instance.get('/users/next-employee-id/$prefix');
+      if (response.success && response.data != null) {
+        return response.data['employee_id'];
+      }
+    } catch (e) {
+      print('Error getting next employee ID: $e');
+    }
+
+    // Fallback: Generate based on current timestamp if API fails
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     final idNumber = (timestamp % 1000).toString().padLeft(3, '0');
     
@@ -458,15 +487,17 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
 
   String _convertRoleToBackend(String role) {
     switch (role) {
-      case 'Admin':
+      case 'SUPER ADMIN':
+        return 'super_admin';
+      case 'ADMIN':
         return 'admin';
-      case 'Employee':
+      case 'EMPLOYEE':
         return 'employee';
-      case 'Account Officer':
+      case 'ACCOUNT OFFICER':
         return 'account_officer';
-      case 'Security':
+      case 'SECURITY':
         return 'security';
-      case 'Office Boy':
+      case 'OFFICE BOY':
         return 'office_boy';
       default:
         return 'employee';

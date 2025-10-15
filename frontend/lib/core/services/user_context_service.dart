@@ -57,7 +57,7 @@ class UserContextService with ChangeNotifier {
   }
 
   // Check if user is admin
-  bool get isAdmin => hasRole('admin') || hasRole('account_officer');
+  bool get isAdmin => hasRole('admin') || hasRole('super_admin');
 
   // Check if user is HR
   bool get isHR => hasRole('hr');
