@@ -8,6 +8,7 @@ import 'core/services/firestore_letter_service.dart';
 
 import 'data/providers/auth_provider.dart';
 import 'data/providers/attendance_provider.dart';
+import 'data/providers/user_provider.dart';
 import 'firebase_options.dart';
 import 'package:firebase_core/firebase_core.dart';
 
@@ -35,6 +36,9 @@ import 'modules/user/assignment/assignment_page.dart' as user_assign;
 import 'modules/user/letters/letters_page.dart' as user_letters;
 import 'modules/user/profile/profile_page.dart' as user_profile;
 import 'data/services/api_service.dart';
+import 'test_employee_fetch_page.dart';
+import 'test/user_fetch_unit_test.dart';
+import 'modules/admin/employee/employee_sync_page.dart';
 
 class _CustomNavigatorObserver extends NavigatorObserver {
   @override
@@ -92,6 +96,9 @@ Future<void> main() async {
   );
   await FirestoreLetterService.initialize();
   
+  // Initialize API Service to load saved token
+  await ApiService.initialize();
+  
   // Request camera permission on app startup (for mobile platforms)
   await requestCameraPermissionOnStartup();
   
@@ -104,8 +111,15 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(
+          create: (_) {
+            final authProvider = AuthProvider();
+            authProvider.initialize(); // Initialize auth provider
+            return authProvider;
+          }
+        ),
         ChangeNotifierProvider(create: (_) => AttendanceProvider()),
+        ChangeNotifierProvider(create: (_) => UserProvider()),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
@@ -143,6 +157,9 @@ class MyApp extends StatelessWidget {
 
         '/admin/dashboard': (_) => const AdminDashboardPage(),
         '/admin/employees': (_) => const EmployeePage(),
+        '/admin/employees/test': (_) => const TestEmployeeFetchPage(),
+        '/admin/employees/unit-test': (_) => const UserFetchUnitTest(),
+        '/admin/employees/sync': (_) => const EmployeeSyncPage(),
         '/admin/report': (_) => const ReportPage(),
         '/admin/attendance': (_) => const AttendancePage(),
         '/admin/assignment': (_) => const AssignmentPage(),

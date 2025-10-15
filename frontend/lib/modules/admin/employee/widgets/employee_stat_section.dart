@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:frontend/core/constants/colors.dart';
+import 'package:frontend/data/providers/user_provider.dart';
 
 class EmployeeStatSection extends StatelessWidget {
   const EmployeeStatSection({super.key});
@@ -55,26 +57,38 @@ class EmployeeStatSection extends StatelessWidget {
 
           // Statistik (3 kolom) dengan divider tipis
           Row(
-            children: const [
+            children: [
               Expanded(
-                child: StatBox(
-                  title: "Total Employee",
-                  value: "208",
-                  showDivider: true,
+                child: Consumer<UserProvider>(
+                  builder: (context, userProvider, child) {
+                    return StatBox(
+                      title: "Total Employee",
+                      value: userProvider.statistics?.totalUsers.toString() ?? "0",
+                      showDivider: true,
+                    );
+                  },
                 ),
               ),
               Expanded(
-                child: StatBox(
-                  title: "Total New Hire",
-                  value: "15",
-                  showDivider: true,
+                child: Consumer<UserProvider>(
+                  builder: (context, userProvider, child) {
+                    return StatBox(
+                      title: "Active Employee",
+                      value: userProvider.statistics?.activeUsers.toString() ?? "0",
+                      showDivider: true,
+                    );
+                  },
                 ),
               ),
               Expanded(
-                child: StatBox(
-                  title: "Full Time Employee",
-                  value: "15",
-                  showDivider: false,
+                child: Consumer<UserProvider>(
+                  builder: (context, userProvider, child) {
+                    return StatBox(
+                      title: "Roles Count",
+                      value: userProvider.statistics?.roleDistribution.length.toString() ?? "0",
+                      showDivider: false,
+                    );
+                  },
                 ),
               ),
             ],

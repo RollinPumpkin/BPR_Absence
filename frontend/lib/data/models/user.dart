@@ -56,44 +56,71 @@ class User {
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
-    // Debug logging
-    print('🔍 User.fromJson received data: $json');
-    print('🔍 User.fromJson ROLE field: "${json['role']}" (type: ${json['role'].runtimeType})');
-    print('🔍 User.fromJson EMPLOYEE_ID field: "${json['employee_id']}" (type: ${json['employee_id'].runtimeType})');
-    
     try {
-      final parsedEmployeeId = json['employee_id']?.toString() ?? '';
-      final parsedRole = json['role']?.toString() ?? 'employee';
+      print('🔍 User.fromJson input data: $json');
+      print('🔍 User.fromJson data type: ${json.runtimeType}');
+      print('🔍 User.fromJson keys: ${json.keys.toList()}');
       
-      print('🔍 User.fromJson PARSED employeeId: "$parsedEmployeeId"');
-      print('🔍 User.fromJson PARSED role: "$parsedRole"');
+      // Validate input
+      if (json.isEmpty) {
+        print('❌ User.fromJson: Empty JSON data');
+        throw ArgumentError('Empty JSON data provided to User.fromJson');
+      }
+
+      // Safely parse each field with null checks
+      String safeStringParse(dynamic value, [String defaultValue = '']) {
+        if (value == null) return defaultValue;
+        return value.toString();
+      }
       
+      bool safeBoolParse(dynamic value, [bool defaultValue = false]) {
+        if (value == null) return defaultValue;
+        if (value is bool) return value;
+        if (value is String) return value.toLowerCase() == 'true';
+        return defaultValue;
+      }
+      
+      double? safeDoubleParse(dynamic value) {
+        if (value == null) return null;
+        if (value is double) return value;
+        if (value is int) return value.toDouble();
+        if (value is String) {
+          final parsed = double.tryParse(value);
+          return parsed;
+        }
+        return null;
+      }
+
+      print('🔍 Parsing user with ID: ${json['id']}');
+      print('🔍 User employee_id: ${json['employee_id']}');
+      print('🔍 User employeeId: ${json['employeeId']}');
+
       return User(
-        id: json['id']?.toString() ?? '',
-        employeeId: parsedEmployeeId,
-        fullName: json['full_name']?.toString() ?? '',
-        email: json['email']?.toString() ?? '',
+        id: safeStringParse(json['id']),
+        employeeId: safeStringParse(json['employee_id'] ?? json['employeeId']),
+        fullName: safeStringParse(json['full_name'] ?? json['fullName']),
+        email: safeStringParse(json['email']),
         department: json['department']?.toString(),
         position: json['position']?.toString(),
         phone: json['phone']?.toString(),
-        role: parsedRole,
-        status: json['status']?.toString() ?? 'active',
-        isActive: json['is_active'] == true || json['is_active'] == 'true',
+        role: safeStringParse(json['role'], 'employee'),
+        status: safeStringParse(json['status'], 'active'),
+        isActive: safeBoolParse(json['is_active'] ?? json['isActive'], true),
         profilePicture: json['profile_picture']?.toString(),
-        createdAt: _parseDateTime(json['created_at']),
-        updatedAt: _parseDateTime(json['updated_at']),
-        lastLogin: _parseDateTime(json['last_login']),
+        createdAt: _parseDateTime(json['created_at'] ?? json['createdAt']),
+        updatedAt: _parseDateTime(json['updated_at'] ?? json['updatedAt']),
+        lastLogin: _parseDateTime(json['last_login'] ?? json['lastLogin']),
         address: json['address']?.toString(),
         emergencyContact: json['emergency_contact']?.toString(),
         emergencyPhone: json['emergency_phone']?.toString(),
-        dateOfBirth: _parseDateTime(json['date_of_birth']),
+        dateOfBirth: _parseDateTime(json['date_of_birth'] ?? json['dateOfBirth']),
         gender: json['gender']?.toString(),
         maritalStatus: json['marital_status']?.toString(),
         nationalId: json['national_id']?.toString(),
         bankAccount: json['bank_account']?.toString(),
         bankName: json['bank_name']?.toString(),
-        hireDate: _parseDateTime(json['hire_date']),
-        salary: json['salary'] != null ? (json['salary'] as num).toDouble() : null,
+        hireDate: _parseDateTime(json['hire_date'] ?? json['hireDate']),
+        salary: safeDoubleParse(json['salary']),
       );
     } catch (e) {
       print('❌ Error in User.fromJson: $e');
@@ -109,18 +136,27 @@ class User {
       if (dateValue is String) {
         if (dateValue.isEmpty) return null;
         return DateTime.parse(dateValue);
-      } else if (dateValue is Map<String, dynamic>) {
+      } else if (dateValue is Map) {
+        final dateMap = dateValue as Map<String, dynamic>;
         // Handle Firebase Timestamp
-        if (dateValue.containsKey('_seconds')) {
-          return DateTime.fromMillisecondsSinceEpoch(
-            dateValue['_seconds'] * 1000 + (dateValue['_nanoseconds'] ~/ 1000000)
-          );
+        if (dateMap.containsKey('_seconds')) {
+          final seconds = dateMap['_seconds'];
+          final nanoseconds = dateMap['_nanoseconds'] ?? 0;
+          if (seconds != null) {
+            return DateTime.fromMillisecondsSinceEpoch(
+              (seconds as int) * 1000 + ((nanoseconds as int) ~/ 1000000)
+            );
+          }
         }
         // Handle Firestore Timestamp format
-        if (dateValue.containsKey('seconds')) {
-          return DateTime.fromMillisecondsSinceEpoch(
-            dateValue['seconds'] * 1000 + (dateValue['nanoseconds'] ~/ 1000000)
-          );
+        if (dateMap.containsKey('seconds')) {
+          final seconds = dateMap['seconds'];
+          final nanoseconds = dateMap['nanoseconds'] ?? 0;
+          if (seconds != null) {
+            return DateTime.fromMillisecondsSinceEpoch(
+              (seconds as int) * 1000 + ((nanoseconds as int) ~/ 1000000)
+            );
+          }
         }
       } else if (dateValue is num) {
         // Handle timestamp as number
@@ -128,7 +164,7 @@ class User {
       }
       return null;
     } catch (e) {
-      print('⚠️ Error parsing date: $e for value: $dateValue');
+      print('⚠️ Error parsing date: $e for value: $dateValue (${dateValue.runtimeType})');
       return null;
     }
   }

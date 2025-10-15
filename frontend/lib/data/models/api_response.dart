@@ -94,10 +94,43 @@ class ListResponse<T> {
     T Function(Map<String, dynamic>) fromJsonT,
     String itemsKey,
   ) {
+    print('🔧 ListResponse.fromJson - Input: $json');
+    print('🔧 ListResponse.fromJson - Looking for key: $itemsKey');
+    
+    List<T> processedItems = [];
+    
+    final itemsData = json[itemsKey];
+    print('🔧 ListResponse.fromJson - Items data: $itemsData');
+    print('🔧 ListResponse.fromJson - Items data type: ${itemsData.runtimeType}');
+    
+    if (itemsData is List) {
+      for (int i = 0; i < itemsData.length; i++) {
+        final item = itemsData[i];
+        print('🔧 ListResponse.fromJson - Processing item $i: $item');
+        print('🔧 ListResponse.fromJson - Item $i type: ${item.runtimeType}');
+        
+        if (item != null && item is Map<String, dynamic>) {
+          try {
+            final processedItem = fromJsonT(item);
+            processedItems.add(processedItem);
+            print('✅ ListResponse.fromJson - Successfully processed item $i');
+          } catch (e) {
+            print('❌ ListResponse.fromJson - Error processing item $i: $e');
+            print('❌ ListResponse.fromJson - Problematic item: $item');
+            // Continue processing other items instead of failing completely
+          }
+        } else {
+          print('⚠️ ListResponse.fromJson - Invalid item $i (null or not Map): $item');
+        }
+      }
+    } else {
+      print('❌ ListResponse.fromJson - Items data is not a List: ${itemsData.runtimeType}');
+    }
+    
+    print('🔧 ListResponse.fromJson - Final processed items count: ${processedItems.length}');
+    
     return ListResponse<T>(
-      items: (json[itemsKey] as List<dynamic>?)
-          ?.map((item) => fromJsonT(item as Map<String, dynamic>))
-          .toList() ?? [],
+      items: processedItems,
       pagination: json['pagination'] != null 
           ? PaginationData.fromJson(json['pagination'])
           : null,
