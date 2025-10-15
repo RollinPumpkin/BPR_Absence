@@ -285,9 +285,16 @@ class _LetterPageState extends State<LetterPage> {
                            letter.subject.toLowerCase().contains(searchTerm) ||
                            letter.letterType.toLowerCase().contains(searchTerm);
         
-        // Filter by status
-        bool matchesStatus = _selectedStatus == 'all' || 
-                           letter.status == _selectedStatus;
+        // Filter by status - fix mapping for pending filter
+        bool matchesStatus = false;
+        if (_selectedStatus == 'all') {
+          matchesStatus = true;
+        } else if (_selectedStatus == 'pending') {
+          // "Pending" filter should show "waiting_approval" status
+          matchesStatus = letter.status == 'waiting_approval' || letter.status == 'pending';
+        } else {
+          matchesStatus = letter.status == _selectedStatus;
+        }
         
         return matchesSearch && matchesStatus;
       }).toList();

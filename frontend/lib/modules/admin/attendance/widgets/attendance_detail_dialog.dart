@@ -1,11 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/core/constants/colors.dart';
+import 'package:frontend/data/models/user.dart';
 import '../pages/attendance_edit_page.dart';
 
 class AttendanceDetailDialog extends StatelessWidget {
-  const AttendanceDetailDialog({super.key});
+  final User user;
+  final String? clockIn;
+  final String? clockOut;
+  final String? status;
+  final String? date;
 
-  @override
+  const AttendanceDetailDialog({
+    super.key,
+    required this.user,
+    this.clockIn,
+    this.clockOut,
+    this.status,
+    this.date,
+  });  @override
   Widget build(BuildContext context) {
     return Dialog(
       insetPadding: const EdgeInsets.all(16),
@@ -68,10 +80,11 @@ class AttendanceDetailDialog extends StatelessWidget {
                         child: Icon(Icons.person, color: AppColors.neutral500),
                       ),
                       const SizedBox(width: 12),
-                      const Expanded(
+                      Expanded(
                         child: _EmpNamePosition(
-                          name: 'Septa Puma Surya',
-                          position: 'Jabatan',
+                          name: user.fullName.isEmpty ? 'Unknown Employee' : user.fullName,
+                          position: user.position?.isEmpty == false ? user.position! : 
+                                   (user.department?.isEmpty == false ? user.department! : 'Unknown Position'),
                         ),
                       ),
                       const _StatusChip(text: 'Check In', color: AppColors.primaryGreen),
@@ -84,24 +97,24 @@ class AttendanceDetailDialog extends StatelessWidget {
                 _SectionBox(
                   title: 'Attendance Information',
                   child: Column(
-                    children: const [
+                    children: [
                       _TwoColRow(
                         leftLabel: 'Date',
-                        leftValue: '1 March 2025',
+                        leftValue: _formatCurrentDate(),
                         rightLabel: 'Check In',
-                        rightValue: '09:00',
+                        rightValue: _getCheckInTime(),
                       ),
-                      SizedBox(height: 8),
+                      const SizedBox(height: 8),
                       _TwoColRow(
                         leftLabel: 'Status',
-                        leftValue: 'Present',
+                        leftValue: _getAttendanceStatus(),
                         rightLabel: 'Check Out',
-                        rightValue: '-',
+                        rightValue: _getCheckOutTime(),
                       ),
-                      SizedBox(height: 8),
+                      const SizedBox(height: 8),
                       _TwoColRow(
                         leftLabel: 'Work Hours',
-                        leftValue: '8 Hours',
+                        leftValue: _getWorkHours(),
                       ),
                     ],
                   ),
@@ -231,6 +244,56 @@ class AttendanceDetailDialog extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _formatCurrentDate() {
+    if (date != null) return date!;
+    
+    final now = DateTime.now();
+    final months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    return '${now.day} ${months[now.month - 1]} ${now.year}';
+  }
+
+  String _getCheckInTime() {
+    return clockIn ?? '-';
+  }
+
+  String _getCheckOutTime() {
+    return clockOut ?? '-';
+  }
+
+  String _getAttendanceStatus() {
+    return status ?? 'Present';
+  }
+
+  String _getWorkHours() {
+    final checkOut = _getCheckOutTime();
+    final checkIn = _getCheckInTime();
+    
+    if (checkOut == '-' || checkIn == '-') return '-';
+    
+    try {
+      final checkInTime = TimeOfDay(
+        hour: int.parse(checkIn.split(':')[0]),
+        minute: int.parse(checkIn.split(':')[1]),
+      );
+      final checkOutTime = TimeOfDay(
+        hour: int.parse(checkOut.split(':')[0]),
+        minute: int.parse(checkOut.split(':')[1]),
+      );
+      
+      final checkInMinutes = checkInTime.hour * 60 + checkInTime.minute;
+      final checkOutMinutes = checkOutTime.hour * 60 + checkOutTime.minute;
+      final workMinutes = checkOutMinutes - checkInMinutes;
+      final hours = (workMinutes / 60).floor();
+      
+      return '$hours Hours';
+    } catch (e) {
+      return '-';
+    }
   }
 
   Future<void> _confirmDelete(BuildContext context) async {
