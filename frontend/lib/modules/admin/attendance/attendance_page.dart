@@ -2,10 +2,13 @@ import 'dart:typed_data';
 import 'package:excel/excel.dart';
 import 'package:file_saver/file_saver.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import 'package:frontend/core/constants/colors.dart';
 import 'package:frontend/core/widgets/custom_bottom_nav_router.dart';
 import 'package:frontend/modules/admin/shared/admin_nav_items.dart';
+import 'package:frontend/data/providers/user_provider.dart';
+import 'package:frontend/data/models/user.dart';
 
 import 'widgets/date_row.dart';
 import 'widgets/attendance_stat.dart';
@@ -14,167 +17,235 @@ import 'widgets/attendance_card.dart';
 import 'widgets/section_lined_title.dart';
 import 'pages/attendance_form_page.dart';
 
-class AttendancePage extends StatelessWidget {
+class AttendancePage extends StatefulWidget {
   const AttendancePage({super.key});
 
   @override
+  State<AttendancePage> createState() => _AttendancePageState();
+}
+
+class _AttendancePageState extends State<AttendancePage> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadUsersForAttendance();
+    });
+  }
+
+  void _loadUsersForAttendance() {
+    final userProvider = context.read<UserProvider>();
+    if (userProvider.users.isEmpty) {
+      userProvider.initialize();
+    }
+  }
+
+  List<Map<String, dynamic>> _generateAttendanceData(List<User> users) {
+    final statuses = ['Present', 'Sick', 'Late'];
+    final statusColors = [AppColors.primaryGreen, AppColors.primaryYellow, AppColors.primaryRed];
+    final clockIns = ['08:33:10', '-', '09:45:56'];
+    final clockOuts = ['16:03:10', '-', '-'];
+    final dates = ['20 Januari 2025', '19 Januari 2025', '18 Januari 2025'];
+
+    List<Map<String, dynamic>> attendanceData = [];
+    
+    for (int i = 0; i < users.length && i < 3; i++) {
+      final user = users[i];
+      attendanceData.add({
+        'name': user.fullName,
+        'division': user.position ?? user.department ?? 'Unknown Position',
+        'status': statuses[i % statuses.length],
+        'statusColor': statusColors[i % statusColors.length],
+        'clockIn': clockIns[i % clockIns.length],
+        'clockOut': clockOuts[i % clockOuts.length],
+        'date': dates[i % dates.length],
+        'user': user, // Add user object to the data
+      });
+    }
+
+    // If no users available, use fallback data
+    if (attendanceData.isEmpty) {
+      attendanceData = [
+        {
+          'name': 'Haidar Mahapatih',
+          'division': 'Mobile Developer',
+          'status': 'Present',
+          'statusColor': AppColors.primaryGreen,
+          'clockIn': '08:33:10',
+          'clockOut': '16:03:10',
+          'date': '20 Januari 2025',
+        },
+        {
+          'name': 'Septa Puma',
+          'division': 'Web Developer', 
+          'status': 'Sick',
+          'statusColor': AppColors.primaryYellow,
+          'clockIn': '-',
+          'clockOut': '-',
+          'date': '19 Januari 2025',
+        },
+        {
+          'name': 'Agung Riyadi',
+          'division': 'Backend Developer',
+          'status': 'Late',
+          'statusColor': AppColors.primaryRed,
+          'clockIn': '09:45:56',
+          'clockOut': '-',
+          'date': '18 Januari 2025',
+        },
+      ];
+    }
+
+    return attendanceData;
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.backgroundGray,
+    return Consumer<UserProvider>(
+      builder: (context, userProvider, child) {
+        final attendanceData = _generateAttendanceData(userProvider.users);
 
-      appBar: AppBar(
-        backgroundColor: AppColors.pureWhite,
-        elevation: 0,
-        centerTitle: false,
-        automaticallyImplyLeading: false,
-        title: const Text(
-          'Attendance',
-          style: TextStyle(
-            color: AppColors.neutral800,
-            fontWeight: FontWeight.w800,
+        return Scaffold(
+          backgroundColor: AppColors.backgroundGray,
+
+          appBar: AppBar(
+            backgroundColor: AppColors.pureWhite,
+            elevation: 0,
+            centerTitle: false,
+            automaticallyImplyLeading: false,
+            title: const Text(
+              'Attendance',
+              style: TextStyle(
+                color: AppColors.neutral800,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
           ),
-        ),
-      ),
 
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.only(bottom: 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 12), // Added more space from AppBar
-            // Tanggal
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: DateRow(),
-            ),
-            const SizedBox(height: 12), // Increased spacing after date
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 12), // Added more space from AppBar
+                // Tanggal
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  child: DateRow(),
+                ),
+                const SizedBox(height: 12), // Increased spacing after date
 
-            // Stat ringkas
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _StatsBar(
-                stats: const [
-                  _StatItem('Present', '28', AppColors.primaryGreen),
-                  _StatItem('Late', '15', AppColors.primaryRed),
-                  _StatItem('Sick', '15', AppColors.primaryYellow),
-                  _StatItem('Leave', '5', AppColors.accentBlue),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 10),
-
-            // ====== Tambahan: Judul "Data" + garis ======
-            const LinedSectionTitle(title: "Data"),
-
-            // Aksi: Filter • Export • Attendance Form
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-              child: Row(
-                children: [
-                  // FILTER
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        // TODO: tampilkan filter
-                      },
-                      icon: const Icon(Icons.filter_list, size: 18),
-                      label: const Text('Filter'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.neutral800,
-                        side: const BorderSide(color: AppColors.dividerGray),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                    ),
+                // Stat ringkas
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: _StatsBar(
+                    stats: const [
+                      _StatItem('Present', '28', AppColors.primaryGreen),
+                      _StatItem('Late', '15', AppColors.primaryRed),
+                      _StatItem('Sick', '15', AppColors.primaryYellow),
+                      _StatItem('Leave', '5', AppColors.accentBlue),
+                    ],
                   ),
-                  const SizedBox(width: 8),
+                ),
 
-                  // EXPORT
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () => _exportAttendanceExcel(context),
-                      icon: const Icon(Icons.file_download_outlined, size: 18),
-                      label: const Text('Export'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.white,
-                        backgroundColor: AppColors.primaryRed,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
+                const SizedBox(height: 10),
 
-                  // ATTENDANCE FORM
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => const AttendanceFormPage(),
+                // ====== Tambahan: Judul "Data" + garis ======
+                const LinedSectionTitle(title: "Data"),
+
+                // Aksi: Filter • Export • Attendance Form
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                  child: Row(
+                    children: [
+                      // FILTER
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            // TODO: tampilkan filter
+                          },
+                          icon: const Icon(Icons.filter_list, size: 18),
+                          label: const Text('Filter'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.neutral800,
+                            side: const BorderSide(color: AppColors.dividerGray),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
                           ),
-                        );
-                      },
-                      icon: const Icon(
-                        Icons.assignment_turned_in_outlined,
-                        size: 18,
-                      ),
-                      label: const Text('Attendance Form'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primaryBlue,
-                        foregroundColor: AppColors.pureWhite,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
                         ),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        elevation: 0,
                       ),
-                    ),
+                      const SizedBox(width: 8),
+
+                      // EXPORT
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => _exportAttendanceExcel(context),
+                          icon: const Icon(Icons.file_download_outlined, size: 18),
+                          label: const Text('Export'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.white,
+                            backgroundColor: AppColors.primaryRed,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+
+                      // ATTENDANCE FORM
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const AttendanceFormPage(),
+                              ),
+                            );
+                          },
+                          icon: const Icon(
+                            Icons.assignment_turned_in_outlined,
+                            size: 18,
+                          ),
+                          label: const Text('Attendance Form'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primaryBlue,
+                            foregroundColor: AppColors.pureWhite,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            elevation: 0,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ),
+                ),
 
-            const SizedBox(height: 12),
+                const SizedBox(height: 12),
 
-            // List kartu attendance (contoh)
-            AttendanceCard(
-              name: "Haidar Mahapatih",
-              division: "Mobile Developer",
-              status: "Present",
-              statusColor: AppColors.primaryGreen,
-              clockIn: "08:33:10",
-              clockOut: "16:03:10",
-              date: "20 Januari 2025",
+                // List kartu attendance dari data real
+                ...attendanceData.map((attendance) => AttendanceCard(
+                  name: attendance['name'],
+                  division: attendance['division'],
+                  status: attendance['status'],
+                  statusColor: attendance['statusColor'],
+                  clockIn: attendance['clockIn'],
+                  clockOut: attendance['clockOut'],
+                  date: attendance['date'],
+                  user: attendance['user'], // Pass the user object
+                )).toList(),
+              ],
             ),
-            AttendanceCard(
-              name: "Septa Puma",
-              division: "Web Developer",
-              status: "Sick",
-              statusColor: AppColors.primaryYellow,
-              clockIn: "-",
-              clockOut: "-",
-              date: "19 Januari 2025",
-            ),
-            AttendanceCard(
-              name: "Agung Riyadi",
-              division: "Backend Developer",
-              status: "Late",
-              statusColor: AppColors.primaryRed,
-              clockIn: "09:45:56",
-              clockOut: "-",
-              date: "18 Januari 2025",
-            ),
-          ],
-        ),
-      ),
+          ),
 
-      bottomNavigationBar: const CustomBottomNavRouter(
-        currentIndex: 1,
-        items: AdminNavItems.items,
-      ),
+          bottomNavigationBar: const CustomBottomNavRouter(
+            currentIndex: 1,
+            items: AdminNavItems.items,
+          ),
+        );
+      },
     );
   }
 }

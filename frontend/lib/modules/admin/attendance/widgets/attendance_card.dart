@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:frontend/core/constants/colors.dart';
+import 'package:frontend/data/models/user.dart';
 import 'attendance_detail_dialog.dart';
 import '../pages/attendance_edit_page.dart';
 
@@ -14,6 +15,7 @@ class AttendanceCard extends StatelessWidget {
   final String clockIn;
   final String clockOut;
   final String date;
+  final User? user; // Add User parameter
 
   // optional override (kalau mau custom perilaku)
   final VoidCallback? onTap;
@@ -29,16 +31,47 @@ class AttendanceCard extends StatelessWidget {
     required this.clockIn,
     required this.clockOut,
     required this.date,
+    this.user, // Add user parameter
     this.onTap,
     this.onEdit,
     this.onDelete,
   });
 
   void _openDetail(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => const AttendanceDetailDialog(),
-    );
+    if (user != null) {
+      showDialog(
+        context: context,
+        builder: (context) => AttendanceDetailDialog(
+          user: user!,
+          clockIn: clockIn,
+          clockOut: clockOut,
+          status: status,
+          date: date,
+        ),
+      );
+    } else {
+      // Fallback jika user null, gunakan dummy user
+      final dummyUser = User(
+        id: 'dummy',
+        email: 'dummy@email.com',
+        fullName: name,
+        employeeId: 'EMP001',
+        department: division,
+        role: 'employee',
+        status: 'active',
+        isActive: true,
+      );
+      showDialog(
+        context: context,
+        builder: (context) => AttendanceDetailDialog(
+          user: dummyUser,
+          clockIn: clockIn,
+          clockOut: clockOut,
+          status: status,
+          date: date,
+        ),
+      );
+    }
   }
 
   void _openEdit(BuildContext context) {

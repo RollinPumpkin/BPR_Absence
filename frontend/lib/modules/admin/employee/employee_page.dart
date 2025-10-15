@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+  import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/core/constants/colors.dart';
 import 'package:frontend/data/providers/user_provider.dart';
@@ -43,7 +43,7 @@ class _EmployeePageState extends State<EmployeePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.backgroundGray,
+      backgroundColor: const Color(0xFFF5F5F5), // Same as user dashboard
 
       appBar: AppBar(
         backgroundColor: AppColors.pureWhite,
