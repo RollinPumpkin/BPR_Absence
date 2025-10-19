@@ -58,36 +58,96 @@ class Letter {
   });
 
   factory Letter.fromJson(Map<String, dynamic> json) {
-    return Letter(
-      id: json['id'] ?? '',
-      recipientId: json['recipient_id'] ?? '',
-      senderId: json['sender_id'] ?? '',
-      subject: json['subject'] ?? '',
-      content: json['content'] ?? '',
-      letterType: json['letter_type'] ?? '',
-      status: json['status'] ?? 'sent',
-      priority: json['priority'] ?? 'normal',
-      letterNumber: json['letter_number'],
-      letterDate: _parseFirestoreTimestamp(json['letter_date']),
-      requiresResponse: json['requires_response'] ?? false,
-      responseDeadline: _parseFirestoreTimestamp(json['response_deadline']),
-      responseReceived: json['response_received'] ?? false,
-      responseContent: json['response_content'],
-      responseDate: _parseFirestoreTimestamp(json['response_date']),
-      attachments: (json['attachments'] as List<dynamic>?)
-          ?.map((item) => LetterAttachment.fromJson(item))
-          .toList() ?? [],
-      ccRecipients: List<String>.from(json['cc_recipients'] ?? []),
-      templateUsed: json['template_used'],
-      referenceNumber: json['reference_number'],
-      createdAt: _parseFirestoreTimestamp(json['created_at']),
-      updatedAt: _parseFirestoreTimestamp(json['updated_at']),
-      recipientName: json['recipient_name'],
-      recipientEmployeeId: json['recipient_employee_id'],
-      recipientDepartment: json['recipient_department'],
-      senderName: json['sender_name'],
-      senderPosition: json['sender_position'],
-    );
+    try {
+      print('🔍 Parsing Letter from JSON: ${json['id'] ?? 'Unknown ID'}');
+      
+      // Null safety for all fields
+      final id = json['id']?.toString() ?? '';
+      final recipientId = (json['recipient_id'] ?? json['recipientId'])?.toString() ?? '';
+      final senderId = (json['sender_id'] ?? json['senderId'])?.toString() ?? '';
+      final subject = json['subject']?.toString() ?? '';
+      final content = json['content']?.toString() ?? '';
+      final letterType = (json['letter_type'] ?? json['letterType'])?.toString() ?? '';
+      final status = json['status']?.toString() ?? 'sent';
+      final priority = json['priority']?.toString() ?? 'normal';
+      
+      // Handle optional fields with safe conversions
+      final letterNumber = (json['letter_number'] ?? json['letterNumber'])?.toString();
+      final requiresResponse = json['requires_response'] ?? json['requiresResponse'] ?? false;
+      final responseReceived = json['response_received'] ?? json['responseReceived'] ?? false;
+      final responseContent = (json['response_content'] ?? json['responseContent'])?.toString();
+      
+      // Handle attachments safely
+      List<LetterAttachment> attachments = [];
+      final attachmentsData = json['attachments'];
+      if (attachmentsData is List) {
+        for (var item in attachmentsData) {
+          if (item != null && item is Map<String, dynamic>) {
+            try {
+              attachments.add(LetterAttachment.fromJson(item));
+            } catch (e) {
+              print('⚠️ Failed to parse attachment: $e');
+            }
+          }
+        }
+      }
+      
+      // Handle ccRecipients safely
+      List<String> ccRecipients = [];
+      final ccData = json['cc_recipients'] ?? json['ccRecipients'];
+      if (ccData is List) {
+        ccRecipients = ccData.map((e) => e?.toString() ?? '').toList();
+      }
+      
+      return Letter(
+        id: id,
+        recipientId: recipientId,
+        senderId: senderId,
+        subject: subject,
+        content: content,
+        letterType: letterType,
+        status: status,
+        priority: priority,
+        letterNumber: letterNumber,
+        letterDate: _parseFirestoreTimestamp(json['letter_date'] ?? json['letterDate']),
+        requiresResponse: requiresResponse,
+        responseDeadline: _parseFirestoreTimestamp(json['response_deadline'] ?? json['responseDeadline']),
+        responseReceived: responseReceived,
+        responseContent: responseContent,
+        responseDate: _parseFirestoreTimestamp(json['response_date'] ?? json['responseDate']),
+        attachments: attachments,
+        ccRecipients: ccRecipients,
+        templateUsed: (json['template_used'] ?? json['templateUsed'])?.toString(),
+        referenceNumber: (json['reference_number'] ?? json['referenceNumber'])?.toString(),
+        createdAt: _parseFirestoreTimestamp(json['created_at'] ?? json['createdAt']),
+        updatedAt: _parseFirestoreTimestamp(json['updated_at'] ?? json['updatedAt']),
+        recipientName: (json['recipient_name'] ?? json['recipientName'])?.toString(),
+        recipientEmployeeId: (json['recipient_employee_id'] ?? json['recipientEmployeeId'])?.toString(),
+        recipientDepartment: (json['recipient_department'] ?? json['recipientDepartment'])?.toString(),
+        senderName: (json['sender_name'] ?? json['senderName'])?.toString(),
+        senderPosition: (json['sender_position'] ?? json['senderPosition'])?.toString(),
+      );
+    } catch (e, stackTrace) {
+      print('❌ Error parsing Letter from JSON: $e');
+      print('❌ Stack trace: $stackTrace');
+      print('❌ Problematic JSON: $json');
+      
+      // Return a default letter object instead of rethrowing
+      return Letter(
+        id: json['id']?.toString() ?? 'error_${DateTime.now().millisecondsSinceEpoch}',
+        recipientId: '',
+        senderId: '',
+        subject: 'Error parsing letter',
+        content: 'Failed to parse letter data',
+        letterType: 'error',
+        status: 'error',
+        priority: 'normal',
+        requiresResponse: false,
+        responseReceived: false,
+        attachments: [],
+        ccRecipients: [],
+      );
+    }
   }
 
   // Helper method to parse Firestore timestamp format

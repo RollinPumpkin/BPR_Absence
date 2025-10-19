@@ -70,8 +70,8 @@ class _LetterPageState extends State<LetterPage> {
       
       // Add pending letters
       if (pendingResponse.success && pendingResponse.data != null) {
-        print('🔍 Admin Letters: Adding ${pendingResponse.data!.length} pending letters');
-        allLetters.addAll(pendingResponse.data!);
+        print('🔍 Admin Letters: Adding ${pendingResponse.data!.items.length} pending letters');
+        allLetters.addAll(pendingResponse.data!.items);
       } else {
         print('🔍 Admin Letters: No pending letters or error: ${pendingResponse.message}');
       }
@@ -136,15 +136,6 @@ class _LetterPageState extends State<LetterPage> {
         }
       }
 
-      // If still no letters, create dummy data for testing
-      if (uniqueLetters.isEmpty) {
-        print('🔍 Admin Letters: No letters found, creating dummy data for testing...');
-        final dummyLetters = _createDummyLetters();
-        for (var letter in dummyLetters) {
-          uniqueLetters[letter.id] = letter;
-        }
-      }
-
       setState(() {
         _allLetters = uniqueLetters.values.toList();
         // Sort by creation date, newest first
@@ -162,118 +153,12 @@ class _LetterPageState extends State<LetterPage> {
       setState(() {
         _errorMessage = 'Error loading letters: $e';
         _isLoading = false;
+        _allLetters = []; // Empty list instead of dummy data
       });
     }
   }
 
-  List<Letter> _createDummyLetters() {
-    final now = DateTime.now();
-    return [
-      Letter(
-        id: 'dummy1',
-        subject: 'Sick Leave Request - Ahmad Suryono',
-        content: 'I am requesting sick leave due to illness. Medical certificate will be provided.',
-        letterType: 'sick_leave',
-        letterNumber: 'SL/2025/001',
-        letterDate: now.subtract(Duration(days: 1)),
-        priority: 'medium',
-        status: 'waiting_approval',
-        senderId: 'emp001',
-        senderName: 'Ahmad Suryono',
-        senderPosition: 'Account Officer',
-        recipientId: 'admin',
-        createdAt: now.subtract(Duration(days: 1)),
-        updatedAt: now.subtract(Duration(days: 1)),
-        requiresResponse: true,
-        responseDeadline: now.add(Duration(days: 3)),
-        responseReceived: false,
-        attachments: [],
-        ccRecipients: [],
-      ),
-      Letter(
-        id: 'dummy2',
-        subject: 'Annual Leave Request - Budi Santoso',
-        content: 'I would like to request annual leave for vacation next month.',
-        letterType: 'annual_leave',
-        letterNumber: 'AL/2025/002',
-        letterDate: now.subtract(Duration(days: 2)),
-        priority: 'low',
-        status: 'approved',
-        senderId: 'emp002',
-        senderName: 'Budi Santoso',
-        senderPosition: 'Finance Staff',
-        recipientId: 'admin',
-        createdAt: now.subtract(Duration(days: 2)),
-        updatedAt: now.subtract(Duration(hours: 12)),
-        requiresResponse: false,
-        responseReceived: false,
-        attachments: [],
-        ccRecipients: [],
-      ),
-      Letter(
-        id: 'dummy3',
-        subject: 'Permission Letter - Sari Dewi',
-        content: 'I need permission to leave early today for family matters.',
-        letterType: 'permission_letter',
-        letterNumber: 'PL/2025/003',
-        letterDate: now.subtract(Duration(hours: 6)),
-        priority: 'high',
-        status: 'rejected',
-        senderId: 'emp003',
-        senderName: 'Sari Dewi',
-        senderPosition: 'Customer Service',
-        recipientId: 'admin',
-        createdAt: now.subtract(Duration(hours: 6)),
-        updatedAt: now.subtract(Duration(hours: 2)),
-        requiresResponse: true,
-        responseDeadline: now.add(Duration(hours: 18)),
-        responseReceived: false,
-        attachments: [],
-        ccRecipients: [],
-      ),
-      Letter(
-        id: 'dummy4',
-        subject: 'Work Certificate Request - Andi Putra',
-        content: 'I need a work certificate for bank loan application.',
-        letterType: 'work_certificate',
-        letterNumber: 'WC/2025/004',
-        letterDate: now.subtract(Duration(days: 3)),
-        priority: 'normal',
-        status: 'approved',
-        senderId: 'emp004',
-        senderName: 'Andi Putra',
-        senderPosition: 'Credit Analyst',
-        recipientId: 'admin',
-        createdAt: now.subtract(Duration(days: 3)),
-        updatedAt: now.subtract(Duration(days: 1)),
-        requiresResponse: false,
-        responseReceived: false,
-        attachments: [],
-        ccRecipients: [],
-      ),
-      Letter(
-        id: 'dummy5',
-        subject: 'Family Leave Request - Maya Sari',
-        content: 'Emergency family leave needed due to family member hospitalization.',
-        letterType: 'family_leave',
-        letterNumber: 'FL/2025/005',
-        letterDate: now.subtract(Duration(hours: 3)),
-        priority: 'high',
-        status: 'waiting_approval',
-        senderId: 'emp005',
-        senderName: 'Maya Sari',
-        senderPosition: 'Teller',
-        recipientId: 'admin',
-        createdAt: now.subtract(Duration(hours: 3)),
-        updatedAt: now.subtract(Duration(hours: 3)),
-        requiresResponse: true,
-        responseDeadline: now.add(Duration(hours: 21)),
-        responseReceived: false,
-        attachments: [],
-        ccRecipients: [],
-      ),
-    ];
-  }
+
 
   void _filterLetters() {
     String searchTerm = _searchController.text.toLowerCase();

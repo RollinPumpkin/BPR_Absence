@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/core/constants/colors.dart';
+import 'status_breakdown_chart.dart';
 
 class AttendanceDetailSheet extends StatelessWidget {
   final String title;
@@ -7,6 +8,7 @@ class AttendanceDetailSheet extends StatelessWidget {
   final int? present;
   final int? absent;
   final int? lateCount;
+  final Map<String, int>? statusBreakdown;
 
   const AttendanceDetailSheet({
     super.key,
@@ -15,6 +17,7 @@ class AttendanceDetailSheet extends StatelessWidget {
     this.present,
     this.absent,
     this.lateCount,
+    this.statusBreakdown,
   });
 
   @override
@@ -80,6 +83,52 @@ class AttendanceDetailSheet extends StatelessWidget {
                     children: [
                       _SummaryChips(present: present, absent: absent, lateCount: lateCount),
                       const SizedBox(height: 14),
+                      
+                      // Status breakdown section (if available)
+                      if (statusBreakdown != null) ...[
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: AppColors.pureWhite,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: AppColors.shadowColor,
+                                blurRadius: 12,
+                                offset: Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Status Breakdown',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.neutral800,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Row(
+                                children: [
+                                  StatusBreakdownChart(
+                                    statusData: statusBreakdown!,
+                                    size: 140,
+                                  ),
+                                  const SizedBox(width: 20),
+                                  Expanded(
+                                    child: StatusLegend(statusData: statusBreakdown!),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                      
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(

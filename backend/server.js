@@ -299,6 +299,7 @@ app.use('/api/dashboard', require('./routes/dashboard'));
 app.use('/api/letters', require('./routes/letters'));
 app.use('/api/profile', require('./routes/profile'));
 app.use('/api/assignments', require('./routes/assignments'));
+app.use('/api/seeder', require('./routes/seeder'));
 
 // Health check endpoint
 app.get('/health', (req, res) => {

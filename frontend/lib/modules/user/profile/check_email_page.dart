@@ -1,8 +1,33 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/core/constants/colors.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class CheckEmailPage extends StatelessWidget {
-  const CheckEmailPage({super.key});
+  final String? email;
+  const CheckEmailPage({super.key, this.email});
+
+  Future<void> _openGmail() async {
+    // Try to open Gmail app first, fallback to web Gmail
+    const gmailAppUrl = 'googlegmail://';
+    const webGmailUrl = 'https://gmail.com';
+    
+    try {
+      // Try to launch Gmail app
+      if (await canLaunchUrl(Uri.parse(gmailAppUrl))) {
+        await launchUrl(Uri.parse(gmailAppUrl), mode: LaunchMode.externalApplication);
+      } else {
+        // Fallback to web Gmail
+        await launchUrl(Uri.parse(webGmailUrl), mode: LaunchMode.externalApplication);
+      }
+    } catch (e) {
+      // If all fails, try web Gmail as last resort
+      try {
+        await launchUrl(Uri.parse(webGmailUrl), mode: LaunchMode.externalApplication);
+      } catch (e) {
+        print('Error opening Gmail: $e');
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,7 +82,7 @@ class CheckEmailPage extends StatelessWidget {
                   children: [
                     const TextSpan(text: "We sent a password reset link to your email\n"),
                     TextSpan(
-                      text: "uremail@gmail.com",
+                      text: email ?? "your-email@gmail.com",
                       style: TextStyle(
                         color: AppColors.primaryBlue,
                         fontWeight: FontWeight.w500,
@@ -76,14 +101,8 @@ class CheckEmailPage extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {
-                    // Here you could implement opening the email app
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text("Opening email app..."),
-                        backgroundColor: AppColors.primaryGreen,
-                      ),
-                    );
+                  onPressed: () async {
+                    await _openGmail();
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFF59E0B), // Orange color

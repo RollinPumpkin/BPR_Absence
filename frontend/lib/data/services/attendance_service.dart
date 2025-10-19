@@ -71,9 +71,9 @@ class AttendanceService {
       ApiConstants.attendance.list,
       queryParameters: queryParams,
       fromJson: (json) => ListResponse<Attendance>.fromJson(
-        json,
+        json['data'] ?? json, // Access nested data object
         (item) => Attendance.fromJson(item),
-        'data',
+        'attendance', // Use 'attendance' key instead of 'data'
       ),
     );
   }

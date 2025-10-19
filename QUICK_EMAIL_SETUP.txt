@@ -1,0 +1,29 @@
+🔐 Quick Gmail Setup for BPR Absence
+=====================================
+
+STEP 1: Get Gmail App Password
+------------------------------
+1. Go to: https://myaccount.google.com/security
+2. Login with: septapuma@gmail.com  
+3. Find "2-Step Verification" → make sure it's ON
+4. Find "App passwords" → click it
+5. Select "Mail" from dropdown
+6. Select "Other" and type: BPR Absence
+7. Click "Generate"
+8. Copy the 16-character password (like: abcd efgh ijkl mnop)
+
+STEP 2: Update .env File
+------------------------
+1. Open: backend\.env
+2. Find line: EMAIL_PASS=your_gmail_app_password_here
+3. Replace with: EMAIL_PASS=your16characterpassword (no spaces!)
+4. Save file
+
+STEP 3: Test Email
+------------------
+1. Open terminal in backend folder
+2. Run: node quick-email-test.js
+3. Check septapuma@gmail.com inbox
+4. You should get a professional password reset email!
+
+That's it! After this works, you can test forgot password in your Flutter app.

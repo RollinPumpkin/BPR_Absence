@@ -4,6 +4,7 @@ import 'package:frontend/modules/admin/shared/admin_nav_items.dart';
 import 'package:frontend/core/constants/colors.dart';
 import 'package:frontend/data/services/assignment_service.dart';
 import 'package:frontend/data/models/assignment.dart';
+import 'package:frontend/utils/diagnostic_service.dart';
 
 // Widgets assignment
 import 'widgets/assignment_tab_switcher.dart';
@@ -40,125 +41,55 @@ class _AssignmentPageState extends State<AssignmentPage> {
         _error = null;
       });
 
-      print('🚀 Starting to load assignments...');
+      print('🚀 ADMIN ASSIGNMENT PAGE: Starting to load assignments...');
       
       // Try to get assignments from API first
       List<Assignment> assignments = [];
       
       try {
         // Debug API connection first
-        print('🔍 Running API debug check...');
+        print('🔍 ADMIN: Running API debug check...');
         await _assignmentService.debugApiCall();
         
-        // Try to get upcoming assignments first
-        assignments = await _assignmentService.getUpcomingAssignments();
+        // Try to get all assignments (admin should see all assignments)
+        print('📋 ADMIN: Getting all assignments...');
+        assignments = await _assignmentService.getAllAssignments();
         
-        // If no upcoming assignments, try to get all assignments
-        if (assignments.isEmpty) {
-          print('📋 No upcoming assignments, trying to get all assignments...');
-          assignments = await _assignmentService.getAllAssignments();
+        print('📋 ADMIN: Loaded ${assignments.length} assignments from Firestore');
+        
+        // If we got assignments, show some details
+        if (assignments.isNotEmpty) {
+          print('📋 ADMIN: First assignment: ${assignments.first.title}');
+          print('📋 ADMIN: Assignment statuses: ${assignments.map((a) => a.status).toSet().toList()}');
         }
         
-        print('📋 Loaded ${assignments.length} assignments from API');
       } catch (apiError) {
-        print('❌ API Error: $apiError');
-        print('🔄 Using fallback dummy data for testing...');
-        
-        // Fallback to dummy data for testing
-        assignments = _createDummyAssignments();
-        print('📋 Using ${assignments.length} dummy assignments as fallback');
+        print('❌ ADMIN API Error: $apiError');
+        print('❌ ADMIN Error type: ${apiError.runtimeType}');
+        // Set error for display but still use empty list
+        _error = 'Failed to load assignments from database: $apiError';
+        assignments = [];
       }
 
       setState(() {
         _assignments = assignments;
         _isLoading = false;
       });
-    } catch (e) {
-      print('❌ Error loading assignments: $e');
+      
+      print('📋 ADMIN: Final state - ${assignments.length} assignments loaded');
+      
+    } catch (e, stackTrace) {
+      print('❌ ADMIN: Error loading assignments: $e');
+      print('❌ ADMIN: Stack trace: $stackTrace');
       setState(() {
-        _error = e.toString();
+        _error = 'Error loading assignments: $e';
         _isLoading = false;
+        _assignments = [];
       });
     }
   }
 
-  List<Assignment> _createDummyAssignments() {
-    final now = DateTime.now();
-    return [
-      Assignment(
-        id: '1',
-        title: 'Morning Stand-up Meeting',
-        description: 'Daily team synchronization meeting to discuss progress and blockers',
-        dueDate: now.add(Duration(hours: 2)),
-        priority: 'medium',
-        status: 'pending',
-        assignedTo: 'admin',
-        assignedBy: 'admin',
-        createdAt: now.subtract(Duration(days: 1)),
-        updatedAt: now,
-      ),
-      Assignment(
-        id: '2', 
-        title: 'Code Review - Payment Module',
-        description: 'Review and approve pull requests for payment gateway integration',
-        dueDate: now.add(Duration(hours: 4)),
-        priority: 'high',
-        status: 'in-progress',
-        assignedTo: 'admin',
-        assignedBy: 'admin',
-        createdAt: now.subtract(Duration(days: 1)),
-        updatedAt: now,
-      ),
-      Assignment(
-        id: '3',
-        title: 'Monthly Financial Report',
-        description: 'Compile and submit comprehensive financial report for October 2025',
-        dueDate: now.add(Duration(days: 1)),
-        priority: 'high',
-        status: 'pending',
-        assignedTo: 'admin',
-        assignedBy: 'admin',
-        createdAt: now.subtract(Duration(days: 2)),
-        updatedAt: now,
-      ),
-      Assignment(
-        id: '4',
-        title: 'Database Optimization',
-        description: 'Optimize database queries and implement indexing for better performance',
-        dueDate: now.add(Duration(days: 3)),
-        priority: 'medium',
-        status: 'pending',
-        assignedTo: 'admin',
-        assignedBy: 'admin',
-        createdAt: now.subtract(Duration(days: 1)),
-        updatedAt: now,
-      ),
-      Assignment(
-        id: '5',
-        title: 'System Performance Analysis',
-        description: 'Analyze system performance and create optimization recommendations',
-        dueDate: now.subtract(Duration(days: 2)),
-        priority: 'medium',
-        status: 'overdue',
-        assignedTo: 'admin',
-        assignedBy: 'admin',
-        createdAt: now.subtract(Duration(days: 5)),
-        updatedAt: now,
-      ),
-      Assignment(
-        id: '6',
-        title: 'Weekly Team Retrospective',
-        description: 'Facilitate weekly retrospective meeting to discuss improvements',
-        dueDate: now.subtract(Duration(days: 1)),
-        priority: 'low',
-        status: 'completed',
-        assignedTo: 'admin',
-        assignedBy: 'admin', 
-        createdAt: now.subtract(Duration(days: 3)),
-        updatedAt: now,
-      ),
-    ];
-  }
+
 
   @override
   Widget build(BuildContext context) {

@@ -192,7 +192,7 @@ class DummyData {
       'employee_id': 'ADM999',
       'full_name': 'Admin Test',
       'email': 'admin@gmail.com',
-      'password': 'admin123',
+      'password': '123456',
       'phone': '+62899999999',
       'department': 'Test',
       'position': 'Test Admin',

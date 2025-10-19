@@ -3,8 +3,14 @@ import 'package:frontend/core/constants/colors.dart';
 import 'package:frontend/core/widgets/custom_bottom_nav_router.dart';
 import 'package:frontend/modules/admin/shared/admin_nav_items.dart';
 import 'package:frontend/data/services/letter_service.dart';
+import 'package:frontend/data/services/assignment_service.dart';
+import 'package:frontend/data/services/attendance_service.dart';
 import 'package:frontend/data/models/letter.dart';
+import 'package:frontend/data/models/assignment.dart';
+import 'package:frontend/data/models/attendance.dart';
 import 'package:frontend/modules/admin/letter/pages/letter_acceptance_page.dart';
+import 'package:frontend/utils/diagnostic_service.dart';
+
 
 import 'widgets/header.dart';
 import 'widgets/menu_button.dart';
@@ -23,14 +29,31 @@ class AdminDashboardPage extends StatefulWidget {
 
 class _AdminDashboardPageState extends State<AdminDashboardPage> {
   final LetterService _letterService = LetterService();
+  final AssignmentService _assignmentService = AssignmentService();
+  final AttendanceService _attendanceService = AttendanceService();
+  
   List<Letter> _pendingLetters = [];
   bool _isLoadingLetters = true;
   String? _letterError;
+
+  List<Assignment> _assignments = [];
+  bool _isLoadingAssignments = true;
+  String? _assignmentError;
+
+  List<Attendance> _attendanceRecords = [];
+  bool _isLoadingAttendance = true;
+  String? _attendanceError;
+
+  bool _showAllLetters = false;
+  bool _showAllAssignments = false;
+  bool _showAllAttendance = false;
 
   @override
   void initState() {
     super.initState();
     _loadPendingLetters();
+    _loadAssignments();
+    _loadAttendanceRecords();
   }
 
   Future<void> _loadPendingLetters() async {
@@ -41,105 +64,129 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     });
 
     try {
-      // Try to get pending letters first
-      print('📬 Dashboard: Attempting getPendingLetters()...');
-      var response = await _letterService.getPendingLetters();
+      print('🔍 Dashboard: Fetching pending letters...');
+      final pendingResponse = await _letterService.getPendingLetters(limit: 50);
       
-      if (response.success && response.data != null && response.data!.isNotEmpty) {
-        print('✅ Dashboard: getPendingLetters() success - ${response.data!.length} letters');
-        setState(() {
-          _pendingLetters = response.data!;
-          _isLoadingLetters = false;
-        });
-        return;
+      print('� Dashboard: Fetching received letters...');
+      final receivedResponse = await _letterService.getReceivedLetters(limit: 50);
+      
+      print('🔍 Dashboard: Pending response success: ${pendingResponse.success}');
+      print('🔍 Dashboard: Received response success: ${receivedResponse.success}');
+      
+      List<Letter> allLetters = [];
+      
+      // Add pending letters
+      if (pendingResponse.success && pendingResponse.data != null) {
+        print('🔍 Dashboard: Adding ${pendingResponse.data!.items.length} pending letters');
+        allLetters.addAll(pendingResponse.data!.items);
+      } else {
+        print('🔍 Dashboard: No pending letters or error: ${pendingResponse.message}');
       }
       
-      // Fallback 1: Try getReceivedLetters and filter for pending
-      print('📬 Dashboard: Trying getReceivedLetters() as fallback...');
-      final receivedResponse = await _letterService.getReceivedLetters();
-      
+      // Add received letters (approved/rejected)
       if (receivedResponse.success && receivedResponse.data != null) {
-        final allLetters = receivedResponse.data!.items;
-        final pendingLetters = allLetters.where((letter) => 
-          letter.status == 'waiting_approval' || letter.status == 'pending'
-        ).toList();
-        
-        print('✅ Dashboard: getReceivedLetters() success - ${allLetters.length} total, ${pendingLetters.length} pending');
-        
-        if (pendingLetters.isNotEmpty) {
-          setState(() {
-            _pendingLetters = pendingLetters;
-            _isLoadingLetters = false;
-          });
-          return;
-        }
+        print('🔍 Dashboard: Adding ${receivedResponse.data!.items.length} received letters');
+        allLetters.addAll(receivedResponse.data!.items);
+      } else {
+        print('🔍 Dashboard: No received letters or error: ${receivedResponse.message}');
       }
       
-      // Fallback 2: Create dummy pending letters
-      print('🔄 Dashboard: Creating dummy pending letters...');
-      _pendingLetters = _createDummyPendingLetters();
+      // Remove duplicates by ID
+      final Map<String, Letter> uniqueLetters = {};
+      for (Letter letter in allLetters) {
+        uniqueLetters[letter.id] = letter;
+      }
+      
+      print('🔍 Dashboard: Total unique letters: ${uniqueLetters.length}');
+      
+      // Filter for pending status only (same logic as Letters Page)
+      final pendingLetters = uniqueLetters.values.where((letter) => 
+        letter.status == 'waiting_approval' || letter.status == 'pending'
+      ).toList();
+      
+      print('🔍 Dashboard: Filtered pending letters: ${pendingLetters.length}');
+      
       setState(() {
+        _pendingLetters = pendingLetters;
         _isLoadingLetters = false;
       });
       
     } catch (e) {
       print('❌ Dashboard: Error loading letters: $e');
-      // Fallback: Create dummy data
-      _pendingLetters = _createDummyPendingLetters();
       setState(() {
-        _letterError = 'Using dummy data due to: $e';
+        _letterError = 'Failed to load letters: $e';
         _isLoadingLetters = false;
+        _pendingLetters = []; // Empty list instead of dummy data
       });
     }
   }
 
-  List<Letter> _createDummyPendingLetters() {
-    final now = DateTime.now();
-    return [
-      Letter(
-        id: 'pending1',
-        subject: 'Emergency Leave Request - Sari Indah',
-        content: 'I need emergency leave due to family emergency.',
-        letterType: 'emergency_leave',
-        letterNumber: 'EL/2025/001',
-        letterDate: now.subtract(Duration(hours: 2)),
-        priority: 'high',
-        status: 'waiting_approval',
-        senderId: 'emp006',
-        senderName: 'Sari Indah',
-        senderPosition: 'Marketing Staff',
-        recipientId: 'admin',
-        createdAt: now.subtract(Duration(hours: 2)),
-        updatedAt: now.subtract(Duration(hours: 2)),
-        requiresResponse: true,
-        responseDeadline: now.add(Duration(hours: 22)),
-        responseReceived: false,
-        attachments: [],
-        ccRecipients: [],
-      ),
-      Letter(
-        id: 'pending2',
-        subject: 'Sick Leave - Budi Rahmat',
-        content: 'Medical certificate attached for sick leave request.',
-        letterType: 'sick_leave',
-        letterNumber: 'SL/2025/002',
-        letterDate: now.subtract(Duration(hours: 4)),
-        priority: 'medium',
-        status: 'waiting_approval',
-        senderId: 'emp007',
-        senderName: 'Budi Rahmat',
-        senderPosition: 'IT Support',
-        recipientId: 'admin',
-        createdAt: now.subtract(Duration(hours: 4)),
-        updatedAt: now.subtract(Duration(hours: 4)),
-        requiresResponse: true,
-        responseDeadline: now.add(Duration(days: 1)),
-        responseReceived: false,
-        attachments: [],
-        ccRecipients: [],
-      ),
-    ];
+
+
+  Future<void> _loadAssignments() async {
+    print('🔄 Dashboard: Starting to load assignments...');
+    setState(() {
+      _isLoadingAssignments = true;
+      _assignmentError = null;
+    });
+
+    try {
+      DiagnosticService.logApiResponse('Assignments', 'Starting request...');
+      final assignments = await _assignmentService.getAllAssignments();
+      
+      DiagnosticService.logApiResponse('Assignments', 'Response received, count: ${assignments.length}');
+      print('✅ Dashboard: Assignments loaded - ${assignments.length} assignments');
+      setState(() {
+        _assignments = assignments;
+        _isLoadingAssignments = false;
+      });
+    } catch (e, stackTrace) {
+      DiagnosticService.logError('Dashboard Assignment Loading', e, stackTrace);
+      print('❌ Dashboard: Error loading assignments: $e');
+      setState(() {
+        _assignmentError = 'Failed to load assignments: $e';
+        _isLoadingAssignments = false;
+        _assignments = []; // Empty list instead of dummy data
+      });
+    }
   }
+
+
+
+  Future<void> _loadAttendanceRecords() async {
+    print('🔄 Dashboard: Starting to load attendance records...');
+    setState(() {
+      _isLoadingAttendance = true;
+      _attendanceError = null;
+    });
+
+    try {
+      final response = await _attendanceService.getAttendanceRecords();
+      
+      if (response.success && response.data != null) {
+        print('✅ Dashboard: Attendance loaded - ${response.data!.items.length} records');
+        setState(() {
+          _attendanceRecords = response.data!.items;
+          _isLoadingAttendance = false;
+        });
+      } else {
+        setState(() {
+          _attendanceError = 'Failed to load attendance data: ${response.message}';
+          _isLoadingAttendance = false;
+          _attendanceRecords = []; // Empty list instead of dummy data
+        });
+      }
+    } catch (e) {
+      print('❌ Dashboard: Error loading attendance: $e');
+      setState(() {
+        _attendanceError = 'Failed to load attendance: $e';
+        _isLoadingAttendance = false;
+        _attendanceRecords = []; // Empty list instead of dummy data
+      });
+    }
+  }
+
+
 
   Future<void> _approveLetter(Letter letter) async {
     try {
@@ -213,6 +260,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     );
   }
 
+
+
   Widget _buildLettersSection() {
     if (_isLoadingLetters) {
       return const Padding(
@@ -283,24 +332,77 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       );
     }
 
-    // Display up to 2 pending letters in dashboard overview
-    final displayLetters = _pendingLetters.take(2).toList();
+    // Display letters based on _showAllLetters flag
+    final displayLetters = _showAllLetters 
+        ? _pendingLetters 
+        : _pendingLetters.take(2).toList();
 
     return Column(
-      children: displayLetters.map((letter) {
-        return LetterCard(
-          name: letter.senderName ?? 'Unknown',
-          status: _getStatusText(letter.letterType),
-          statusColor: _getStatusColor(letter.letterType),
-          dateText: _formatDate(letter.createdAt ?? DateTime.now()),
-          category: _formatLetterType(letter.letterType),
-          summary: letter.content.length > 80 
-              ? '${letter.content.substring(0, 80)}...'
-              : letter.content,
-          stageText: 'Waiting Approval',
-          onViewTap: () => _showLetterQuickActions(letter),
-        );
-      }).toList(),
+      children: [
+        // Letters list - make it scrollable when showing all
+        if (_showAllLetters)
+          Container(
+            height: 300, // Fixed height for scrollable area
+            child: ListView.builder(
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 0),
+              itemCount: displayLetters.length,
+              itemBuilder: (context, index) {
+                final letter = displayLetters[index];
+                return LetterCard(
+                  name: letter.senderName ?? 'Unknown',
+                  status: _getStatusText(letter.letterType),
+                  statusColor: _getStatusColor(letter.letterType),
+                  dateText: _formatDate(letter.createdAt ?? DateTime.now()),
+                  category: _formatLetterType(letter.letterType),
+                  summary: letter.content.length > 80 
+                      ? '${letter.content.substring(0, 80)}...'
+                      : letter.content,
+                  stageText: 'Waiting Approval',
+                  onViewTap: () => _showLetterQuickActions(letter),
+                );
+              },
+            ),
+          )
+        else
+          // Show limited letters without scroll for preview
+          ...displayLetters.map((letter) {
+            return LetterCard(
+              name: letter.senderName ?? 'Unknown',
+              status: _getStatusText(letter.letterType),
+              statusColor: _getStatusColor(letter.letterType),
+              dateText: _formatDate(letter.createdAt ?? DateTime.now()),
+              category: _formatLetterType(letter.letterType),
+              summary: letter.content.length > 80 
+                  ? '${letter.content.substring(0, 80)}...'
+                  : letter.content,
+              stageText: 'Waiting Approval',
+              onViewTap: () => _showLetterQuickActions(letter),
+            );
+          }).toList(),
+        
+        // Show more/less button if there are more than 2 letters
+        if (_pendingLetters.length > 2)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: TextButton(
+              onPressed: () {
+                setState(() {
+                  _showAllLetters = !_showAllLetters;
+                });
+              },
+              child: Text(
+                _showAllLetters 
+                    ? 'Show Less' 
+                    : 'Show All (${_pendingLetters.length} total)',
+                style: const TextStyle(
+                  color: AppColors.primaryBlue,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 
@@ -483,6 +585,319 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     );
   }
 
+  Widget _buildAssignmentsSection() {
+    if (_isLoadingAssignments) {
+      return const Padding(
+        padding: EdgeInsets.all(32.0),
+        child: Center(
+          child: CircularProgressIndicator(
+            color: AppColors.primaryBlue,
+          ),
+        ),
+      );
+    }
+
+    if (_assignmentError != null) {
+      return Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Card(
+          color: AppColors.primaryRed.withOpacity(0.1),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              children: [
+                const Icon(Icons.error, color: AppColors.primaryRed),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _assignmentError!,
+                    style: const TextStyle(
+                      color: AppColors.primaryRed,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                TextButton(
+                  onPressed: _loadAssignments,
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (_assignments.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.all(16.0),
+        child: Card(
+          color: AppColors.neutral100,
+          child: Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Row(
+              children: [
+                Icon(Icons.check_circle, color: AppColors.primaryGreen),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'No assignments available',
+                    style: TextStyle(
+                      color: AppColors.neutral500,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Display assignments based on _showAllAssignments flag
+    final displayAssignments = _showAllAssignments 
+        ? _assignments 
+        : _assignments.take(2).toList();
+
+    return Column(
+      children: [
+        // Assignments list - make it scrollable when showing all
+        if (_showAllAssignments)
+          Container(
+            height: 300, // Fixed height for scrollable area
+            child: ListView.builder(
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 0),
+              itemCount: displayAssignments.length,
+              itemBuilder: (context, index) {
+                final assignment = displayAssignments[index];
+                return AssignmentCard(
+                  name: assignment.title,
+                  status: assignment.status,
+                  date: _formatDate(assignment.dueDate),
+                  note: assignment.priority.toUpperCase(),
+                  description: assignment.description,
+                );
+              },
+            ),
+          )
+        else
+          // Show limited assignments without scroll for preview
+          ...displayAssignments.map((assignment) {
+            return AssignmentCard(
+              name: assignment.title,
+              status: assignment.status,
+              date: _formatDate(assignment.dueDate),
+              note: assignment.priority.toUpperCase(),
+              description: assignment.description,
+            );
+          }).toList(),
+        
+        // Show more/less button if there are more than 2 assignments
+        if (_assignments.length > 2)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: TextButton(
+              onPressed: () {
+                setState(() {
+                  _showAllAssignments = !_showAllAssignments;
+                });
+              },
+              child: Text(
+                _showAllAssignments 
+                    ? 'Show Less' 
+                    : 'Show All (${_assignments.length} total)',
+                style: const TextStyle(
+                  color: AppColors.primaryBlue,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildAttendanceSection() {
+    if (_isLoadingAttendance) {
+      return const Padding(
+        padding: EdgeInsets.all(32.0),
+        child: Center(
+          child: CircularProgressIndicator(
+            color: AppColors.primaryBlue,
+          ),
+        ),
+      );
+    }
+
+    if (_attendanceError != null) {
+      return Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Card(
+          color: AppColors.primaryRed.withOpacity(0.1),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              children: [
+                const Icon(Icons.error, color: AppColors.primaryRed),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _attendanceError!,
+                    style: const TextStyle(
+                      color: AppColors.primaryRed,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                TextButton(
+                  onPressed: _loadAttendanceRecords,
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Generate chart data from attendance records
+    final chartData = _generateAttendanceChartData();
+    final stats = _calculateAttendanceStats();
+
+    return Column(
+      children: [
+        // Attendance chart and stats
+        AttendanceCard(
+          title: "Attendance Overview",
+          chart: AttendanceChart(
+            data: chartData,
+            labels: ['S', 'S', 'R', 'K', 'J', 'S', 'M'],
+            barWidth: 16,
+            aspectRatio: 1.9,
+          ),
+          present: stats['present'] ?? 0,
+          absent: stats['absent'] ?? 0,
+          lateCount: stats['late'] ?? 0,
+          statusBreakdown: stats,
+          showStatusBreakdown: true,
+          chartHeight: 160,
+        ),
+        
+        // Individual attendance records (if showing all)
+        if (_showAllAttendance && _attendanceRecords.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Container(
+            height: 300, // Increased height for consistency with other sections
+            child: ListView.builder(
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: _attendanceRecords.length,
+              itemBuilder: (context, index) {
+                final record = _attendanceRecords[index];
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  child: ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: _getAttendanceStatusColor(record.status),
+                      child: Text(
+                        record.userName?.substring(0, 1).toUpperCase() ?? 'U',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    title: Text(record.userName ?? 'Unknown User'),
+                    subtitle: Text('${record.date} • ${record.status}'),
+                    trailing: Text(
+                      record.checkInTime ?? '-',
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+        
+        // Show more/less button for attendance records
+        if (_attendanceRecords.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: TextButton(
+              onPressed: () {
+                setState(() {
+                  _showAllAttendance = !_showAllAttendance;
+                });
+              },
+              child: Text(
+                _showAllAttendance 
+                    ? 'Show Chart Only' 
+                    : 'Show All Records (${_attendanceRecords.length} total)',
+                style: const TextStyle(
+                  color: AppColors.primaryBlue,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  List<int> _generateAttendanceChartData() {
+    // Generate chart data for the last 7 days
+    final now = DateTime.now();
+    final chartData = <int>[];
+    
+    for (int i = 6; i >= 0; i--) {
+      final date = now.subtract(Duration(days: i));
+      final dateStr = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+      
+      final dayRecords = _attendanceRecords.where((record) => record.date == dateStr).length;
+      chartData.add(dayRecords);
+    }
+    
+    // Return actual data only, no dummy fallback
+    return chartData;
+  }
+
+  Map<String, int> _calculateAttendanceStats() {
+    final stats = <String, int>{};
+    for (final record in _attendanceRecords) {
+      // Normalize status names for consistency
+      String normalizedStatus = record.status.toLowerCase();
+      if (normalizedStatus == 'sick_leave') {
+        normalizedStatus = 'sick';
+      }
+      stats[normalizedStatus] = (stats[normalizedStatus] ?? 0) + 1;
+    }
+    
+    return {
+      'present': stats['present'] ?? 0,
+      'late': stats['late'] ?? 0,
+      'sick': stats['sick'] ?? 0,
+      'leave': stats['leave'] ?? 0,
+      'absent': stats['absent'] ?? 0,
+    };
+  }
+
+  Color _getAttendanceStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'present':
+        return AppColors.primaryGreen;
+      case 'late':
+        return AppColors.primaryRed;
+      case 'sick':
+      case 'absent':
+        return AppColors.primaryYellow;
+      default:
+        return AppColors.neutral500;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -492,6 +907,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         top: true,
         bottom: false, 
         child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -521,11 +937,17 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               ),
               const SizedBox(height: 20),
 
+
+
               // LETTERS (ringkas)
               SectionTitle(
                 title: "Letter${_pendingLetters.isNotEmpty ? ' (${_pendingLetters.length} pending)' : ''}",
-                action: "View",
-                onTap: _navigateToLetterAcceptance,
+                action: _showAllLetters ? "Show Less" : "View All",
+                onTap: () {
+                  setState(() {
+                    _showAllLetters = !_showAllLetters;
+                  });
+                },
               ),
               _buildLettersSection(),
               const SizedBox(height: 12),
@@ -533,85 +955,34 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               // ASSIGNMENT (ringkas)
               SectionTitle(
                 title: "Assignment",
-                action: "View",
-                onTap: () => showSectionListModal(
-                  context,
-                  title: "All Assignments",
-                  children: const [
-                    AssignmentCard(
-                      name: "Client Presentation Preparation",
-                      status: "pending",
-                      date: "15 Oktober 2025",
-                      note: "HIGH",
-                      description:
-                          "Prepare slides and demo for tomorrow's client presentation on Q4 features",
-                    ),
-                    AssignmentCard(
-                      name: "Client Portfolio Review",
-                      status: "completed",
-                      date: "15 Oktober 2025",
-                      note: "MEDIUM",
-                      description:
-                          "Review portfolio klien untuk kuartal Q4 2025",
-                    ),
-                  ],
-                ),
+                action: _showAllAssignments ? "Show Less" : "View All",
+                onTap: () {
+                  setState(() {
+                    _showAllAssignments = !_showAllAssignments;
+                  });
+                },
               ),
               const SizedBox(height: 8),
-              const AssignmentCard(
-                name: "Client Presentation Preparation",
-                status: "pending",
-                date: "15 Oktober 2025",
-                note: "HIGH",
-                description:
-                    "Prepare slides and demo for tomorrow's client presentation on Q4 features",
-              ),
-              const AssignmentCard(
-                name: "Employee Performance Evaluation",
-                status: "in_progress",
-                date: "15 Oktober 2025",
-                note: "MEDIUM",
-                description:
-                    "Melakukan evaluasi performa karyawan untuk periode semester 2",
-              ),
+              _buildAssignmentsSection(),
               const SizedBox(height: 12),
 
               // ATTENDANCE (ringkas)
               SectionTitle(
                 title: "Attendance",
-                action: "View",
-                onTap: () => showSectionListModal(
-                  context,
-                  title: "Attendance",
-                  children: [
-                    AttendanceCard(
-                      title: "Attendance (Weekly)",
-                      chart: AttendanceChart(
-                        data: [9, 11, 5, 10, 8, 6, 3],
-                        labels: ['S', 'S', 'R', 'K', 'J', 'S', 'M'],
-                        barWidth: 16,
-                        aspectRatio: 1.9,
-                      ),
-                      present: 132,
-                      absent: 14,
-                      lateCount: 9,
-                    ),
-                  ],
-                ),
+                action: _showAllAttendance ? "Show Less" : "View All",
+                onTap: () {
+                  setState(() {
+                    _showAllAttendance = !_showAllAttendance;
+                  });
+                },
               ),
-              AttendanceCard(
-                title: "Attendance",
-                chart: AttendanceChart(
-                  data: [9, 11, 5, 10, 8, 6, 3],
-                  labels: ['S', 'S', 'R', 'K', 'J', 'S', 'M'],
-                  barWidth: 16,
-                  aspectRatio: 1.9,
-                ),
-                present: 132,
-                absent: 14,
-                lateCount: 9,
-              ),
+              const SizedBox(height: 8),
+              _buildAttendanceSection(),
               const SizedBox(height: 12),
+
+
+
+              const SizedBox(height: 20),
             ],
           ),
         ),

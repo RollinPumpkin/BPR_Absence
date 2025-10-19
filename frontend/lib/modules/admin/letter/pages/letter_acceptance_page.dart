@@ -42,7 +42,7 @@ class _LetterAcceptancePageState extends State<LetterAcceptancePage> {
       
       if (response.success && response.data != null) {
         setState(() {
-          _pendingLetters = response.data!;
+          _pendingLetters = response.data!.items;
           _isLoading = false;
         });
       } else {

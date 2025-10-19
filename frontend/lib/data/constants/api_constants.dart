@@ -93,6 +93,7 @@ class LetterEndpoints {
   String get send => '/letters/send';
   String get received => '/letters/received';
   String get sent => '/letters/sent';
+  String get pending => '/letters/pending';
   String get list => '/letters';
   String get markRead => '/letters/mark-read';
   String get reply => '/letters/reply';
@@ -105,6 +106,7 @@ class LetterEndpoints {
   String get overdueResponses => '/letters/overdue-responses';
   String get export => '/letters/export';
   String get uploadAttachment => '/letters/upload-attachment';
+  String statusById(String id) => '/letters/$id/status';
 }
 
 class UserEndpoints {

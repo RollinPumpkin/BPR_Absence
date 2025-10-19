@@ -413,21 +413,59 @@ class ApiService {
     Response response,
     T Function(dynamic)? fromJson,
   ) {
+    print('🔍 _handleResponse - Response data type: ${response.data.runtimeType}');
+    print('🔍 _handleResponse - Raw response data: ${response.data}');
+    
     final data = response.data;
     
     if (data is Map<String, dynamic>) {
       final success = data['success'] ?? true;
       final message = data['message'] ?? 'Success';
       
+      print('🔍 _handleResponse - Success: $success, Message: $message');
+      print('🔍 _handleResponse - Data field: ${data['data']}');
+      print('🔍 _handleResponse - Data field type: ${data['data'].runtimeType}');
+      
       if (success) {
         T? resultData;
         
-        if (fromJson != null && data['data'] != null) {
-          resultData = fromJson(data['data']);
-        } else if (T == String && data['data'] is String) {
-          resultData = data['data'] as T;
-        } else if (T == dynamic) {
-          resultData = data['data'] as T?;
+        try {
+          // Enhanced null safety for data processing
+          final rawData = data['data'];
+          
+          if (fromJson != null) {
+            if (rawData != null) {
+              print('🔍 _handleResponse - Attempting to parse with fromJson...');
+              
+              // Extra null safety: ensure rawData can be converted
+              if (rawData is Map<String, dynamic>) {
+                resultData = fromJson(rawData);
+                print('✅ _handleResponse - Successfully parsed with fromJson');
+              } else if (rawData is List || rawData is String || rawData is num || rawData is bool) {
+                resultData = fromJson(rawData);
+                print('✅ _handleResponse - Successfully parsed primitive type with fromJson');
+              } else {
+                print('⚠️ _handleResponse - Cannot parse data type: ${rawData.runtimeType}');
+                resultData = null;
+              }
+            } else {
+              print('⚠️ _handleResponse - Data is null, cannot use fromJson');
+              resultData = null;
+            }
+          } else if (T == String && rawData is String) {
+            resultData = rawData as T;
+            print('✅ _handleResponse - Direct string assignment');
+          } else if (T == dynamic) {
+            resultData = rawData as T?;
+            print('✅ _handleResponse - Dynamic type assignment');
+          } else {
+            print('⚠️ _handleResponse - No fromJson provided and no direct type match');
+            resultData = null;
+          }
+        } catch (e, stackTrace) {
+          print('❌ _handleResponse - Error parsing data: $e');
+          print('❌ _handleResponse - Stack trace: $stackTrace');
+          resultData = null;
         }
 
         return ApiResponse<T>(
@@ -439,6 +477,7 @@ class ApiService {
               : null,
         );
       } else {
+        print('❌ _handleResponse - API returned success=false');
         return ApiResponse<T>(
           success: false,
           message: message,
@@ -447,12 +486,29 @@ class ApiService {
       }
     }
 
-    // For non-standard responses
-    return ApiResponse<T>(
-      success: true,
-      message: 'Success',
-      data: fromJson != null ? fromJson(data) : data as T?,
-    );
+    // For non-standard responses (direct data without wrapper)
+    print('🔍 _handleResponse - Non-standard response format');
+    try {
+      T? resultData;
+      if (fromJson != null && data != null) {
+        resultData = fromJson(data);
+      } else {
+        resultData = data as T?;
+      }
+      
+      return ApiResponse<T>(
+        success: true,
+        message: 'Success',
+        data: resultData,
+      );
+    } catch (e) {
+      print('❌ _handleResponse - Error parsing non-standard response: $e');
+      return ApiResponse<T>(
+        success: false,
+        message: 'Failed to parse response',
+        error: e.toString(),
+      );
+    }
   }
 
   // Handle errors with enhanced error information

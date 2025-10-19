@@ -1,6 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const admin = require('firebase-admin');
 const { getFirestore, getServerTimestamp } = require('../config/database');
 const { validateLogin, validateRegister } = require('../middleware/validation');
 
@@ -361,16 +362,61 @@ router.post('/forgot-password', async (req, res) => {
       });
     }
 
-    // In a real application, you would:
-    // 1. Generate a reset token
-    // 2. Save it to database with expiration
-    // 3. Send email with reset link
-    
-    // For demo purposes, just return success
-    res.status(200).json({
-      success: true,
-      message: 'Password reset instructions sent to your email'
+    // Get user data
+    const userData = usersSnapshot.docs[0].data();
+    const userId = usersSnapshot.docs[0].id;
+
+    // Generate reset token (in production, use crypto.randomBytes)
+    const resetToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    const expirationTime = Date.now() + (24 * 60 * 60 * 1000); // 24 hours
+
+    // Save reset token to database
+    await db.collection('password_resets').doc(userId).set({
+      email: email,
+      token: resetToken,
+      expires_at: admin.firestore.Timestamp.fromMillis(expirationTime),
+      created_at: admin.firestore.FieldValue.serverTimestamp(),
+      used: false
     });
+
+    // Try to send real email (if email service is configured)
+    try {
+      const { sendForgotPasswordEmail } = require('../services/emailService');
+      const emailResult = await sendForgotPasswordEmail(email, resetToken);
+      
+      if (emailResult.success) {
+        console.log(`✅ Real email sent to ${email}`);
+        res.status(200).json({
+          success: true,
+          message: 'Password reset instructions sent to your email',
+          emailSent: true
+        });
+      } else {
+        // Fallback to mock response if email fails
+        console.log(`⚠️ Email service failed, using demo mode for ${email}`);
+        console.log(`🔗 Demo reset link: http://localhost:8080/#/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`);
+        res.status(200).json({
+          success: true,
+          message: 'Password reset instructions sent to your email (Demo Mode)',
+          emailSent: false,
+          demo: true,
+          resetToken: resetToken, // Include token in demo mode
+          resetLink: `http://localhost:8080/#/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`
+        });
+      }
+    } catch (emailError) {
+      // Fallback to mock if email service is not available
+      console.log(`ℹ️ Email service not available, using demo mode for ${email}`);
+      console.log(`🔗 Demo reset link: http://localhost:8080/#/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`);
+      res.status(200).json({
+        success: true,
+        message: 'Password reset instructions sent to your email (Demo Mode)',
+        emailSent: false,
+        demo: true,
+        resetToken: resetToken, // Include token in demo mode
+        resetLink: `http://localhost:8080/#/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`
+      });
+    }
 
   } catch (error) {
     console.error('Forgot password error:', error);
@@ -408,12 +454,34 @@ router.post('/reset-password', async (req, res) => {
       });
     }
 
-    // For this demo, we'll use a simple token validation
-    // In production, you would validate JWT tokens or database-stored tokens
-    if (token !== 'demo-reset-token') {
+    // Validate token from password_resets collection
+    const resetDoc = await db.collection('password_resets').where('email', '==', email).where('token', '==', token).get();
+    
+    if (resetDoc.empty) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid or expired reset token'
+        message: 'Invalid reset token'
+      });
+    }
+    
+    const resetData = resetDoc.docs[0].data();
+    
+    // Check if token is already used
+    if (resetData.used) {
+      return res.status(400).json({
+        success: false,
+        message: 'Reset token has already been used'
+      });
+    }
+    
+    // Check if token is expired
+    const now = Date.now();
+    const expirationTime = resetData.expires_at.toMillis();
+    
+    if (now > expirationTime) {
+      return res.status(400).json({
+        success: false,
+        message: 'Reset token has expired'
       });
     }
 
@@ -439,6 +507,12 @@ router.post('/reset-password', async (req, res) => {
     await userRef.update({
       password: hashedNewPassword,
       updated_at: getServerTimestamp()
+    });
+
+    // Mark token as used
+    await resetDoc.docs[0].ref.update({
+      used: true,
+      used_at: admin.firestore.FieldValue.serverTimestamp()
     });
 
     res.json({

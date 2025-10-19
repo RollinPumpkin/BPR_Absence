@@ -83,11 +83,47 @@ class LetterService {
     return await _apiService.get<ListResponse<Letter>>(
       ApiConstants.letters.received,
       queryParameters: queryParams,
-      fromJson: (json) => ListResponse<Letter>.fromJson(
-        json['data'], // Extract the 'data' object first
-        (item) => Letter.fromJson(item),
-        'letters', // Then look for 'letters' within 'data'
-      ),
+      fromJson: (json) {
+        print('🔍 getReceivedLetters fromJson - Input: $json');
+        print('🔍 getReceivedLetters fromJson - Input type: ${json.runtimeType}');
+        
+        try {
+          // Handle null response
+          if (json == null) {
+            print('⚠️ getReceivedLetters - json is null');
+            return ListResponse<Letter>(items: []);
+          }
+          
+          if (json is Map<String, dynamic>) {
+            // Try multiple possible structures
+            Map<String, dynamic>? dataObject;
+            
+            if (json.containsKey('data') && json['data'] is Map<String, dynamic>) {
+              dataObject = json['data'] as Map<String, dynamic>;
+              print('📋 getReceivedLetters - Using json.data structure');
+            } else {
+              dataObject = json;
+              print('📋 getReceivedLetters - Using direct json structure');
+            }
+            
+            return ListResponse<Letter>.fromJson(
+              dataObject,
+              (item) {
+                print('🔍 Parsing received letter item: ${item['subject'] ?? 'Unknown'}');
+                return Letter.fromJson(item);
+              },
+              'letters',
+            );
+          } else {
+            print('❌ getReceivedLetters - json is not a Map: ${json.runtimeType}');
+            return ListResponse<Letter>(items: []);
+          }
+        } catch (e, stackTrace) {
+          print('❌ getReceivedLetters fromJson error: $e');
+          print('❌ getReceivedLetters stackTrace: $stackTrace');
+          return ListResponse<Letter>(items: []);
+        }
+      },
     );
   }
 
@@ -301,7 +337,7 @@ class LetterService {
   // ==================== ADMIN APPROVAL METHODS ====================
 
   // Get pending letters for admin approval
-  Future<ApiResponse<List<Letter>>> getPendingLetters({
+  Future<ApiResponse<ListResponse<Letter>>> getPendingLetters({
     int page = 1,
     int limit = 20,
     String? letterType,
@@ -313,16 +349,49 @@ class LetterService {
 
     if (letterType != null) queryParams['letter_type'] = letterType;
 
-    return await _apiService.get<List<Letter>>(
-      '/letters/pending',
+    return await _apiService.get<ListResponse<Letter>>(
+      ApiConstants.letters.pending,
       queryParameters: queryParams,
       fromJson: (json) {
-        if (json['data'] != null && json['data']['letters'] is List) {
-          return (json['data']['letters'] as List)
-              .map((item) => Letter.fromJson(item))
-              .toList();
+        print('🔍 getPendingLetters fromJson - Input: $json');
+        print('🔍 getPendingLetters fromJson - Input type: ${json.runtimeType}');
+        
+        try {
+          // Handle different possible response structures
+          if (json == null) {
+            print('⚠️ getPendingLetters - json is null');
+            return ListResponse<Letter>(items: []);
+          }
+          
+          if (json is Map<String, dynamic>) {
+            // Try multiple possible structures
+            Map<String, dynamic>? dataObject;
+            
+            if (json.containsKey('data') && json['data'] is Map<String, dynamic>) {
+              dataObject = json['data'] as Map<String, dynamic>;
+              print('📋 getPendingLetters - Using json.data structure');
+            } else {
+              dataObject = json;
+              print('📋 getPendingLetters - Using direct json structure');
+            }
+            
+            return ListResponse<Letter>.fromJson(
+              dataObject,
+              (item) {
+                print('🔍 Parsing letter item: ${item['subject'] ?? 'Unknown'}');
+                return Letter.fromJson(item);
+              },
+              'letters', // Look for 'letters' key in the data object
+            );
+          } else {
+            print('❌ getPendingLetters - json is not a Map: ${json.runtimeType}');
+            return ListResponse<Letter>(items: []);
+          }
+        } catch (e, stackTrace) {
+          print('❌ getPendingLetters fromJson error: $e');
+          print('❌ getPendingLetters stackTrace: $stackTrace');
+          return ListResponse<Letter>(items: []);
         }
-        return <Letter>[];
       },
     );
   }
@@ -333,7 +402,7 @@ class LetterService {
     String? reason,
   }) async {
     return await _apiService.put<Map<String, dynamic>>(
-      '/letters/$letterId/status',
+      ApiConstants.letters.statusById(letterId),
       data: {
         'status': 'approved',
         'reason': reason ?? 'Letter request approved',
@@ -348,7 +417,7 @@ class LetterService {
     String? reason,
   }) async {
     return await _apiService.put<Map<String, dynamic>>(
-      '/letters/$letterId/status',
+      ApiConstants.letters.statusById(letterId),
       data: {
         'status': 'rejected',
         'reason': reason ?? 'Letter request rejected',
@@ -364,7 +433,7 @@ class LetterService {
     String? reason,
   }) async {
     return await _apiService.put<Map<String, dynamic>>(
-      '/letters/$letterId/status',
+      ApiConstants.letters.statusById(letterId),
       data: {
         'status': status,
         'reason': reason,

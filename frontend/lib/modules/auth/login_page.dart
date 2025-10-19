@@ -127,52 +127,12 @@ class _LoginPageState extends State<LoginPage>
 
           // ROLE BASED ROUTING - Clean and comprehensive
           final userRole = authProvider.currentUser!.role;
-          
-          print('🔥 CRITICAL DEBUG: Raw user data = ${authProvider.currentUser}');
-          print('🔥 CRITICAL DEBUG: User Role = "$userRole"');
-          print('🔥 CRITICAL DEBUG: Role type = ${userRole.runtimeType}');
-          print('🔥 CRITICAL DEBUG: Role isEmpty = ${userRole.isEmpty}');
-          print('🔥 CRITICAL DEBUG: Role == "admin" = ${userRole == "admin"}');
-          print('🔥 CRITICAL DEBUG: Role == "super_admin" = ${userRole == "super_admin"}');
-          print('🔥 CRITICAL DEBUG: Role bytes = ${userRole.codeUnits}');
-          print('🔥 CRITICAL DEBUG: Role trimmed = "${userRole.trim()}"');
-          print('🔥 CRITICAL DEBUG: Role toLowerCase = "${userRole.toLowerCase()}"');
-          
-          // Route based on User Role (clean logic)
           String routeDestination = _getRouteByRole(userRole);
           
-          print('🔥 CRITICAL DEBUG: Route destination = "$routeDestination"');
-          print('🔥 CRITICAL DEBUG: Expected for admin: "/admin/dashboard"');
-          print('🔥 CRITICAL DEBUG: Route matches admin? ${routeDestination == "/admin/dashboard"}');
-          print('🚀 NAVIGATION: About to navigate to $routeDestination');
+          print('🎯 LOGIN SUCCESS: User ${authProvider.currentUser!.email} (${userRole}) → ${routeDestination}');
           
-          // Add debug alert to verify what user sees
-          await showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Text('DEBUG: Login Success'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Name: ${authProvider.currentUser!.fullName}'),
-                  Text('Email: ${authProvider.currentUser!.email}'),
-                  Text('Role: "$userRole"'),
-                  Text('Employee ID: ${authProvider.currentUser!.employeeId}'),
-                  Text('Routing to: $routeDestination'),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    Navigator.pushReplacementNamed(context, routeDestination);
-                  },
-                  child: Text('Continue to $routeDestination'),
-                ),
-              ],
-            ),
-          );
+          // Navigate directly to the determined route
+          Navigator.pushReplacementNamed(context, routeDestination);
         }
       } else {
         print('🚀 LOGIN_ATTEMPT: Login failed or no user data');

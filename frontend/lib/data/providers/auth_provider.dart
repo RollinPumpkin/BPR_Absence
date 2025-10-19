@@ -429,6 +429,31 @@ class AuthProvider with ChangeNotifier {
   // Check if user is employee
   bool get isEmployee => hasRole('employee');
 
+  // Change password with new signature
+  Future<bool> changeUserPassword(String currentPassword, String newPassword) async {
+    _setLoading(true);
+    _clearError();
+
+    try {
+      final response = await _authService.changePassword(
+        currentPassword: currentPassword,
+        newPassword: newPassword,
+      );
+      
+      if (response.success) {
+        return true;
+      } else {
+        _setError(response.message ?? 'Failed to change password');
+        return false;
+      }
+    } catch (e) {
+      _setError('Error changing password: ${e.toString()}');
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   // Get user's full name
   String get userFullName => _currentUser?.fullName ?? 'User';
 
