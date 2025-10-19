@@ -67,6 +67,9 @@ class AssignmentService {
         ApiConstants.assignments.upcoming,
         fromJson: (data) {
           print('🔄 Processing response data: $data');
+          if (data == null) {
+            return <String, dynamic>{};
+          }
           return data as Map<String, dynamic>;
         },
       );
@@ -149,18 +152,101 @@ class AssignmentService {
       }
 
       final response = await _apiService.get<Map<String, dynamic>>(
-        '/api/assignments',
+        ApiConstants.assignments.list,
         queryParameters: queryParams,
-        fromJson: (data) => data as Map<String, dynamic>,
+        fromJson: (data) {
+          // Enhanced null safety for response data
+          if (data == null) {
+            print('❌ Received null data from assignments API');
+            return <String, dynamic>{};
+          }
+          
+          if (data is! Map<String, dynamic>) {
+            print('❌ Received invalid data type: ${data.runtimeType}');
+            return <String, dynamic>{};
+          }
+          
+          print('📱 Valid data received: ${data.keys.toList()}');
+          return data;
+        },
       );
       
-      if (response.success && response.data != null) {
-        final List<dynamic> assignmentsJson = response.data!['assignments'] ?? [];
-        return assignmentsJson
-            .map((json) => Assignment.fromJson(json as Map<String, dynamic>))
-            .toList();
+      print('📱 getAllAssignments Response success: ${response.success}');
+      print('📱 getAllAssignments Response message: ${response.message}');
+      print('📱 getAllAssignments Response data: ${response.data}');
+      print('📱 getAllAssignments Response error: ${response.error}');
+      
+      if (response.success) {
+        if (response.data == null) {
+          print('⚠️ getAllAssignments - Response data is null, returning empty list');
+          return [];
+        }
+        
+        print('📱 getAllAssignments Full response data: ${response.data}');
+        print('📱 getAllAssignments Response data type: ${response.data.runtimeType}');
+        
+        // Handle different response structures with enhanced null safety
+        dynamic assignmentsData;
+        
+        try {
+          if (response.data is Map<String, dynamic>) {
+            final responseMap = response.data as Map<String, dynamic>;
+            
+            if (responseMap.containsKey('data') && responseMap['data'] is Map) {
+              final dataMap = responseMap['data'] as Map<String, dynamic>;
+              assignmentsData = dataMap['assignments'];
+              print('📋 Found assignments in data.assignments structure');
+            } else if (responseMap.containsKey('assignments')) {
+              assignmentsData = responseMap['assignments'];
+              print('📋 Found assignments in direct assignments structure');
+            } else {
+              print('❌ Could not find assignments in response structure');
+              print('❌ Available keys: ${responseMap.keys.toList()}');
+              // Return empty list instead of throwing
+              return [];
+            }
+          } else {
+            print('❌ Response data is not a Map: ${response.data.runtimeType}');
+            return [];
+          }
+          
+          if (assignmentsData == null) {
+            print('⚠️ Assignments data is null, returning empty list');
+            return [];
+          }
+          
+          if (assignmentsData is List) {
+            final List<dynamic> assignmentsJson = assignmentsData;
+            print('📋 getAllAssignments Found ${assignmentsJson.length} assignments');
+            
+            // Process assignments with error handling
+            List<Assignment> assignments = [];
+            for (int i = 0; i < assignmentsJson.length; i++) {
+              try {
+                final json = assignmentsJson[i];
+                if (json != null && json is Map<String, dynamic>) {
+                  assignments.add(Assignment.fromJson(json));
+                }
+              } catch (e) {
+                print('❌ Error parsing assignment $i: $e');
+                // Continue processing other assignments
+              }
+            }
+            
+            print('✅ Successfully parsed ${assignments.length} assignments');
+            return assignments;
+          } else {
+            print('❌ Assignments data is not a list: ${assignmentsData.runtimeType}');
+            return [];
+          }
+        } catch (e) {
+          print('❌ Error processing assignments response: $e');
+          return [];
+        }
       } else {
-        throw Exception(response.message ?? 'Failed to load assignments');
+        final errorMessage = response.message ?? response.error ?? 'Failed to load assignments';
+        print('❌ API Error: $errorMessage');
+        throw Exception(errorMessage);
       }
     } catch (e) {
       print('Error fetching assignments: $e');
@@ -171,7 +257,7 @@ class AssignmentService {
   Future<void> createSampleAssignments() async {
     try {
       final response = await _apiService.post<Map<String, dynamic>>(
-        '/api/assignments/seed',
+        '/assignments/seed',
         fromJson: (data) => data as Map<String, dynamic>,
       );
       

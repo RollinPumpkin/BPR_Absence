@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:frontend/core/constants/colors.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:frontend/modules/user/profile/check_email_page.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class ForgotPassPage extends StatefulWidget {
   const ForgotPassPage({super.key});
@@ -25,7 +28,9 @@ class _ForgotPassPageState extends State<ForgotPassPage> {
   }
 
   Future<void> _resetPasswordWithEmail() async {
-    if (emailController.text.trim().isEmpty) {
+    final email = emailController.text.trim();
+    
+    if (email.isEmpty) {
       _showSnackBar('Please enter your email address', isError: true);
       return;
     }
@@ -33,18 +38,28 @@ class _ForgotPassPageState extends State<ForgotPassPage> {
     setState(() => _isLoading = true);
     
     try {
-      await _auth.sendPasswordResetEmail(email: emailController.text.trim());
-      _showSnackBar('Password reset email sent! Check your inbox.');
-      // Navigate to email confirmation page
-      Navigator.pushNamed(context, '/forgot-password/email');
-    } on FirebaseAuthException catch (e) {
-      String message = 'Failed to send reset email';
-      if (e.code == 'user-not-found') {
-        message = 'No user found with this email address';
-      } else if (e.code == 'invalid-email') {
-        message = 'Invalid email address';
+      // Call our backend API for password reset
+      final response = await http.post(
+        Uri.parse('http://localhost:3000/api/auth/forgot-password'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'email': email}),
+      );
+      
+      final data = json.decode(response.body);
+      
+      if (response.statusCode == 200 && data['success'] == true) {
+        // Always navigate to check email page - whether real email was sent or demo mode
+        _showSnackBar('Password reset email sent! Check your inbox.', isError: false);
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => CheckEmailPage(email: email),
+          ),
+        );
+      } else {
+        String message = data['message'] ?? 'Failed to send reset email';
+        _showSnackBar(message, isError: true);
       }
-      _showSnackBar(message, isError: true);
     } catch (e) {
       _showSnackBar('An error occurred. Please try again.', isError: true);
     } finally {
@@ -103,9 +118,66 @@ class _ForgotPassPageState extends State<ForgotPassPage> {
     );
   }
 
+  void _showDemoModeDialog(String email, String resetLink, String resetToken) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.info, color: Colors.orange),
+            SizedBox(width: 8),
+            Text('Demo Mode'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Email service not configured. Use this reset link:'),
+            SizedBox(height: 16),
+            Container(
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey[300]!),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Reset Token:', style: TextStyle(fontWeight: FontWeight.bold)),
+                  SelectableText(resetToken),
+                  SizedBox(height: 8),
+                  Text('Reset Link:', style: TextStyle(fontWeight: FontWeight.bold)),
+                  SelectableText(resetLink, style: TextStyle(fontSize: 12)),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              // Navigate to check email page
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => CheckEmailPage(email: email),
+                ),
+              );
+            },
+            child: Text('Continue'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.pureWhite,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24.0),

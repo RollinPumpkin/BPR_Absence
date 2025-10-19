@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/core/constants/colors.dart';
 import 'attendance_detail_sheet.dart';
+import 'status_breakdown_chart.dart';
 
 class AttendanceCard extends StatelessWidget {
   final String title;
@@ -8,7 +9,9 @@ class AttendanceCard extends StatelessWidget {
   final int? present;
   final int? absent;
   final int? lateCount;
+  final Map<String, int>? statusBreakdown;
   final double chartHeight;
+  final bool showStatusBreakdown;
 
   const AttendanceCard({
     super.key,
@@ -17,7 +20,9 @@ class AttendanceCard extends StatelessWidget {
     this.present,
     this.absent,
     this.lateCount,
+    this.statusBreakdown,
     this.chartHeight = 180,
+    this.showStatusBreakdown = false,
   });
 
   void _openDetail(BuildContext context) {
@@ -35,6 +40,7 @@ class AttendanceCard extends StatelessWidget {
         present: present,
         absent: absent,
         lateCount: lateCount,
+        statusBreakdown: statusBreakdown,
       ),
     );
   }
@@ -91,7 +97,34 @@ class AttendanceCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 12),
-              SizedBox(height: chartHeight, child: chart),
+              if (showStatusBreakdown && statusBreakdown != null) ...[
+                // Status breakdown section
+                Row(
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: SizedBox(height: chartHeight, child: chart),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      flex: 1,
+                      child: Column(
+                        children: [
+                          StatusBreakdownChart(
+                            statusData: statusBreakdown!,
+                            size: 100,
+                          ),
+                          const SizedBox(height: 12),
+                          StatusLegend(statusData: statusBreakdown!),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ] else ...[
+                // Traditional chart only
+                SizedBox(height: chartHeight, child: chart),
+              ],
             ],
           ),
         ),

@@ -154,6 +154,115 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
+// Get received letters (approved/rejected letters for current user)
+router.get('/received', auth, async (req, res) => {
+  try {
+    const { 
+      page = 1, 
+      limit = 20,
+      status,
+      letter_type,
+      priority,
+      start_date,
+      end_date,
+      sort_by = 'created_at',
+      sort_order = 'desc'
+    } = req.query;
+
+    console.log('📨 Received Letters API called');
+    console.log('👤 User info:', {
+      userId: req.user.userId,
+      role: req.user.role,
+      employeeId: req.user.employeeId
+    });
+
+    const isAdmin = req.user.role === 'admin' || req.user.role === 'super_admin';
+    let lettersRef = db.collection('letters');
+
+    // For admin users, get all received letters
+    // For regular users, filter by recipient_id
+    if (!isAdmin) {
+      console.log('👥 Filtering by recipient_id:', req.user.userId);
+      lettersRef = lettersRef.where('recipient_id', '==', req.user.userId);
+    } else {
+      console.log('👑 Admin access - getting all received letters');
+    }
+
+    // Filter by status to only show received letters (approved/rejected/processed)
+    // Use simple approach - get all and filter in memory for now
+    
+    // Apply additional filters first
+    if (status) {
+      lettersRef = lettersRef.where('status', '==', status);
+    }
+    
+    if (letter_type) {
+      lettersRef = lettersRef.where('type', '==', letter_type);
+    }
+    
+    if (priority) {
+      lettersRef = lettersRef.where('priority', '==', priority);
+    }
+
+    // Apply date filters
+    if (start_date) {
+      const startDate = new Date(start_date);
+      lettersRef = lettersRef.where('created_at', '>=', startDate);
+    }
+    
+    if (end_date) {
+      const endDate = new Date(end_date);
+      endDate.setHours(23, 59, 59, 999);
+      lettersRef = lettersRef.where('created_at', '<=', endDate);
+    }
+
+    // Apply sorting
+    lettersRef = lettersRef.orderBy(sort_by, sort_order);
+
+    console.log('🔍 Executing received letters query...');
+    const snapshot = await lettersRef.get();
+    
+    // Filter received letters in memory to avoid Firestore 'in' query limitations
+    const receivedStatuses = ['approved', 'rejected', 'processed'];
+    const allLetters = [];
+    snapshot.forEach(doc => {
+      const letterData = doc.data();
+      if (receivedStatuses.includes(letterData.status)) {
+        allLetters.push({
+          id: doc.id,
+          ...letterData
+        });
+      }
+    });
+
+    // Apply pagination to filtered results
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const letters = allLetters.slice(offset, offset + parseInt(limit));
+    const total = allLetters.length;
+
+    console.log(`📊 Found ${letters.length} received letters (total: ${total})`);
+
+    res.json({
+      success: true,
+      data: {
+        letters,
+        pagination: {
+          current_page: parseInt(page),
+          per_page: parseInt(limit),
+          total: total,
+          last_page: Math.ceil(total / parseInt(limit))
+        }
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error getting received letters:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get received letters'
+    });
+  }
+});
+
 // Get letter statistics
 router.get('/statistics', auth, async (req, res) => {
   try {

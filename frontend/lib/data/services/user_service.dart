@@ -329,4 +329,31 @@ class UserService {
       fromJson: (json) => json,
     );
   }
+
+  // Get current user profile
+  Future<ApiResponse<Map<String, dynamic>>> getCurrentUser() async {
+    final response = await _apiService.get<Map<String, dynamic>>(
+      '/profile',
+      fromJson: (json) => json,
+    );
+    
+    // Extract profile data from nested structure if present
+    if (response.success && response.data != null && response.data!['profile'] != null) {
+      return ApiResponse<Map<String, dynamic>>(
+        success: response.success,
+        message: response.message,
+        data: response.data!['profile'] as Map<String, dynamic>,
+      );
+    }
+    
+    return response;
+  }
+
+  // Get user statistics with user ID parameter
+  Future<ApiResponse<Map<String, dynamic>>> getUserStatisticsById(String userId) async {
+    return await _apiService.get<Map<String, dynamic>>(
+      '${ApiConstants.users.list}/$userId/statistics',
+      fromJson: (json) => json,
+    );
+  }
 }

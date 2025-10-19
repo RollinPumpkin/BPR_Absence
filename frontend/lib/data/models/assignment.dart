@@ -28,25 +28,97 @@ class Assignment {
   });
 
   factory Assignment.fromJson(Map<String, dynamic> json) {
-    return Assignment(
-      id: json['id']?.toString() ?? '',
-      title: json['title']?.toString() ?? '',
-      description: json['description']?.toString() ?? '',
-      dueDate: json['dueDate'] != null 
-          ? DateTime.tryParse(json['dueDate'].toString()) ?? DateTime.now()
-          : DateTime.now(),
-      priority: json['priority']?.toString() ?? 'medium',
-      status: json['status']?.toString() ?? 'pending',
-      assignedTo: json['assignedTo']?.toString(),
-      assignedBy: json['assignedBy']?.toString(),
-      createdBy: json['createdBy']?.toString(),
-      createdAt: json['createdAt'] != null 
-          ? DateTime.tryParse(json['createdAt'].toString()) ?? DateTime.now()
-          : DateTime.now(),
-      updatedAt: json['updatedAt'] != null 
-          ? DateTime.tryParse(json['updatedAt'].toString())
-          : null,
-    );
+    try {
+      print('🔍 Parsing Assignment from JSON: ${json['title'] ?? 'Unknown Title'}');
+      
+      // Parse dueDate with Firestore timestamp support
+      DateTime dueDate = DateTime.now();
+      final dueDateData = json['dueDate'];
+      if (dueDateData != null) {
+        if (dueDateData is Map<String, dynamic> && dueDateData.containsKey('_seconds')) {
+          // Firestore timestamp format
+          final seconds = dueDateData['_seconds'] as int;
+          final nanoseconds = dueDateData['_nanoseconds'] as int? ?? 0;
+          dueDate = DateTime.fromMillisecondsSinceEpoch(
+            seconds * 1000 + (nanoseconds ~/ 1000000)
+          );
+        } else if (dueDateData is String) {
+          dueDate = DateTime.tryParse(dueDateData) ?? DateTime.now();
+        }
+      }
+      
+      // Parse createdAt with Firestore timestamp support
+      DateTime createdAt = DateTime.now();
+      final createdAtData = json['createdAt'];
+      if (createdAtData != null) {
+        if (createdAtData is Map<String, dynamic> && createdAtData.containsKey('_seconds')) {
+          // Firestore timestamp format
+          final seconds = createdAtData['_seconds'] as int;
+          final nanoseconds = createdAtData['_nanoseconds'] as int? ?? 0;
+          createdAt = DateTime.fromMillisecondsSinceEpoch(
+            seconds * 1000 + (nanoseconds ~/ 1000000)
+          );
+        } else if (createdAtData is String) {
+          createdAt = DateTime.tryParse(createdAtData) ?? DateTime.now();
+        }
+      }
+      
+      // Parse updatedAt with Firestore timestamp support
+      DateTime? updatedAt;
+      final updatedAtData = json['updatedAt'];
+      if (updatedAtData != null) {
+        if (updatedAtData is Map<String, dynamic> && updatedAtData.containsKey('_seconds')) {
+          // Firestore timestamp format
+          final seconds = updatedAtData['_seconds'] as int;
+          final nanoseconds = updatedAtData['_nanoseconds'] as int? ?? 0;
+          updatedAt = DateTime.fromMillisecondsSinceEpoch(
+            seconds * 1000 + (nanoseconds ~/ 1000000)
+          );
+        } else if (updatedAtData is String) {
+          updatedAt = DateTime.tryParse(updatedAtData);
+        }
+      }
+      
+      // Handle assignedTo - could be a list or string
+      String? assignedTo;
+      final assignedToData = json['assignedTo'];
+      if (assignedToData != null) {
+        if (assignedToData is List && assignedToData.isNotEmpty) {
+          assignedTo = assignedToData.first?.toString();
+        } else if (assignedToData is String) {
+          assignedTo = assignedToData;
+        }
+      }
+      
+      return Assignment(
+        id: json['id']?.toString() ?? '',
+        title: json['title']?.toString() ?? '',
+        description: json['description']?.toString() ?? '',
+        dueDate: dueDate,
+        priority: json['priority']?.toString() ?? 'medium',
+        status: json['status']?.toString() ?? 'pending',
+        assignedTo: assignedTo,
+        assignedBy: json['assignedBy']?.toString(),
+        createdBy: json['createdBy']?.toString(),
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+      );
+    } catch (e, stackTrace) {
+      print('❌ Error parsing Assignment from JSON: $e');
+      print('❌ Stack trace: $stackTrace');
+      print('❌ Problematic JSON: $json');
+      
+      // Return a default assignment object instead of throwing
+      return Assignment(
+        id: json['id']?.toString() ?? 'error_${DateTime.now().millisecondsSinceEpoch}',
+        title: json['title']?.toString() ?? 'Error parsing assignment',
+        description: 'Failed to parse assignment data',
+        dueDate: DateTime.now(),
+        priority: 'medium',
+        status: 'pending',
+        createdAt: DateTime.now(),
+      );
+    }
   }
 
   Map<String, dynamic> toJson() {

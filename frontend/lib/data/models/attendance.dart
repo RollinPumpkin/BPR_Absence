@@ -39,30 +39,65 @@ class Attendance {
     this.department,
   });
 
+  // Getter for formatted date
+  String get formattedDate {
+    try {
+      final parsedDate = DateTime.parse(date);
+      final months = [
+        'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+      ];
+      return '${parsedDate.day} ${months[parsedDate.month - 1]} ${parsedDate.year}';
+    } catch (e) {
+      return date; // Return original if parsing fails
+    }
+  }
+
   factory Attendance.fromJson(Map<String, dynamic> json) {
     return Attendance(
       id: json['id'] ?? '',
-      userId: json['user_id'] ?? '',
+      userId: json['userId'] ?? json['user_id'] ?? '',
       date: json['date'] ?? '',
-      checkInTime: json['check_in_time'],
-      checkOutTime: json['check_out_time'],
-      checkInLocation: json['check_in_location'],
-      checkOutLocation: json['check_out_location'],
+      checkInTime: json['checkInTime'] ?? json['check_in_time'],
+      checkOutTime: json['checkOutTime'] ?? json['check_out_time'],
+      checkInLocation: json['checkInLocation'] ?? json['check_in_location'],
+      checkOutLocation: json['checkOutLocation'] ?? json['check_out_location'],
       status: json['status'] ?? 'absent',
       notes: json['notes'],
       latitude: json['latitude']?.toDouble(),
       longitude: json['longitude']?.toDouble(),
-      workingHours: json['working_hours']?.toInt(),
-      createdAt: json['created_at'] != null 
-          ? DateTime.parse(json['created_at']) 
-          : null,
-      updatedAt: json['updated_at'] != null 
-          ? DateTime.parse(json['updated_at']) 
-          : null,
-      userName: json['user_name'],
-      employeeId: json['employee_id'],
+      workingHours: json['hoursWorked']?.toInt() ?? json['working_hours']?.toInt(),
+      createdAt: json['createdAt'] != null 
+          ? _parseDateTime(json['createdAt']) 
+          : json['created_at'] != null 
+              ? DateTime.parse(json['created_at'])
+              : null,
+      updatedAt: json['updatedAt'] != null 
+          ? _parseDateTime(json['updatedAt']) 
+          : json['updated_at'] != null 
+              ? DateTime.parse(json['updated_at'])
+              : null,
+      userName: json['userName'] ?? json['user_name'],
+      employeeId: json['employeeId'] ?? json['employee_id'],
       department: json['department'],
     );
+  }
+
+  // Helper method to parse Firestore timestamp
+  static DateTime? _parseDateTime(dynamic timestamp) {
+    if (timestamp is Map<String, dynamic>) {
+      final seconds = timestamp['_seconds'];
+      final nanoseconds = timestamp['_nanoseconds'] ?? 0;
+      if (seconds != null) {
+        return DateTime.fromMillisecondsSinceEpoch(
+          (seconds * 1000) + (nanoseconds ~/ 1000000)
+        );
+      }
+    }
+    if (timestamp is String) {
+      return DateTime.parse(timestamp);
+    }
+    return null;
   }
 
   Map<String, dynamic> toJson() {

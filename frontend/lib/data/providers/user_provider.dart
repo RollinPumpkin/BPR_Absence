@@ -3,10 +3,12 @@ import 'package:frontend/data/models/user.dart';
 import 'package:frontend/data/models/user_statistics.dart';
 import 'package:frontend/data/services/user_service.dart';
 import 'package:frontend/data/services/auth_service.dart';
+import 'package:frontend/data/services/api_service.dart';
 
 class UserProvider with ChangeNotifier {
   final UserService _userService = UserService();
   final AuthService _authService = AuthService();
+  final ApiService _apiService = ApiService.instance;
   
   List<User> _users = [];
   bool _isLoading = false;
@@ -278,11 +280,18 @@ class UserProvider with ChangeNotifier {
 
   // Get statistics
   Map<String, int> getUserStatistics() {
-    final total = _users.length;
+    // Use total from pagination for accurate count
+    final total = _totalUsers > 0 ? _totalUsers : _users.length;
     final active = _users.where((user) => user.isActive).length;
     final inactive = total - active;
     final admins = _users.where((user) => user.role == 'admin' || user.role == 'super_admin').length;
     final employees = _users.where((user) => user.role == 'employee').length;
+
+    print('📊 UserProvider getUserStatistics:');
+    print('   - Total (from pagination): $_totalUsers');
+    print('   - Total (calculated): $total');
+    print('   - Active (from loaded users): $active');
+    print('   - Loaded users count: ${_users.length}');
 
     return {
       'total': total,
@@ -293,36 +302,74 @@ class UserProvider with ChangeNotifier {
     };
   }
 
-  // Fetch and update statistics
+  // Fetch and update statistics from API
   Future<void> fetchStatistics() async {
     try {
-      final stats = getUserStatistics();
-      final roleDistribution = <String, int>{};
-      final departmentDistribution = <String, int>{};
+      print('📊 UserProvider: Fetching statistics from /api/debug/stats...');
       
-      // Calculate role distribution
-      for (final user in _users) {
-        roleDistribution[user.role] = (roleDistribution[user.role] ?? 0) + 1;
-      }
-      
-      // Calculate department distribution
-      for (final user in _users) {
-        if (user.department != null) {
-          departmentDistribution[user.department!] = (departmentDistribution[user.department!] ?? 0) + 1;
-        }
-      }
-      
-      _statistics = UserStatistics(
-        totalUsers: stats['total'] ?? 0,
-        activeUsers: stats['active'] ?? 0,
-        inactiveUsers: stats['inactive'] ?? 0,
-        roleDistribution: roleDistribution,
-        departmentDistribution: departmentDistribution,
+      // Use the same stats endpoint as dashboard for consistency
+      final response = await _apiService.get<Map<String, dynamic>>(
+        '/debug/stats',
+        fromJson: (json) => json as Map<String, dynamic>,
       );
       
+      if (response.success && response.data != null) {
+        final apiStats = response.data!;
+        print('📊 UserProvider: API stats received: $apiStats');
+        
+        // Calculate role distribution from loaded users (for roles breakdown)
+        final roleDistribution = <String, int>{};
+        final departmentDistribution = <String, int>{};
+        
+        for (final user in _users) {
+          roleDistribution[user.role] = (roleDistribution[user.role] ?? 0) + 1;
+        }
+        
+        for (final user in _users) {
+          if (user.department != null) {
+            departmentDistribution[user.department!] = (departmentDistribution[user.department!] ?? 0) + 1;
+          }
+        }
+        
+        _statistics = UserStatistics(
+          totalUsers: apiStats['total'] ?? 0,
+          activeUsers: apiStats['active'] ?? 0,
+          inactiveUsers: apiStats['resign'] ?? 0,
+          roleDistribution: roleDistribution,
+          departmentDistribution: departmentDistribution,
+        );
+        
+        print('📊 UserProvider: Statistics updated - Total: ${_statistics!.totalUsers}, Active: ${_statistics!.activeUsers}');
+      } else {
+        print('❌ UserProvider: Failed to fetch stats from API: ${response.message}');
+        
+        // Fallback to local calculation
+        final localStats = getUserStatistics();
+        final roleDistribution = <String, int>{};
+        final departmentDistribution = <String, int>{};
+        
+        for (final user in _users) {
+          roleDistribution[user.role] = (roleDistribution[user.role] ?? 0) + 1;
+        }
+        
+        for (final user in _users) {
+          if (user.department != null) {
+            departmentDistribution[user.department!] = (departmentDistribution[user.department!] ?? 0) + 1;
+          }
+        }
+        
+        _statistics = UserStatistics(
+          totalUsers: localStats['total'] ?? 0,
+          activeUsers: localStats['active'] ?? 0,
+          inactiveUsers: localStats['inactive'] ?? 0,
+          roleDistribution: roleDistribution,
+          departmentDistribution: departmentDistribution,
+        );
+      }
+
       notifyListeners();
     } catch (e) {
-      debugPrint('Error fetching statistics: $e');
+      print('❌ UserProvider: Error fetching statistics: $e');
     }
   }
 
@@ -334,8 +381,7 @@ class UserProvider with ChangeNotifier {
     await testSimpleApiCall();
     
     await fetchUsers(refresh: true);
-    // Temporarily disable fetchStatistics to debug
-    // await fetchStatistics();
+    await fetchStatistics();
     print('📊 UserProvider: Initialization complete');
   }
 
@@ -369,6 +415,85 @@ class UserProvider with ChangeNotifier {
     }
   }
 
+  // Current user management
+  User? _currentUser;
+  Map<String, dynamic>? _userStatistics;
+
+  User? get currentUser => _currentUser;
+  Map<String, dynamic>? get userStatistics => _userStatistics;
+
+  // Get current user profile
+  Future<void> getCurrentUser() async {
+    try {
+      _setLoading(true);
+      _errorMessage = null;
+
+      final response = await _userService.getCurrentUser();
+      
+      if (response.success && response.data != null) {
+        _currentUser = User.fromJson(response.data!);
+        await getUserStatisticsForUser(_currentUser!.id);
+      } else {
+        _errorMessage = response.message ?? 'Failed to load user profile';
+      }
+    } catch (e) {
+      _errorMessage = 'Error loading user profile: $e';
+      print('❌ Error in getCurrentUser: $e');
+    } finally {
+      _setLoading(false);
+      notifyListeners();
+    }
+  }
+
+  // Update user profile
+  Future<bool> updateProfile(String userId, Map<String, dynamic> userData) async {
+    try {
+      _setLoading(true);
+      _errorMessage = null;
+
+      final response = await _userService.updateUser(userId, userData);
+      
+      if (response.success) {
+        // Update current user if it's the same user
+        if (_currentUser?.id == userId && response.data != null) {
+          _currentUser = response.data;
+        }
+        
+        // Update user in the list if it exists
+        final userIndex = _users.indexWhere((user) => user.id == userId);
+        if (userIndex != -1 && response.data != null) {
+          _users[userIndex] = response.data!;
+        }
+        
+        notifyListeners();
+        return true;
+      } else {
+        _errorMessage = response.message ?? 'Failed to update profile';
+        return false;
+      }
+    } catch (e) {
+      _errorMessage = 'Error updating profile: $e';
+      print('❌ Error in updateProfile: $e');
+      return false;
+    } finally {
+      _setLoading(false);
+      notifyListeners();
+    }
+  }
+
+  // Get user statistics with user ID
+  Future<void> getUserStatisticsForUser(String userId) async {
+    try {
+      final response = await _userService.getUserStatisticsById(userId);
+      
+      if (response.success && response.data != null) {
+        _userStatistics = response.data;
+      }
+    } catch (e) {
+      print('❌ Error getting user statistics: $e');
+    }
+  }
+
   // Clear error message
   void clearError() {
     _errorMessage = null;
@@ -378,6 +503,8 @@ class UserProvider with ChangeNotifier {
   // Clear all data
   void clearData() {
     _users.clear();
+    _currentUser = null;
+    _userStatistics = null;
     _errorMessage = null;
     _currentPage = 1;
     _hasMore = true;

@@ -34,7 +34,7 @@ import 'modules/user/attendance/attendance_form_page.dart';
 // import 'modules/user/attendance/user_attendance_form_page.dart'; // Disabled - using attendance_form_page.dart instead
 import 'modules/user/assignment/assignment_page.dart' as user_assign;
 import 'modules/user/letters/letters_page.dart' as user_letters;
-import 'modules/user/profile/profile_page.dart' as user_profile;
+import 'modules/user/profile/user_profile_page.dart' as user_profile;
 import 'data/services/api_service.dart';
 import 'test_employee_fetch_page.dart';
 import 'test/user_fetch_unit_test.dart';
@@ -154,6 +154,12 @@ class MyApp extends StatelessWidget {
         '/forgot-password/email': (_) => const EmailPage(),
         '/forgot-password/email/Expired-link': (_) => const LinkExpiredPage(),
         '/forgot-password/reset-password': (_) => const ResetPasswordPage(),
+        '/reset-password': (context) {
+          final uri = Uri.parse(ModalRoute.of(context)!.settings.name ?? '');
+          final token = uri.queryParameters['token'];
+          final email = uri.queryParameters['email'];
+          return ResetPasswordPage(token: token, email: email);
+        },
 
         '/admin/dashboard': (_) => const AdminDashboardPage(),
         '/admin/employees': (_) => const EmployeePage(),

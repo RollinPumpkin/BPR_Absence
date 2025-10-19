@@ -20,6 +20,8 @@ class AppColors {
   static const Color primaryBlue   = Color(0xFF2D5FB5);
   static const Color primaryGreen  = Color(0xFF4CAF50);
   static const Color primaryYellow = Color(0xFFFFD968);
+  static const Color primaryOrange = Color(0xFFFF9800);
+  static const Color primaryPurple = Color(0xFF9C27B0);
 
   // ===== Neutral (Grayscale scale) ==========================================
   // Nama mengikuti skala umum (50 = paling terang … 900 = paling gelap).
