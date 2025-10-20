@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 @immutable
 class Employee {
+  final String? id; // Add user ID for updates
   final String? fullName;
   final String? email;
   final String? password; // biasanya jangan ditampilkan
@@ -26,8 +27,10 @@ class Employee {
 
   // Other
   final String? warningLetterType; // 'SP1' | 'SP2' | 'SP3' | 'None'
+  final String? emergencyContact;
 
   const Employee({
+    this.id,
     this.fullName,
     this.email,
     this.password,
@@ -46,6 +49,7 @@ class Employee {
     this.accountHolderName,
     this.accountNumber,
     this.warningLetterType,
+    this.emergencyContact,
   });
 
   Employee copyWith({
@@ -67,6 +71,7 @@ class Employee {
     String? accountHolderName,
     String? accountNumber,
     String? warningLetterType,
+    String? emergencyContact,
   }) {
     return Employee(
       fullName: fullName ?? this.fullName,
@@ -87,6 +92,7 @@ class Employee {
       accountHolderName: accountHolderName ?? this.accountHolderName,
       accountNumber: accountNumber ?? this.accountNumber,
       warningLetterType: warningLetterType ?? this.warningLetterType,
+      emergencyContact: emergencyContact ?? this.emergencyContact,
     );
   }
 }

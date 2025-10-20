@@ -94,13 +94,15 @@ class UserProvider with ChangeNotifier {
           print('📋 UserProvider: ListResponse type: ${listResponse.runtimeType}');
           print('📋 UserProvider: ListResponse items count: ${listResponse.items.length}');
           
-          // Filter out any null items and validate each item
+          // Filter out any null items, terminated employees, and validate each item
           final validItems = <User>[];
           for (int i = 0; i < listResponse.items.length; i++) {
             final item = listResponse.items[i];
-            if (item != null) {
+            if (item != null && item.status != 'terminated') {  // Filter out terminated employees
               validItems.add(item);
-              print('📋 UserProvider: Valid item $i: ${item.fullName} (${item.role})');
+              print('📋 UserProvider: Valid item $i: ${item.fullName} (${item.role}) - Status: ${item.status}');
+            } else if (item != null && item.status == 'terminated') {
+              print('⚠️ UserProvider: Terminated employee filtered out: ${item.fullName}');
             } else {
               print('⚠️ UserProvider: Null item found at index $i, skipping');
             }

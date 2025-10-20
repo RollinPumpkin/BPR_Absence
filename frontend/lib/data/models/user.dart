@@ -16,11 +16,14 @@ class User {
   
   // Additional personal information
   final String? address;
+  final String? placeOfBirth;  // Add place of birth
   final String? emergencyContact;
   final String? emergencyPhone;
   final DateTime? dateOfBirth;
   final String? gender;
   final String? maritalStatus;
+  final String? contractType;  // Add contract type
+  final String? lastEducation; // Add last education
   final String? nationalId;
   final String? bankAccount;
   final String? bankName;
@@ -43,11 +46,14 @@ class User {
     this.updatedAt,
     this.lastLogin,
     this.address,
+    this.placeOfBirth,   // Add place of birth
     this.emergencyContact,
     this.emergencyPhone,
     this.dateOfBirth,
     this.gender,
     this.maritalStatus,
+    this.contractType,   // Add contract type
+    this.lastEducation,  // Add last education
     this.nationalId,
     this.bankAccount,
     this.bankName,
@@ -111,11 +117,14 @@ class User {
         updatedAt: _parseDateTime(json['updated_at'] ?? json['updatedAt']),
         lastLogin: _parseDateTime(json['last_login'] ?? json['lastLogin']),
         address: json['address']?.toString(),
+        placeOfBirth: json['place_of_birth']?.toString(),  // Add place of birth mapping
         emergencyContact: json['emergency_contact']?.toString(),
         emergencyPhone: json['emergency_phone']?.toString(),
         dateOfBirth: _parseDateTime(json['date_of_birth'] ?? json['dateOfBirth']),
         gender: json['gender']?.toString(),
         maritalStatus: json['marital_status']?.toString(),
+        contractType: json['contract_type']?.toString(),   // Add contract type mapping
+        lastEducation: json['last_education']?.toString(), // Add last education mapping
         nationalId: json['national_id']?.toString(),
         bankAccount: json['bank_account']?.toString(),
         bankName: json['bank_name']?.toString(),

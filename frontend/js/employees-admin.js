@@ -386,11 +386,8 @@ function confirmDeleteEmployee(employeeId) {
 
 async function deleteEmployee(employeeId) {
   try {
-    // Update status to terminated instead of deleting
-    const response = await AdminAPI.updateEmployeeStatus(employeeId, {
-      status: 'terminated',
-      reason: 'Deleted by admin'
-    });
+    // Use actual delete endpoint instead of just status update
+    const response = await AdminAPI.deleteEmployee(employeeId);
     
     if (response.success) {
       AdminAPI.showSuccess('Karyawan berhasil dihapus');
