@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:frontend/core/constants/colors.dart';
 import 'package:frontend/modules/admin/employee/models/employee.dart';
 import 'package:frontend/modules/admin/employee/pages/edit_page.dart';
+import 'package:frontend/data/services/employee_service.dart';
+import 'package:frontend/data/providers/user_provider.dart';
 import 'package:intl/intl.dart';
 
 class DetailsPage extends StatelessWidget {
@@ -31,17 +34,52 @@ class DetailsPage extends StatelessWidget {
     return parts.join(' ');
   }
 
-  // format nomor rekening (kelompok 4)
-  String _fmtAccount(String? s) {
-    final v = _val(s);
-    if (v == '—') return v;
-    final d = v.replaceAll(RegExp(r'\s+'), '');
-    final parts = <String>[];
-    for (var i = 0; i < d.length; i += 4) {
-      parts.add(d.substring(i, i + 4 > d.length ? d.length : i + 4));
+  Future<void> _deleteEmployee(BuildContext context) async {
+    if (employee.id == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Cannot delete employee: No ID available'),
+          backgroundColor: AppColors.primaryRed,
+        ),
+      );
+      return;
     }
-    return parts.join(' ');
+
+    try {
+      final response = await EmployeeService.deleteEmployee(employee.id!);
+      
+      if (response.success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Employee deleted successfully'),
+            backgroundColor: AppColors.primaryGreen,
+          ),
+        );
+        
+        // Refresh the employee list through UserProvider and go back
+        if (context.mounted) {
+          Provider.of<UserProvider>(context, listen: false).refreshUsers();
+          Navigator.of(context).pop(); // Go back to employee list
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(response.message ?? 'Failed to delete employee'),
+            backgroundColor: AppColors.primaryRed,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error deleting employee: $e'),
+          backgroundColor: AppColors.primaryRed,
+        ),
+      );
+    }
   }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -168,16 +206,6 @@ class DetailsPage extends StatelessWidget {
                   _DetailItem(label: 'Division', value: _val(employee.division)),
                   const _DividerLine(),
                   _DetailItem(label: 'Last Education', value: _val(employee.lastEducation)),
-                  const _DividerLine(),
-                  _DetailItem(label: 'NIK', value: _val(employee.nik)),
-
-                  const SizedBox(height: 8),
-                  const _SectionDivider(title: 'Banking'),
-                  _DetailItem(label: 'Bank', value: _val(employee.bank)),
-                  const _DividerLine(),
-                  _DetailItem(label: 'Account Number', value: _fmtAccount(employee.accountNumber)),
-                  const _DividerLine(),
-                  _DetailItem(label: "Account Holder's Name", value: _val(employee.accountHolderName)),
 
                   const SizedBox(height: 8),
                   const _SectionDivider(title: 'Other'),
@@ -202,10 +230,10 @@ class DetailsPage extends StatelessWidget {
                   icon: const Icon(Icons.edit),
                   label: const Text('Edit', style: TextStyle(fontWeight: FontWeight.w700)),
                   onPressed: () {
-                    // lewatkan Employee ke EditPage kalau EditPage kamu sudah support prefill
+                    // Pass the employee data to EditPage for prefilling
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const EditPage()),
+                      MaterialPageRoute(builder: (_) => EditPage(employee: employee)),
                     );
                   },
                 ),
@@ -244,15 +272,9 @@ class DetailsPage extends StatelessWidget {
                               foregroundColor: AppColors.pureWhite,
                               elevation: 0,
                             ),
-                            onPressed: () {
+                            onPressed: () async {
                               Navigator.pop(ctx);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Employee deleted'),
-                                  backgroundColor: AppColors.primaryRed,
-                                ),
-                              );
-                              // TODO: delete action
+                              await _deleteEmployee(context);
                             },
                             child: const Text('Delete'),
                           ),

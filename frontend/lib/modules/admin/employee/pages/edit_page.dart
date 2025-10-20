@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/core/constants/colors.dart';
 import 'package:frontend/modules/admin/employee/models/employee.dart';
+import 'package:frontend/data/services/employee_service.dart';
 
 class EditPage extends StatefulWidget {
   final Employee? employee; // ⬅️ optional prefill
@@ -18,9 +19,8 @@ class _EditPageState extends State<EditPage> {
   final TextEditingController mobileController = TextEditingController();
   final TextEditingController placeOfBirthController = TextEditingController();
   final TextEditingController positionController = TextEditingController();
-  final TextEditingController nikController = TextEditingController();
-  final TextEditingController accountHolderController = TextEditingController();
-  final TextEditingController accountNumberController = TextEditingController();
+  final TextEditingController emergencyContactController = TextEditingController();
+
   final TextEditingController divisionController = TextEditingController();
   final TextEditingController _dobController = TextEditingController();
   final TextEditingController departmentController = TextEditingController();
@@ -28,7 +28,7 @@ class _EditPageState extends State<EditPage> {
   // Dropdown values
   String? selectedGender;
   String? selectedContractType;
-  String? selectedBank;
+
   String? selectedEducation;
   String? selectedWarningLetter;
   String? selectedRole;
@@ -44,6 +44,9 @@ class _EditPageState extends State<EditPage> {
   
   // Password visibility
   bool _isPasswordVisible = false;
+  
+  // Loading state
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -57,24 +60,144 @@ class _EditPageState extends State<EditPage> {
       mobileController.text = emp.mobileNumber ?? '';
       placeOfBirthController.text = emp.placeOfBirth ?? '';
       positionController.text = emp.position ?? '';
-      nikController.text = emp.nik ?? '';
-      accountHolderController.text = emp.accountHolderName ?? '';
-      accountNumberController.text = emp.accountNumber ?? '';
+      emergencyContactController.text = emp.emergencyContact ?? '';
+
       divisionController.text = emp.division ?? '';
       departmentController.text = emp.department ?? '';
 
-      selectedGender = emp.gender;
+      selectedGender = _convertGenderForDropdown(emp.gender);
       selectedContractType = emp.contractType;
-      selectedBank = emp.bank;
       selectedEducation = emp.lastEducation;
       selectedWarningLetter = emp.warningLetterType;
-      selectedRole = emp.role;
+      selectedRole = _convertRoleForDropdown(emp.role);
 
       if (emp.dateOfBirth != null) {
         selectedDate = emp.dateOfBirth;
         _dobController.text =
             '${emp.dateOfBirth!.day}/${emp.dateOfBirth!.month}/${emp.dateOfBirth!.year}';
       }
+    }
+  }
+
+  // Convert role from database format to dropdown format
+  String? _convertRoleForDropdown(String? role) {
+    if (role == null) return null;
+    
+    switch (role.toLowerCase()) {
+      case 'employee':
+        return 'Employee';
+      case 'account_officer':
+      case 'account officer':
+        return 'Account Officer';
+      case 'security':
+        return 'Security';
+      case 'office_boy':
+      case 'office boy':
+        return 'Office Boy';
+      case 'admin':
+        return 'Employee'; // Default admin to Employee if not in dropdown
+      case 'super_admin':
+        return 'Employee'; // Default super_admin to Employee if not in dropdown
+      default:
+        return roleOptions.contains(role) ? role : 'Employee'; // Default fallback
+    }
+  }
+
+  // Convert gender from database format to dropdown format
+  String? _convertGenderForDropdown(String? gender) {
+    if (gender == null) return null;
+    
+    switch (gender.toLowerCase()) {
+      case 'male':
+        return 'Male';
+      case 'female':
+        return 'Female';
+      default:
+        return ['Male', 'Female'].contains(gender) ? gender : null; // Default fallback
+    }
+  }
+
+  // Save employee data
+  Future<void> _saveEmployeeData() async {
+    if (widget.employee?.id == null) {
+      _showError('No employee ID available for update');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // Prepare updated data (only fields supported by current endpoint)
+      final updateData = {
+        'full_name': fullnameController.text.trim(),
+        'email': emailController.text.trim(),
+        'phone': mobileController.text.trim(),
+        'position': positionController.text.trim(),
+        'department': departmentController.text.trim(),
+        'role': _convertRoleToBackend(selectedRole),
+        // Note: gender, place_of_birth, date_of_birth, contract_type, last_education
+        // are not yet supported by the backend endpoint
+        // emergency_contact field not in UI form yet
+      };
+
+      // Update user via admin endpoint
+      final response = await EmployeeService.updateEmployee(
+        widget.employee!.id!,
+        updateData,
+      );
+
+      if (response.success) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Profile updated successfully!'),
+              backgroundColor: AppColors.primaryGreen,
+            ),
+          );
+          Navigator.pop(context, true); // Return true to indicate success
+        }
+      } else {
+        _showError(response.message ?? 'Failed to update profile');
+      }
+    } catch (e) {
+      _showError('Failed to update profile: ${e.toString()}');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  // Convert role from dropdown format to backend format
+  String? _convertRoleToBackend(String? role) {
+    if (role == null) return null;
+    
+    switch (role) {
+      case 'Employee':
+        return 'employee';
+      case 'Account Officer':
+        return 'account_officer';
+      case 'Security':
+        return 'security';
+      case 'Office Boy':
+        return 'office_boy';
+      default:
+        return role.toLowerCase();
+    }
+  }
+
+  void _showError(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: AppColors.primaryRed,
+        ),
+      );
     }
   }
 
@@ -139,9 +262,8 @@ class _EditPageState extends State<EditPage> {
     mobileController.dispose();
     placeOfBirthController.dispose();
     positionController.dispose();
-    nikController.dispose();
-    accountHolderController.dispose();
-    accountNumberController.dispose();
+    emergencyContactController.dispose();
+
     divisionController.dispose();
     _dobController.dispose();
     departmentController.dispose();
@@ -372,41 +494,12 @@ class _EditPageState extends State<EditPage> {
                       onChanged: (v) => setState(() => selectedEducation = v),
                     ),
                   ),
-                  _field(
-                    child: TextField(
-                      controller: nikController,
-                      keyboardType: TextInputType.number,
-                      decoration: _inputDec('NIK', 'Enter the NIK',
-                          prefixIcon: const Icon(Icons.badge_outlined, size: 18)),
-                    ),
-                  ),
 
                   const SizedBox(height: 8),
-                  const _SectionDivider(title: 'Banking'),
 
-                  _field(
-                    child: _dropdown(
-                      label: 'Bank',
-                      value: selectedBank,
-                      items: const ['BCA', 'BRI', 'Mandiri', 'BNI'],
-                      onChanged: (v) => setState(() => selectedBank = v),
-                    ),
-                  ),
-                  _field(
-                    child: TextField(
-                      controller: accountHolderController,
-                      decoration: _inputDec("Account Holder’s Name", 'Bank Number Account Holder Name'),
-                    ),
-                  ),
-                  _field(
-                    child: TextField(
-                      controller: accountNumberController,
-                      keyboardType: TextInputType.number,
-                      decoration: _inputDec('Account Number', 'Enter the Account Number'),
-                    ),
-                  ),
 
-                  const SizedBox(height: 8),
+
+
                   const _SectionDivider(title: 'Other'),
 
                   _field(
@@ -442,16 +535,7 @@ class _EditPageState extends State<EditPage> {
                 ),
                 const SizedBox(width: 10),
                 ElevatedButton(
-                  onPressed: () {
-                    // TODO: implement save logic
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Profile updated'),
-                        backgroundColor: AppColors.primaryGreen,
-                      ),
-                    );
-                    Navigator.pop(context);
-                  },
+                  onPressed: _isLoading ? null : _saveEmployeeData,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryGreen,
                     foregroundColor: AppColors.pureWhite,
@@ -459,7 +543,16 @@ class _EditPageState extends State<EditPage> {
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                     elevation: 0,
                   ),
-                  child: const Text('Save', style: TextStyle(fontWeight: FontWeight.w800)),
+                  child: _isLoading 
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          color: AppColors.pureWhite,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : const Text('Save', style: TextStyle(fontWeight: FontWeight.w800)),
                 ),
               ],
             ),

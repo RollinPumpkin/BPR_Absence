@@ -1161,6 +1161,89 @@ router.put('/admin/employees/:userId', auth, requireAdminRole, async (req, res) 
   }
 });
 
+// Delete employee (Admin only)
+router.delete('/admin/employees/:userId', auth, requireAdminRole, async (req, res) => {
+  try {
+    // Check admin privileges
+    const { role: userRole, employee_id: userEmployeeId } = req.user;
+    const hasAdminRole = userRole === 'admin' || userRole === 'super_admin';
+    const hasAdminEmployeeId = userEmployeeId?.startsWith('SUP') || userEmployeeId?.startsWith('ADM');
+    const isAdmin = hasAdminRole || hasAdminEmployeeId;
+    
+    if (!isAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Admin privileges required.'
+      });
+    }
+
+    const { userId } = req.params;
+    const userRef = db.collection('users').doc(userId);
+    const userDoc = await userRef.get();
+
+    if (!userDoc.exists) {
+      return res.status(404).json({
+        success: false,
+        message: 'Employee not found'
+      });
+    }
+
+    const userData = userDoc.data();
+
+    // Prevent deletion of admin users
+    if (userData.role === 'admin' || userData.role === 'super_admin' || 
+        userData.employee_id?.startsWith('ADM') || userData.employee_id?.startsWith('SUP')) {
+      return res.status(403).json({
+        success: false,
+        message: 'Cannot delete admin users'
+      });
+    }
+
+    // Soft delete - update status to terminated instead of actual deletion
+    await userRef.update({
+      status: 'terminated',
+      is_active: false,
+      deleted_at: getServerTimestamp(),
+      deleted_by: req.user.userId,
+      deletion_reason: 'Deleted by admin'
+    });
+
+    // Create notification for audit trail
+    try {
+      await db.collection('notifications').add({
+        user_id: userId,
+        title: 'Account Terminated',
+        message: `Your account has been terminated by admin`,
+        type: 'account_termination',
+        reference_id: userId,
+        reference_type: 'user',
+        is_read: false,
+        priority: 'high',
+        created_at: getServerTimestamp()
+      });
+    } catch (notifError) {
+      console.error('Failed to create termination notification:', notifError);
+    }
+
+    res.json({
+      success: true,
+      message: 'Employee deleted successfully',
+      data: {
+        user_id: userId,
+        employee_id: userData.employee_id,
+        full_name: userData.full_name
+      }
+    });
+
+  } catch (error) {
+    console.error('Delete employee error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete employee'
+    });
+  }
+});
+
 // Deactivate/Reactivate employee (Admin only)
 router.patch('/admin/employees/:userId/status', auth, requireAdminRole, async (req, res) => {
   try {

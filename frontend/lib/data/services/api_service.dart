@@ -368,6 +368,26 @@ class ApiService {
     }
   }
 
+  // Generic PATCH request
+  Future<ApiResponse<T>> patch<T>(
+    String endpoint,
+    Map<String, dynamic> data, {
+    Map<String, dynamic>? queryParameters,
+    T Function(dynamic)? fromJson,
+  }) async {
+    try {
+      final response = await _dio.patch(
+        endpoint,
+        data: data,
+        queryParameters: queryParameters,
+      );
+
+      return _handleResponse<T>(response, fromJson);
+    } on DioException catch (e) {
+      return _handleError<T>(e);
+    }
+  }
+
   // Upload file
   Future<ApiResponse<T>> uploadFile<T>(
     String endpoint,

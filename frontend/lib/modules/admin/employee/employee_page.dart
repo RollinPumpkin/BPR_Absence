@@ -189,11 +189,7 @@ class _EmployeePageState extends State<EmployeePage> {
                         itemBuilder: (context, index) {
                           final user = userProvider.users[index];
                           return EmployeeCard(
-                            name: user.fullName,
-                            division: user.department ?? 'Unknown Division',
-                            position: user.position ?? 'Unknown Position',
-                            phone: user.phone ?? 'No Phone',
-                            status: user.status,
+                            user: user,
                           );
                         },
                       ),

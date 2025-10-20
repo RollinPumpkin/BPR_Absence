@@ -19,6 +19,7 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
   final TextEditingController fullnameController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController mobileController = TextEditingController();
+  final TextEditingController placeOfBirthController = TextEditingController();
   final TextEditingController positionController = TextEditingController();
   final TextEditingController divisionController = TextEditingController();
   final TextEditingController _dobController = TextEditingController();
@@ -81,6 +82,7 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
     fullnameController.dispose();
     passwordController.dispose();
     mobileController.dispose();
+    placeOfBirthController.dispose();
     positionController.dispose();
     divisionController.dispose();
     _dobController.dispose();
@@ -247,6 +249,12 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
                 ),
               ),
               _field(
+                child: TextField(
+                  controller: placeOfBirthController,
+                  decoration: _inputDec('Place of Birth', 'Enter the Place of Birth'),
+                ),
+              ),
+              _field(
                 child: TextFormField(
                   readOnly: true,
                   controller: _dobController,
@@ -374,9 +382,11 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
         'department': departmentController.text.trim(),
         'division': divisionController.text.trim(),
         'gender': selectedGender?.toLowerCase(),
+        'place_of_birth': placeOfBirthController.text.trim(),
         'date_of_birth': selectedDate?.toIso8601String(),
         'contract_type': selectedContractType,
         'last_education': selectedEducation,
+        'warning_letter_type': 'None', // Default value for new employees
       };
 
       final response = await ApiService.instance.post(

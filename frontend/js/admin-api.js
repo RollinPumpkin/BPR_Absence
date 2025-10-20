@@ -125,6 +125,13 @@ async function updateEmployeeStatus(employeeId, statusData) {
   });
 }
 
+// Delete employee
+async function deleteEmployee(employeeId) {
+  return apiCall(`/users/admin/employees/${employeeId}`, {
+    method: 'DELETE'
+  });
+}
+
 // Reset employee password
 async function resetEmployeePassword(employeeId, passwordData = {}) {
   return apiCall(`/users/admin/employees/${employeeId}/reset-password`, {
@@ -441,6 +448,7 @@ window.AdminAPI = {
   createEmployee,
   updateEmployee,
   updateEmployeeStatus,
+  deleteEmployee,
   resetEmployeePassword,
   bulkImportEmployees,
   getEmployeeAnalytics,
