@@ -25,30 +25,38 @@ class _ActivitySummaryWidgetState extends State<ActivitySummaryWidget> {
 
   Future<void> _loadActivityData() async {
     try {
-      setState(() {
-        _isLoading = true;
-        _error = null;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = true;
+          _error = null;
+        });
+      }
 
       // Get activity summary for this week
       final response = await _dashboardService.getActivitySummary(period: 'week');
       
       if (response.isSuccess && response.data != null) {
-        setState(() {
-          _activitySummary = response.data!;
-          _isLoading = false;
-        });
+        if (mounted) {
+          setState(() {
+            _activitySummary = response.data!;
+            _isLoading = false;
+          });
+        }
       } else {
+        if (mounted) {
+          setState(() {
+            _error = response.message ?? 'Failed to load activity data';
+            _isLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
         setState(() {
-          _error = response.message ?? 'Failed to load activity data';
+          _error = 'Error loading activity data: ${e.toString()}';
           _isLoading = false;
         });
       }
-    } catch (e) {
-      setState(() {
-        _error = 'Error loading activity data: ${e.toString()}';
-        _isLoading = false;
-      });
     }
   }
 

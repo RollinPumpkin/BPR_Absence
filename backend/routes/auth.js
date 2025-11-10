@@ -34,8 +34,14 @@ router.post('/register', validateRegister, async (req, res) => {
     } = req.body;
 
     const usersRef = db.collection('users');
-    const emailQuery = await usersRef.where('email', '==', email).get();
-    const employeeIdQuery = await usersRef.where('employee_id', '==', employee_id).get();
+    const emailQuery = await usersRef
+      .where('email', '==', email)
+      .where('status', '!=', 'terminated')
+      .get();
+    const employeeIdQuery = await usersRef
+      .where('employee_id', '==', employee_id)
+      .where('status', '!=', 'terminated')
+      .get();
     if (!emailQuery.empty || !employeeIdQuery.empty) {
       return res.status(400).json({
         success: false,

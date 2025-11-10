@@ -1,40 +1,50 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:frontend/core/constants/colors.dart';
 import 'package:frontend/modules/admin/employee/pages/edit_page.dart';
 import 'package:frontend/modules/admin/employee/pages/details_page.dart';
 import 'package:frontend/modules/admin/employee/models/employee.dart';
 import 'package:frontend/data/models/user.dart';
 import 'package:frontend/data/services/employee_service.dart';
-import 'package:frontend/data/providers/user_provider.dart';
 
 class EmployeeCard extends StatelessWidget {
   final User user;
+  final Future<void> Function()? onDeleted;
 
   const EmployeeCard({
     super.key,
     required this.user,
+    this.onDeleted,
   });
 
   void _showDeleteDialog(BuildContext context) {
+    print('🗑️ Delete button clicked for: ${user.fullName}');
+    print('🆔 User ID: ${user.id}');
+    print('📧 User Email: ${user.email}');
+    print('👔 User Role: ${user.role}');
+    
     showDialog(
       context: context,
-      builder: (BuildContext context) {
+      barrierDismissible: true,
+      builder: (BuildContext dialogContext) {
+        print('📋 Delete dialog opened');
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           title: const Text(
             'Confirm Delete',
             style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.neutral800),
           ),
-          content: const Text(
-            "Are you sure you want to delete this employee?",
-            style: TextStyle(color: AppColors.neutral800),
+          content: Text(
+            "Are you sure you want to delete ${user.fullName}?",
+            style: const TextStyle(color: AppColors.neutral800),
           ),
           actionsAlignment: MainAxisAlignment.end,
           actions: [
             TextButton(
               style: TextButton.styleFrom(foregroundColor: AppColors.neutral800),
-              onPressed: () => Navigator.pop(context),
+              onPressed: () {
+                print('❌ Delete cancelled for ${user.fullName}');
+                Navigator.pop(dialogContext);
+              },
               child: const Text("Cancel"),
             ),
             ElevatedButton(
@@ -44,8 +54,43 @@ class EmployeeCard extends StatelessWidget {
                 elevation: 0,
               ),
               onPressed: () async {
-                Navigator.pop(context);
+                print('✅ Delete confirmed for ${user.fullName}');
+                print('🔒 Closing dialog...');
+                Navigator.pop(dialogContext);
+                
+                print('⏳ Showing loading dialog...');
+                // Show loading dialog
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (BuildContext loadingContext) {
+                    return const Center(
+                      child: Card(
+                        child: Padding(
+                          padding: EdgeInsets.all(20.0),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              CircularProgressIndicator(),
+                              SizedBox(height: 16),
+                              Text('Deleting employee...'),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                );
+                
+                print('🚀 Calling _deleteEmployee...');
                 await _deleteEmployee(context);
+                print('🏁 _deleteEmployee completed');
+                
+                // Close loading dialog
+                if (context.mounted) {
+                  print('🔓 Closing loading dialog...');
+                  Navigator.pop(context);
+                }
               },
               child: const Text("Delete"),
             ),
@@ -56,7 +101,15 @@ class EmployeeCard extends StatelessWidget {
   }
 
   Future<void> _deleteEmployee(BuildContext context) async {
-    if (user.id == null) {
+    print('🔄 Starting employee deletion...');
+    print('👤 User: ${user.fullName}');
+    print('🆔 User ID: ${user.id}');
+    print('📧 Email: ${user.email}');
+    print('🏢 Department: ${user.department}');
+    
+    if (user.id.isEmpty) {
+      print('❌ User ID is empty!');
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Cannot delete employee: No ID available'),
@@ -67,21 +120,42 @@ class EmployeeCard extends StatelessWidget {
     }
 
     try {
-      final response = await EmployeeService.deleteEmployee(user.id!);
+      print('📞 Calling EmployeeService.deleteEmployee with ID: ${user.id}');
+      print('🌐 DELETE endpoint will be: /users/admin/employees/${user.id}');
+      final response = await EmployeeService.deleteEmployee(user.id);
+      
+      print('📨 Response received: success=${response.success}');
+      print('📨 Response message: ${response.message}');
+      print('📨 Response data: ${response.data}');
+      
+      if (!context.mounted) {
+        print('⚠️ Context unmounted, aborting UI updates');
+        return;
+      }
       
       if (response.success) {
+        print('✅ Delete API call successful');
+        
+        // Call the callback to refresh from parent
+        if (onDeleted != null) {
+          print('🔄 Calling onDeleted callback and waiting...');
+          await onDeleted!();
+          print('✅ onDeleted callback completed');
+        } else {
+          print('⚠️ No onDeleted callback provided');
+        }
+        
+        // Show success message after refresh completes
+        if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Employee deleted successfully'),
             backgroundColor: AppColors.primaryGreen,
+            duration: Duration(seconds: 2),
           ),
         );
-        
-        // Refresh the employee list through UserProvider
-        if (context.mounted) {
-          Provider.of<UserProvider>(context, listen: false).refreshUsers();
-        }
       } else {
+        print('❌ Delete failed: ${response.message}');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(response.message ?? 'Failed to delete employee'),
@@ -89,7 +163,10 @@ class EmployeeCard extends StatelessWidget {
           ),
         );
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('❌ Exception during delete: $e');
+      print('📚 Stack trace: $stackTrace');
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error deleting employee: $e'),
@@ -235,6 +312,7 @@ class EmployeeCard extends StatelessWidget {
                     tooltip: 'Export PDF',
                     icon: const Icon(Icons.picture_as_pdf, color: AppColors.primaryGreen),
                     onPressed: () {
+                      print('📄 PDF export clicked');
                       // TODO: export pdf
                     },
                   ),
@@ -242,6 +320,7 @@ class EmployeeCard extends StatelessWidget {
                     tooltip: 'Edit',
                     icon: const Icon(Icons.edit, color: AppColors.primaryYellow),
                     onPressed: () {
+                      print('✏️ Edit clicked for ${user.fullName}');
                       Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -253,7 +332,11 @@ class EmployeeCard extends StatelessWidget {
                   IconButton(
                     tooltip: 'Delete',
                     icon: const Icon(Icons.delete, color: AppColors.primaryRed),
-                    onPressed: () => _showDeleteDialog(context),
+                    splashRadius: 24,
+                    onPressed: () {
+                      print('🗑️ Delete icon clicked for ${user.fullName}');
+                      _showDeleteDialog(context);
+                    },
                   ),
                 ],
               )

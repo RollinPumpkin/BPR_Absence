@@ -47,7 +47,14 @@ class EmployeeService {
 
   // Delete employee
   static Future<ApiResponse<Map<String, dynamic>>> deleteEmployee(String employeeId) async {
-    return await ApiService.instance.delete<Map<String, dynamic>>('$_baseEndpoint/$employeeId');
+    return await ApiService.instance.delete<Map<String, dynamic>>(
+      '$_baseEndpoint/$employeeId',
+      fromJson: (json) {
+        if (json == null) return <String, dynamic>{};
+        if (json is Map<String, dynamic>) return json;
+        return <String, dynamic>{'raw': json};
+      },
+    );
   }
 
   // Update employee status

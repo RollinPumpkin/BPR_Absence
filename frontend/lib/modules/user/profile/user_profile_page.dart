@@ -2,11 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/core/constants/colors.dart';
 import 'package:frontend/data/models/user.dart';
-import 'package:frontend/data/providers/user_provider.dart';
 import 'package:frontend/data/providers/auth_provider.dart';
+import 'package:frontend/data/services/user_service.dart';
 import 'package:frontend/modules/admin/profile/widgets/profile_info_card.dart';
-import 'package:frontend/modules/admin/profile/widgets/profile_stats_card.dart';
-import 'package:frontend/modules/admin/profile/widgets/profile_action_card.dart';
 import 'package:frontend/modules/admin/profile/pages/edit_profile_page.dart';
 
 class UserProfilePage extends StatefulWidget {
@@ -19,6 +17,7 @@ class UserProfilePage extends StatefulWidget {
 class _UserProfilePageState extends State<UserProfilePage> {
   bool _isLoading = true;
   User? _currentUser;
+  final UserService _userService = UserService();
 
   @override
   void initState() {
@@ -28,14 +27,26 @@ class _UserProfilePageState extends State<UserProfilePage> {
 
   Future<void> _loadUserData() async {
     try {
-      final userProvider = Provider.of<UserProvider>(context, listen: false);
-      await userProvider.getCurrentUser();
+      // Fetch user profile without statistics
+      final response = await _userService.getCurrentUser();
       
       if (mounted) {
-        setState(() {
-          _currentUser = userProvider.currentUser;
-          _isLoading = false;
-        });
+        if (response.success && response.data != null) {
+          setState(() {
+            _currentUser = User.fromJson(response.data!);
+            _isLoading = false;
+          });
+        } else {
+          setState(() {
+            _isLoading = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(response.message ?? 'Failed to load profile'),
+              backgroundColor: AppColors.primaryRed,
+            ),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -70,13 +81,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
             fontWeight: FontWeight.w600,
           ),
         ),
-        actions: [
-          if (_currentUser != null)
-            IconButton(
-              icon: const Icon(Icons.edit, color: AppColors.neutral800),
-              onPressed: () => _navigateToEditProfile(),
-            ),
-        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -106,28 +110,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
                         
                         const SizedBox(height: 16),
                         
-                        // Statistics Card
-                        Consumer<UserProvider>(
-                          builder: (context, userProvider, child) {
-                            return ProfileStatsCard(
-                              attendanceRate: userProvider.userStatistics?['attendance_rate'] ?? 0.0,
-                              totalPresent: userProvider.userStatistics?['total_present'] ?? 0,
-                              totalAbsent: userProvider.userStatistics?['total_absent'] ?? 0,
-                              totalLate: userProvider.userStatistics?['total_late'] ?? 0,
-                            );
-                          },
-                        ),
-                        
-                        const SizedBox(height: 16),
-                        
-                        // Quick Actions Card
-                        ProfileActionCard(
-                          title: 'Quick Actions',
-                          actions: _getUserActions(),
-                        ),
-                        
-                        const SizedBox(height: 16),
-                        
                         // Account Settings Card
                         _buildAccountSettingsCard(),
                       ],
@@ -135,51 +117,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
                   ),
                 ),
     );
-  }
-
-  List<ProfileAction> _getUserActions() {
-    return [
-      ProfileAction(
-        icon: Icons.schedule,
-        title: 'My Attendance',
-        subtitle: 'View attendance history',
-        color: AppColors.primaryBlue,
-        onTap: () {
-          // Navigate to attendance history
-          Navigator.pushNamed(context, '/attendance');
-        },
-      ),
-      ProfileAction(
-        icon: Icons.mail,
-        title: 'Submit Request',
-        subtitle: 'Request leave or permission',
-        color: AppColors.primaryGreen,
-        onTap: () {
-          // Navigate to request submission
-          Navigator.pushNamed(context, '/submit-request');
-        },
-      ),
-      ProfileAction(
-        icon: Icons.history,
-        title: 'Request History',
-        subtitle: 'View submitted requests',
-        color: AppColors.primaryOrange,
-        onTap: () {
-          // Navigate to request history
-          Navigator.pushNamed(context, '/request-history');
-        },
-      ),
-      ProfileAction(
-        icon: Icons.notifications,
-        title: 'Notifications',
-        subtitle: 'View notifications',
-        color: AppColors.primaryPurple,
-        onTap: () {
-          // Navigate to notifications
-          Navigator.pushNamed(context, '/notifications');
-        },
-      ),
-    ];
   }
 
   Widget _buildAccountSettingsCard() {

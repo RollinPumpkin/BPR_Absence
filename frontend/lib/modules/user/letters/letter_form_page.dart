@@ -62,7 +62,7 @@ class _LetterFormPageState extends State<LetterFormPage> {
         _userLoaded = false;
       });
 
-      print('🔍 Starting to fetch user name...');
+      print('[LetterForm] Starting to fetch user name...');
       
       // Initialize Firestore
       await FirestoreLetterService.initialize();
@@ -73,11 +73,11 @@ class _LetterFormPageState extends State<LetterFormPage> {
       
       if (authProvider.isAuthenticated && authProvider.currentUser != null) {
         userEmail = authProvider.currentUser!.email;
-        print('� User email from AuthProvider: $userEmail');
+        print('[LetterForm] User email from AuthProvider: $userEmail');
       }
       
       if (userEmail == null || userEmail.isEmpty) {
-        print('⚠️ No user email found, trying alternative method...');
+        print('[LetterForm] No user email found, trying alternative method...');
         
         // Use the known user document ID as fallback
         const knownUserId = 'E8yHtkBnSFc6n9VZa9gE';
@@ -90,8 +90,8 @@ class _LetterFormPageState extends State<LetterFormPage> {
         if (userDoc.exists) {
           final userData = userDoc.data()!;
           final fullName = userData['full_name'] as String?;
-          print('👤 Found user data via ID: $userData');
-          print('✅ Full name: $fullName');
+          print('[LetterForm] Found user data via ID: $userData');
+          print('[LetterForm] Full name: $fullName');
           
           if (mounted) {
             setState(() {
@@ -101,13 +101,13 @@ class _LetterFormPageState extends State<LetterFormPage> {
           }
           return;
         } else {
-          print('❌ User document not found with ID: $knownUserId');
+          print('[LetterForm] User document not found with ID: $knownUserId');
           throw Exception('User not found in database');
         }
       }
       
       // Query Firestore directly for user with this email
-      print('🔍 Querying Firestore for user with email: $userEmail');
+      print('[LetterForm] Querying Firestore for user with email: $userEmail');
       
       final querySnapshot = await FirebaseFirestore.instance
           .collection('users')
@@ -115,14 +115,14 @@ class _LetterFormPageState extends State<LetterFormPage> {
           .limit(1)
           .get();
       
-      print('📊 Query result: ${querySnapshot.docs.length} documents found');
+      print('[LetterForm] Query result: ${querySnapshot.docs.length} documents found');
       
       if (querySnapshot.docs.isNotEmpty) {
         final userData = querySnapshot.docs.first.data();
         final fullName = userData['full_name'] as String?;
         
-        print('👤 Found user data: $userData');
-        print('✅ Full name: $fullName');
+        print('[LetterForm] Found user data: $userData');
+        print('[LetterForm] Full name: $fullName');
         
         if (mounted) {
           setState(() {
@@ -131,7 +131,7 @@ class _LetterFormPageState extends State<LetterFormPage> {
           });
         }
       } else {
-        print('❌ No user found with email: $userEmail');
+        print('[LetterForm] No user found with email: $userEmail');
         if (mounted) {
           setState(() {
             selectedEmployee = 'User not found in database';
@@ -141,7 +141,7 @@ class _LetterFormPageState extends State<LetterFormPage> {
       }
       
     } catch (e) {
-      print('❌ Error fetching user name: $e');
+      print('[LetterForm] Error fetching user name: $e');
       if (mounted) {
         setState(() {
           selectedEmployee = 'Error: ${e.toString()}';
@@ -854,9 +854,9 @@ class _LetterFormPageState extends State<LetterFormPage> {
       );
 
       // Submit directly to Firestore
-      print('🔍 Debug: About to submit letter: ${letter.subject}');
-      print('🔍 Debug: Recipient ID: ${letter.recipientId}');
-      print('🔍 Debug: User Email: $userEmail');
+      print('[LetterForm] Debug: About to submit letter: ${letter.subject}');
+      print('[LetterForm] Debug: Recipient ID: ${letter.recipientId}');
+      print('[LetterForm] Debug: User Email: $userEmail');
       
       // Convert letter to Firestore format and add directly
       final firestore = FirebaseFirestore.instance;
@@ -864,10 +864,10 @@ class _LetterFormPageState extends State<LetterFormPage> {
       // Use employee_id as primary identifier for data separation
       final primaryUserId = employeeId ?? userId ?? actualUserId;
       
-      print('🔍 Debug: Form - employeeId: $employeeId');
-      print('🔍 Debug: Form - userId: $userId'); 
-      print('🔍 Debug: Form - actualUserId: $actualUserId');
-      print('🔍 Debug: Form - primaryUserId (final): $primaryUserId');
+      print('[LetterForm] Debug: Form - employeeId: $employeeId');
+      print('[LetterForm] Debug: Form - userId: $userId'); 
+      print('[LetterForm] Debug: Form - actualUserId: $actualUserId');
+      print('[LetterForm] Debug: Form - primaryUserId (final): $primaryUserId');
       
       final letterData = {
         'letterNumber': letter.letterNumber,
@@ -890,20 +890,20 @@ class _LetterFormPageState extends State<LetterFormPage> {
         'validUntil': validUntilDate != null ? Timestamp.fromDate(validUntilDate!) : null,
       };
       
-      print('🔍 Debug: Saving letter with user_id: $primaryUserId');
-      print('🔍 Debug: Letter data: ${letterData['subject']} - ${letterData['status']}');
+      print('[LetterForm] Debug: Saving letter with user_id: $primaryUserId');
+      print('[LetterForm] Debug: Letter data: ${letterData['subject']} - ${letterData['status']}');
       
       final docRef = await firestore.collection('letters').add(letterData);
-      print('🔍 Debug: Letter added successfully to Firestore with ID: ${docRef.id}');
-      print('🔍 Debug: Letter subject: ${letterData['subject']}');
-      print('🔍 Debug: Letter user_id: ${letterData['user_id']}');
-      print('🔍 Debug: Letter status: ${letterData['status']}');
+      print('[LetterForm] Debug: Letter added successfully to Firestore with ID: ${docRef.id}');
+      print('[LetterForm] Debug: Letter subject: ${letterData['subject']}');
+      print('[LetterForm] Debug: Letter user_id: ${letterData['user_id']}');
+      print('[LetterForm] Debug: Letter status: ${letterData['status']}');
       
       _showSuccessMessage('Letter submitted successfully!');
       Navigator.pop(context, true); // Pass true to indicate success
     } catch (e) {
-      print('🔍 Debug: Error submitting letter: $e');
-      print('🔍 Debug: Error type: ${e.runtimeType}');
+      print('[LetterForm] Debug: Error submitting letter: $e');
+      print('[LetterForm] Debug: Error type: ${e.runtimeType}');
       _showErrorMessage('An error occurred while submitting the letter: $e');
     } finally {
       setState(() {

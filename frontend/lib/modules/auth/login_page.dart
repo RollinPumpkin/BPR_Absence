@@ -131,8 +131,25 @@ class _LoginPageState extends State<LoginPage>
           
           print('🎯 LOGIN SUCCESS: User ${authProvider.currentUser!.email} (${userRole}) → ${routeDestination}');
           
-          // Navigate directly to the determined route
-          Navigator.pushReplacementNamed(context, routeDestination);
+          // Navigate with error handling to prevent crashes
+          try {
+            await Future.delayed(const Duration(milliseconds: 300)); // Give time for state to update
+            if (mounted) {
+              Navigator.pushReplacementNamed(context, routeDestination);
+              print('✅ Navigation started to: $routeDestination');
+            }
+          } catch (e) {
+            print('❌ Navigation exception: $e');
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Failed to navigate: ${e.toString()}'),
+                  backgroundColor: AppColors.errorRed,
+                  duration: const Duration(seconds: 5),
+                ),
+              );
+            }
+          }
         }
       } else {
         print('🚀 LOGIN_ATTEMPT: Login failed or no user data');

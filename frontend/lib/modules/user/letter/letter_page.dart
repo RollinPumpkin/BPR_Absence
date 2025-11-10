@@ -53,35 +53,39 @@ class _UserLetterPageState extends State<UserLetterPage>
       return;
     }
 
-    setState(() {
-      isLoading = true;
-    });
+    if (mounted) {
+      setState(() {
+        isLoading = true;
+      });
+    }
 
     try {
-      print('🔄 Loading letters for user: ${_userContext.currentUserName} (${_userContext.currentUserId})');
+      print('[LetterPage] Loading letters for user: ${_userContext.currentUserName} (${_userContext.currentUserId})');
       
       // Load letters for current user only
       final allLetters = await FirestoreLetterService.getLetters(userId: _userContext.currentUserId);
       
-      setState(() {
-        letters = allLetters;
-        isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          letters = allLetters;
+          isLoading = false;
+        });
+      }
       
-      print('✅ Loaded ${letters.length} letters for current user from Firestore');
+      print('[LetterPage] Loaded ${letters.length} letters for current user from Firestore');
       
       // Debug: Print letter details
       for (var letter in letters) {
-        print('📋 Letter: ${letter.subject} - Status: ${letter.status} - Recipient: ${letter.recipientId}');
+        print('[LetterPage] Letter: ${letter.subject} - Status: ${letter.status} - Recipient: ${letter.recipientId}');
       }
       
     } catch (e) {
-      print('❌ Error loading letters: $e');
-      setState(() {
-        isLoading = false;
-      });
-      
+      print('[LetterPage] Error loading letters: $e');
       if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to load letters: $e'),

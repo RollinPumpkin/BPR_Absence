@@ -34,48 +34,56 @@ class _UserAttendancePageState extends State<UserAttendancePage> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     // Refresh data when user navigates back to this page
-    print('🔍 Debug: Page dependencies changed, refreshing data...');
+    print('[AttendancePage] Debug: Page dependencies changed, refreshing data...');
     _loadRecentAttendance();
   }
 
   Future<void> _loadRecentAttendance() async {
     try {
-      print('🔍 Debug: Loading attendance data...');
-      setState(() {
-        _isLoading = true;
-        _error = null;
-      });
+      print('[AttendancePage] Debug: Loading attendance data...');
+      if (mounted) {
+        setState(() {
+          _isLoading = true;
+          _error = null;
+        });
+      }
 
       final response = await _attendanceService.getMonthlySummary();
-      print('🔍 Debug: Attendance response: ${response.isSuccess}');
-      print('🔍 Debug: Response message: ${response.message}');
-      print('🔍 Debug: Response data: ${response.data}');
+      print('[AttendancePage] Debug: Attendance response: ${response.isSuccess}');
+      print('[AttendancePage] Debug: Response message: ${response.message}');
+      print('[AttendancePage] Debug: Response data: ${response.data}');
       
       if (response.isSuccess && response.data != null) {
-        print('🔍 Debug: Found ${response.data!.attendance.length} attendance records');
-        setState(() {
-          // Take only the last 5 records for recent history
-          _recentAttendance = response.data!.attendance.take(5).toList();
-          _isLoading = false;
-        });
+        print('[AttendancePage] Debug: Found ${response.data!.attendance.length} attendance records');
+        if (mounted) {
+          setState(() {
+            // Take only the last 5 records for recent history
+            _recentAttendance = response.data!.attendance.take(5).toList();
+            _isLoading = false;
+          });
+        }
         
         // Debug each attendance record
         for (var attendance in _recentAttendance) {
-          print('🔍 Debug: Attendance - Date: ${attendance.date}, CheckIn: ${attendance.checkInTime}, CheckOut: ${attendance.checkOutTime}');
+          print('[AttendancePage] Debug: Attendance - Date: ${attendance.date}, CheckIn: ${attendance.checkInTime}, CheckOut: ${attendance.checkOutTime}');
         }
       } else {
-        print('🔍 Debug: Failed to load - ${response.message}');
+        print('[AttendancePage] Debug: Failed to load - ${response.message}');
+        if (mounted) {
+          setState(() {
+            _error = response.message ?? 'Failed to load attendance data';
+            _isLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      print('[AttendancePage] Debug: Exception loading attendance: $e');
+      if (mounted) {
         setState(() {
-          _error = response.message ?? 'Failed to load attendance data';
+          _error = 'Error loading attendance data: ${e.toString()}';
           _isLoading = false;
         });
       }
-    } catch (e) {
-      print('🔍 Debug: Exception loading attendance: $e');
-      setState(() {
-        _error = 'Error loading attendance data: ${e.toString()}';
-        _isLoading = false;
-      });
     }
   }
 
