@@ -853,6 +853,37 @@ router.get('/summary', auth, async (req, res) => {
   }
 });
 
+// Delete an attendance record (admin only)
+router.delete('/:id', auth, requireAdminRole, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const attendanceRef = db.collection('attendance').doc(id);
+    const attendanceDoc = await attendanceRef.get();
+
+    if (!attendanceDoc.exists) {
+      return res.status(404).json({
+        success: false,
+        message: 'Attendance record not found'
+      });
+    }
+
+    await attendanceRef.delete();
+
+    res.json({
+      success: true,
+      message: 'Attendance record deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete attendance error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete attendance record',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
 // Get attendance history with advanced filtering
 router.get('/history', auth, async (req, res) => {
   try {

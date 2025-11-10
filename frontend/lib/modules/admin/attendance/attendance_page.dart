@@ -391,6 +391,56 @@ class _AttendancePageState extends State<AttendancePage> {
     }
   }
 
+  Future<void> _handleDelete(Attendance attendance) async {
+    if (attendance.id.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Invalid attendance id'), backgroundColor: AppColors.primaryRed),
+      );
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Delete Attendance'),
+            content: const Text('Are you sure you want to delete this attendance record? This action cannot be undone.'),
+            actions: [
+              TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryRed, foregroundColor: AppColors.pureWhite),
+                onPressed: () => Navigator.of(ctx).pop(true),
+                child: const Text('Delete'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+
+    if (!confirmed) return;
+
+    try {
+      final resp = await _attendanceService.deleteAttendance(attendance.id);
+      if (resp.success) {
+        setState(() {
+          _attendanceRecords.removeWhere((a) => a.id == attendance.id);
+          _filteredAttendanceRecords.removeWhere((a) => a.id == attendance.id);
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Deleted Successfully'), backgroundColor: AppColors.primaryGreen),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(resp.message ?? 'Failed to delete'), backgroundColor: AppColors.primaryRed),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Delete failed: $e'), backgroundColor: AppColors.primaryRed),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final attendanceData = _generateAttendanceDisplayData();
@@ -588,16 +638,20 @@ class _AttendancePageState extends State<AttendancePage> {
                     ),
                   )
                 else
-                  ...attendanceData.map((attendance) => AttendanceCard(
-                    name: attendance['name'],
-                    division: attendance['division'],
-                    status: attendance['status'],
-                    statusColor: attendance['statusColor'],
-                    clockIn: attendance['clockIn'],
-                    clockOut: attendance['clockOut'],
-                    date: attendance['date'],
-                    user: null, // We don't have User object, just attendance data
-                  )).toList(),
+                  ...attendanceData.map((attendance) {
+                    final Attendance att = attendance['attendance'] as Attendance;
+                    return AttendanceCard(
+                      name: attendance['name'],
+                      division: attendance['division'],
+                      status: attendance['status'],
+                      statusColor: attendance['statusColor'],
+                      clockIn: attendance['clockIn'],
+                      clockOut: attendance['clockOut'],
+                      date: attendance['date'],
+                      user: null, // We don't have User object, just attendance data
+                      onDelete: () => _handleDelete(att),
+                    );
+                  }).toList(),
               ],
             ),
           ),

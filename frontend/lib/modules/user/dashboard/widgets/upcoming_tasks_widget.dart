@@ -42,34 +42,40 @@ class _UpcomingTasksWidgetState extends State<UpcomingTasksWidget> {
   }
 
   Future<void> _loadUpcomingTasks() async {
-    print('🎯 [UpcomingTasksWidget] Starting _loadUpcomingTasks');
+    print('[UpcomingTasksWidget] Starting _loadUpcomingTasks');
     try {
-      setState(() {
-        _isLoading = true;
-        _error = null;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = true;
+          _error = null;
+        });
+      }
 
       // Directly try to get assignments without complex testing
-      print('📱 Getting upcoming assignments...');
+      print('[UpcomingTasksWidget] Getting upcoming assignments...');
       final assignments = await _assignmentService.getUpcomingAssignments();
       
-      print('✅ [UpcomingTasksWidget] Received ${assignments.length} assignments');
+      print('[UpcomingTasksWidget] Received ${assignments.length} assignments');
       for (var assignment in assignments) {
-        print('📋 Assignment: ${assignment.title} - Due: ${assignment.dueDate}');
+        print('[UpcomingTasksWidget] Assignment: ${assignment.title} - Due: ${assignment.dueDate}');
       }
       
-      setState(() {
-        _assignments = assignments;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _assignments = assignments;
+          _isLoading = false;
+        });
+      }
       
-      print('✅ [UpcomingTasksWidget] State updated with ${_assignments.length} assignments');
+      print('[UpcomingTasksWidget] State updated with ${_assignments.length} assignments');
     } catch (e) {
-      print('❌ [UpcomingTasksWidget] Error loading tasks: $e');
-      setState(() {
-        _error = e.toString();
-        _isLoading = false;
-      });
+      print('[UpcomingTasksWidget] Error loading tasks: $e');
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -117,7 +123,7 @@ class _UpcomingTasksWidgetState extends State<UpcomingTasksWidget> {
                     // Reload button
                     IconButton(
                       onPressed: () {
-                        print('🔄 Manual reload triggered');
+                        print('[UpcomingTasksWidget] Manual reload triggered');
                         _loadUpcomingTasks();
                       },
                       icon: const Icon(

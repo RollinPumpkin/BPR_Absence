@@ -66,12 +66,14 @@ class _UserHeaderState extends State<UserHeader> {
     await prefs.remove('clock_in_${userId}_$today');
     await prefs.remove('clock_out_${userId}_$today');
     
-    setState(() {
-      _clockInTime = null;
-      _clockOutTime = null;
-      _hasClockIn = false;
-      _hasClockOut = false;
-    });
+    if (mounted) {
+      setState(() {
+        _clockInTime = null;
+        _clockOutTime = null;
+        _hasClockIn = false;
+        _hasClockOut = false;
+      });
+    }
   }
 
   String _getGreeting(int hour) {
@@ -95,12 +97,14 @@ class _UserHeaderState extends State<UserHeader> {
     final clockIn = prefs.getString('clock_in_${userId}_$today');
     final clockOut = prefs.getString('clock_out_${userId}_$today');
     
-    setState(() {
-      _clockInTime = clockIn;
-      _clockOutTime = clockOut;
-      _hasClockIn = _clockInTime != null;
-      _hasClockOut = _clockOutTime != null;
-    });
+    if (mounted) {
+      setState(() {
+        _clockInTime = clockIn;
+        _clockOutTime = clockOut;
+        _hasClockIn = _clockInTime != null;
+        _hasClockOut = _clockOutTime != null;
+      });
+    }
   }
 
   String _getDisplayTime(String? savedTime, bool isClockOut) {

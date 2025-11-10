@@ -170,6 +170,9 @@ router.get('/admin/employees', auth, requireAdminRole, async (req, res) => {
     }
     if (status) {
       query = query.where('status', '==', status);
+    } else {
+      // Default: exclude terminated employees unless explicitly requested
+      query = query.where('status', '!=', 'terminated');
     }
     if (role) {
       query = query.where('role', '==', role);
@@ -180,6 +183,10 @@ router.get('/admin/employees', auth, requireAdminRole, async (req, res) => {
     
     snapshot.forEach(doc => {
       const data = doc.data();
+      // Double-check: skip terminated employees even if query didn't filter properly
+      if (data.status === 'terminated') {
+        return; // Skip this employee
+      }
       employees.push({
         id: doc.id,
         employee_id: data.employee_id,
@@ -994,8 +1001,11 @@ router.post('/admin/create-employee', auth, requireAdminRole, async (req, res) =
       });
     }
 
-    // Check if email already exists
-    const emailQuery = await db.collection('users').where('email', '==', email).get();
+    // Check if email already exists (excluding terminated users)
+    const emailQuery = await db.collection('users')
+      .where('email', '==', email)
+      .where('status', '!=', 'terminated')
+      .get();
     if (!emailQuery.empty) {
       return res.status(400).json({
         success: false,
@@ -1003,8 +1013,11 @@ router.post('/admin/create-employee', auth, requireAdminRole, async (req, res) =
       });
     }
 
-    // Check if employee ID already exists
-    const employeeIdQuery = await db.collection('users').where('employee_id', '==', employee_id).get();
+    // Check if employee ID already exists (excluding terminated users)
+    const employeeIdQuery = await db.collection('users')
+      .where('employee_id', '==', employee_id)
+      .where('status', '!=', 'terminated')
+      .get();
     if (!employeeIdQuery.empty) {
       return res.status(400).json({
         success: false,

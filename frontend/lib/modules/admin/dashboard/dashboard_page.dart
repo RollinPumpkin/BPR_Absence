@@ -51,23 +51,36 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   @override
   void initState() {
     super.initState();
-    _loadPendingLetters();
-    _loadAssignments();
-    _loadAttendanceRecords();
+    // Load data after widget is built to prevent crashes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _loadPendingLetters().catchError((e) {
+          print('❌ Error loading letters: $e');
+        });
+        _loadAssignments().catchError((e) {
+          print('❌ Error loading assignments: $e');
+        });
+        _loadAttendanceRecords().catchError((e) {
+          print('❌ Error loading attendance: $e');
+        });
+      }
+    });
   }
 
   Future<void> _loadPendingLetters() async {
     print('🔄 Dashboard: Starting to load pending letters...');
-    setState(() {
-      _isLoadingLetters = true;
-      _letterError = null;
-    });
+    if (mounted) {
+      setState(() {
+        _isLoadingLetters = true;
+        _letterError = null;
+      });
+    }
 
     try {
       print('🔍 Dashboard: Fetching pending letters...');
       final pendingResponse = await _letterService.getPendingLetters(limit: 50);
       
-      print('� Dashboard: Fetching received letters...');
+      print('🔍 Dashboard: Fetching received letters...');
       final receivedResponse = await _letterService.getReceivedLetters(limit: 50);
       
       print('🔍 Dashboard: Pending response success: ${pendingResponse.success}');
@@ -106,18 +119,22 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       
       print('🔍 Dashboard: Filtered pending letters: ${pendingLetters.length}');
       
-      setState(() {
-        _pendingLetters = pendingLetters;
-        _isLoadingLetters = false;
-      });
+      if (mounted) {
+        setState(() {
+          _pendingLetters = pendingLetters;
+          _isLoadingLetters = false;
+        });
+      }
       
     } catch (e) {
       print('❌ Dashboard: Error loading letters: $e');
-      setState(() {
-        _letterError = 'Failed to load letters: $e';
-        _isLoadingLetters = false;
-        _pendingLetters = []; // Empty list instead of dummy data
-      });
+      if (mounted) {
+        setState(() {
+          _letterError = 'Failed to load letters: $e';
+          _isLoadingLetters = false;
+          _pendingLetters = []; // Empty list instead of dummy data
+        });
+      }
     }
   }
 
@@ -125,10 +142,12 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
 
   Future<void> _loadAssignments() async {
     print('🔄 Dashboard: Starting to load assignments...');
-    setState(() {
-      _isLoadingAssignments = true;
-      _assignmentError = null;
-    });
+    if (mounted) {
+      setState(() {
+        _isLoadingAssignments = true;
+        _assignmentError = null;
+      });
+    }
 
     try {
       DiagnosticService.logApiResponse('Assignments', 'Starting request...');
@@ -136,18 +155,22 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       
       DiagnosticService.logApiResponse('Assignments', 'Response received, count: ${assignments.length}');
       print('✅ Dashboard: Assignments loaded - ${assignments.length} assignments');
-      setState(() {
-        _assignments = assignments;
-        _isLoadingAssignments = false;
-      });
+      if (mounted) {
+        setState(() {
+          _assignments = assignments;
+          _isLoadingAssignments = false;
+        });
+      }
     } catch (e, stackTrace) {
       DiagnosticService.logError('Dashboard Assignment Loading', e, stackTrace);
       print('❌ Dashboard: Error loading assignments: $e');
-      setState(() {
-        _assignmentError = 'Failed to load assignments: $e';
-        _isLoadingAssignments = false;
-        _assignments = []; // Empty list instead of dummy data
-      });
+      if (mounted) {
+        setState(() {
+          _assignmentError = 'Failed to load assignments: $e';
+          _isLoadingAssignments = false;
+          _assignments = []; // Empty list instead of dummy data
+        });
+      }
     }
   }
 
@@ -155,34 +178,42 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
 
   Future<void> _loadAttendanceRecords() async {
     print('🔄 Dashboard: Starting to load attendance records...');
-    setState(() {
-      _isLoadingAttendance = true;
-      _attendanceError = null;
-    });
+    if (mounted) {
+      setState(() {
+        _isLoadingAttendance = true;
+        _attendanceError = null;
+      });
+    }
 
     try {
       final response = await _attendanceService.getAttendanceRecords();
       
       if (response.success && response.data != null) {
         print('✅ Dashboard: Attendance loaded - ${response.data!.items.length} records');
-        setState(() {
-          _attendanceRecords = response.data!.items;
-          _isLoadingAttendance = false;
-        });
+        if (mounted) {
+          setState(() {
+            _attendanceRecords = response.data!.items;
+            _isLoadingAttendance = false;
+          });
+        }
       } else {
+        if (mounted) {
+          setState(() {
+            _attendanceError = 'Failed to load attendance data: ${response.message}';
+            _isLoadingAttendance = false;
+            _attendanceRecords = []; // Empty list instead of dummy data
+          });
+        }
+      }
+    } catch (e) {
+      print('❌ Dashboard: Error loading attendance: $e');
+      if (mounted) {
         setState(() {
-          _attendanceError = 'Failed to load attendance data: ${response.message}';
+          _attendanceError = 'Failed to load attendance: $e';
           _isLoadingAttendance = false;
           _attendanceRecords = []; // Empty list instead of dummy data
         });
       }
-    } catch (e) {
-      print('❌ Dashboard: Error loading attendance: $e');
-      setState(() {
-        _attendanceError = 'Failed to load attendance: $e';
-        _isLoadingAttendance = false;
-        _attendanceRecords = []; // Empty list instead of dummy data
-      });
     }
   }
 

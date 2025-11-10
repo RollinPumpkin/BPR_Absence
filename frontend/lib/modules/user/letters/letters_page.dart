@@ -462,29 +462,33 @@ class _UserLettersPageState extends State<UserLettersPage> {
         };
       }).toList();
 
-      print('� Loaded ${letters.length} letters from API');
-      setState(() {
-        _letters = letters;
-        _isLoading = false;
-      });
+      print('[LettersPage] Loaded ${letters.length} letters from API');
+      if (mounted) {
+        setState(() {
+          _letters = letters;
+          _isLoading = false;
+        });
+      }
       } else {
-        print('❌ Debug: API failed, falling back to Firebase direct query...');
+        print('[LettersPage] Debug: API failed, falling back to Firebase direct query...');
         
         // Fallback to Firebase if API fails
         await _loadLettersFromFirebase();
       }
     } catch (e) {
-      print('❌ Debug: Error with API, falling back to Firebase: $e');
+      print('[LettersPage] Debug: Error with API, falling back to Firebase: $e');
       
       // Fallback to Firebase if API fails
       try {
         await _loadLettersFromFirebase();
       } catch (firebaseError) {
-        print('❌ Debug: Firebase fallback also failed: $firebaseError');
-        setState(() {
-          _error = 'Failed to load letters: $firebaseError';
-          _isLoading = false;
-        });
+        print('[LettersPage] Debug: Firebase fallback also failed: $firebaseError');
+        if (mounted) {
+          setState(() {
+            _error = 'Failed to load letters: $firebaseError';
+            _isLoading = false;
+          });
+        }
       }
     }
   }

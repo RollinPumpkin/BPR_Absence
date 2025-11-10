@@ -143,11 +143,11 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
         selectedAbsentType = isUserClockedIn ? clockOutTypes.first : clockInTypes.first;
       });
       
-      print('📊 User clock status: ${isUserClockedIn ? "Clocked In" : "Clocked Out"}');
-      print('📋 Default selected type: $selectedAbsentType');
+      print('[AttendanceForm] User clock status: ${isUserClockedIn ? "Clocked In" : "Clocked Out"}');
+      print('[AttendanceForm] Default selected type: $selectedAbsentType');
       
     } catch (e) {
-      print('❌ Error checking clock status from Firestore: $e');
+      print('[AttendanceForm] Error checking clock status from Firestore: $e');
       setState(() {
         isUserClockedIn = false;
         selectedAbsentType = clockInTypes.first;
@@ -168,8 +168,8 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
       // Reset dates when status changes
       _initializeDatesBasedOnType();
     });
-    print('📊 Clock status updated: ${isUserClockedIn ? "Clocked In" : "Clocked Out"}');
-    print('📋 New selected type: $selectedAbsentType');
+    print('[AttendanceForm] Clock status updated: ${isUserClockedIn ? "Clocked In" : "Clocked Out"}');
+    print('[AttendanceForm] New selected type: $selectedAbsentType');
   }
 
   @override
@@ -644,14 +644,14 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
       final ByteData? byteData = await squareImage.toByteData(format: ui.ImageByteFormat.png);
       if (byteData != null) {
         final compressedBytes = byteData.buffer.asUint8List();
-        print('📷 Image compressed to square: ${targetSize}x${targetSize}, size: ${compressedBytes.length} bytes');
+        print('[AttendanceForm] Image compressed to square: ${targetSize}x${targetSize}, size: ${compressedBytes.length} bytes');
         return compressedBytes;
       }
       
       // Fallback to original compression if square processing fails
       return await _compressImage(imageBytes);
     } catch (e) {
-      print('❌ Error creating square image: $e');
+      print('[AttendanceForm] Error creating square image: $e');
       // Fallback to original compression
       return await _compressImage(imageBytes);
     }
@@ -726,12 +726,12 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
       await prefs.setString('clock_in_time', currentTime);
       await prefs.setString('clock_in_${userId}_$today', currentTime);
       await prefs.remove('clock_out_time'); // Clear clock out
-      print('✅ Clock In time saved: $currentTime');
+      print('[AttendanceForm] Clock In time saved: $currentTime');
     } else if (clockOutTypes.contains(selectedAbsentType)) {
       // Set clock out time
       await prefs.setString('clock_out_time', currentTime);
       await prefs.setString('clock_out_${userId}_$today', currentTime);
-      print('✅ Clock Out time saved: $currentTime for type: $selectedAbsentType');
+      print('[AttendanceForm] Clock Out time saved: $currentTime for type: $selectedAbsentType');
     }
   }
 
@@ -834,7 +834,7 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
         }
       }
     } catch (e) {
-      print('❌ Error saving attendance: $e');
+      print('[AttendanceForm] Error saving attendance: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1014,8 +1014,8 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                     selectedAbsentType = isUserClockedIn ? clockOutTypes.first : clockInTypes.first;
                     _initializeDatesBasedOnType();
                   });
-                  print('🔄 DEBUG: Clock status toggled to ${isUserClockedIn ? "Clocked In" : "Clocked Out"}');
-                  print('📋 DEBUG: Selected type: $selectedAbsentType');
+                  print('[AttendanceForm] DEBUG: Clock status toggled to ${isUserClockedIn ? "Clocked In" : "Clocked Out"}');
+                  print('[AttendanceForm] DEBUG: Selected type: $selectedAbsentType');
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.orange,
@@ -1791,13 +1791,13 @@ class DummyAttendanceService {
         await FirebaseFirestore.instance.collection('attendance').add(attendanceData);
       }
 
-      print('✅ Attendance saved to Firestore successfully');
-      print('📊 Type: $type, Date: $today, Time: $currentTime');
+      print('[AttendanceForm] Attendance saved to Firestore successfully');
+      print('[AttendanceForm] Type: $type, Date: $today, Time: $currentTime');
       
       return DummyAttendanceResponse(success: true, message: 'Attendance saved successfully');
       
     } catch (e) {
-      print('❌ Error saving attendance to Firestore: $e');
+      print('[AttendanceForm] Error saving attendance to Firestore: $e');
       return DummyAttendanceResponse(success: false, message: 'Error: $e');
     }
   }

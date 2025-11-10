@@ -189,7 +189,14 @@ class _EmployeePageState extends State<EmployeePage> {
                         itemBuilder: (context, index) {
                           final user = userProvider.users[index];
                           return EmployeeCard(
+                            key: ValueKey(user.id), // Add key for proper widget tracking
                             user: user,
+                            onDeleted: () async {
+                              // Refresh the list after deletion
+                              print('🔄 Refreshing employee list after deletion...');
+                              await userProvider.refreshUsers();
+                              print('✅ Employee list refreshed');
+                            },
                           );
                         },
                       ),
