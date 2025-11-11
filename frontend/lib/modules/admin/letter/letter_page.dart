@@ -337,7 +337,12 @@ class _LetterPageState extends State<LetterPage> {
         });
       },
       selectedColor: AppColors.accentBlue.withOpacity(0.2),
+      backgroundColor: AppColors.backgroundGray,
       checkmarkColor: AppColors.accentBlue,
+      side: BorderSide(
+        color: isSelected ? AppColors.accentBlue : AppColors.dividerGray,
+        width: 1,
+      ),
     );
   }
 
@@ -445,95 +450,84 @@ class _LetterToolbar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: EdgeInsets.zero,
-      child: Row(
-        children: [
-          // Filter
-          OutlinedButton.icon(
-            onPressed: () {
-              // TODO: buka dialog / bottom sheet filter
-            },
-            icon: const Icon(Icons.filter_list, size: 18),
-            label: const Text('Filter'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.neutral800,
-              side: const BorderSide(color: AppColors.dividerGray),
-              backgroundColor: AppColors.pureWhite,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            ),
-          ),
-          const SizedBox(width: 8),
-
-          // Export → Excel
-          OutlinedButton(
+    return Row(
+      children: [
+        // Export → Excel
+        Expanded(
+          child: OutlinedButton.icon(
             onPressed: () => _exportLettersExcel(context),
+            icon: const Icon(Icons.file_download_outlined, size: 18),
+            label: const Text('Export'),
             style: OutlinedButton.styleFrom(
               foregroundColor: AppColors.white,
-              side: const BorderSide(color: AppColors.primaryRed),
               backgroundColor: AppColors.primaryRed,
+              side: const BorderSide(color: AppColors.primaryRed),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              padding: const EdgeInsets.symmetric(vertical: 12),
             ),
-            child: const Text('Export', style: TextStyle(fontWeight: FontWeight.w700)),
           ),
-          const SizedBox(width: 8),
+        ),
+        const SizedBox(width: 8),
 
-          // Add Data
-          ElevatedButton(
+        // Add Data
+        Expanded(
+          child: OutlinedButton.icon(
             onPressed: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const AddLetterPage()),
               );
             },
-            style: ElevatedButton.styleFrom(
+            icon: const Icon(Icons.add, size: 18),
+            label: const Text('Add Data'),
+            style: OutlinedButton.styleFrom(
               backgroundColor: AppColors.primaryBlue,
               foregroundColor: AppColors.pureWhite,
+              side: const BorderSide(color: AppColors.primaryBlue),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              elevation: 0,
+              padding: const EdgeInsets.symmetric(vertical: 12),
             ),
-            child: const Text('Add Data', style: TextStyle(fontWeight: FontWeight.w800)),
           ),
-          const SizedBox(width: 8),
+        ),
+        const SizedBox(width: 8),
 
-          // Add Letter Type (popup)
-          ElevatedButton(
+        // Add Letter Type (popup)
+        Expanded(
+          child: OutlinedButton.icon(
             onPressed: () {
               showDialog(context: context, builder: (_) => const AddLetterTypePopup());
             },
-            style: ElevatedButton.styleFrom(
+            icon: const Icon(Icons.add_circle_outline, size: 18),
+            label: const Text('Add Type'),
+            style: OutlinedButton.styleFrom(
               backgroundColor: AppColors.primaryGreen,
               foregroundColor: AppColors.pureWhite,
+              side: const BorderSide(color: AppColors.primaryGreen),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              elevation: 0,
+              padding: const EdgeInsets.symmetric(vertical: 12),
             ),
-            child:
-                const Text('Add Letter Type', style: TextStyle(fontWeight: FontWeight.w800)),
           ),
-          const SizedBox(width: 8),
+        ),
+        const SizedBox(width: 8),
 
-          // View Letter Type (popup)
-          ElevatedButton(
+        // View Letter Type (popup)
+        Expanded(
+          child: OutlinedButton.icon(
             onPressed: () {
               showDialog(context: context, builder: (_) => const ViewLetterTypePopup());
             },
-            style: ElevatedButton.styleFrom(
+            icon: const Icon(Icons.visibility_outlined, size: 18),
+            label: const Text('View Type'),
+            style: OutlinedButton.styleFrom(
               backgroundColor: AppColors.primaryYellow,
               foregroundColor: AppColors.pureWhite,
+              side: const BorderSide(color: AppColors.primaryYellow),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              elevation: 0,
+              padding: const EdgeInsets.symmetric(vertical: 12),
             ),
-            child:
-                const Text('View Letter Type', style: TextStyle(fontWeight: FontWeight.w800)),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

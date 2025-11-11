@@ -28,7 +28,7 @@ class EmployeeActionButtons extends StatelessWidget {
           style: OutlinedButton.styleFrom(
             foregroundColor: AppColors.neutral800,
             side: const BorderSide(color: AppColors.dividerGray),
-            backgroundColor: AppColors.pureWhite,
+            backgroundColor: AppColors.backgroundGray,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           ),

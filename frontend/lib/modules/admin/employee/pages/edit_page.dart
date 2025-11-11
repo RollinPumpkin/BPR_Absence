@@ -129,18 +129,35 @@ class _EditPageState extends State<EditPage> {
     });
 
     try {
-      // Prepare updated data (only fields supported by current endpoint)
+      // Prepare updated data with all fields
       final updateData = {
         'full_name': fullnameController.text.trim(),
         'email': emailController.text.trim(),
         'phone': mobileController.text.trim(),
         'position': positionController.text.trim(),
         'department': departmentController.text.trim(),
+        'division': divisionController.text.trim(),
         'role': _convertRoleToBackend(selectedRole),
-        // Note: gender, place_of_birth, date_of_birth, contract_type, last_education
-        // are not yet supported by the backend endpoint
-        // emergency_contact field not in UI form yet
+        // Additional fields now supported
+        'gender': selectedGender?.toLowerCase(),
+        'place_of_birth': placeOfBirthController.text.trim(),
+        'contract_type': selectedContractType,
+        'last_education': selectedEducation,
+        'emergency_contact': emergencyContactController.text.trim(),
       };
+
+      // Add date_of_birth if selected
+      if (selectedDate != null) {
+        updateData['date_of_birth'] = selectedDate!.toIso8601String();
+      }
+
+      // Remove empty/null values to avoid overwriting with blanks
+      updateData.removeWhere((key, value) => 
+        value == null || 
+        (value is String && value.isEmpty)
+      );
+
+      print('📝 Update data being sent: $updateData');
 
       // Update user via admin endpoint
       final response = await EmployeeService.updateEmployee(

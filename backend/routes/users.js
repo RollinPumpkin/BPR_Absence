@@ -170,10 +170,8 @@ router.get('/admin/employees', auth, requireAdminRole, async (req, res) => {
     }
     if (status) {
       query = query.where('status', '==', status);
-    } else {
-      // Default: exclude terminated employees unless explicitly requested
-      query = query.where('status', '!=', 'terminated');
     }
+    // Note: We'll filter out terminated users after fetching to avoid index requirements
     if (role) {
       query = query.where('role', '==', role);
     }
@@ -183,10 +181,12 @@ router.get('/admin/employees', auth, requireAdminRole, async (req, res) => {
     
     snapshot.forEach(doc => {
       const data = doc.data();
-      // Double-check: skip terminated employees even if query didn't filter properly
-      if (data.status === 'terminated') {
+      
+      // Filter out terminated employees unless explicitly requested via status parameter
+      if (!status && data.status === 'terminated') {
         return; // Skip this employee
       }
+      
       employees.push({
         id: doc.id,
         employee_id: data.employee_id,
@@ -1002,11 +1002,9 @@ router.post('/admin/create-employee', auth, requireAdminRole, async (req, res) =
     }
 
     // Check if email already exists (excluding terminated users)
-    const emailQuery = await db.collection('users')
-      .where('email', '==', email)
-      .where('status', '!=', 'terminated')
-      .get();
-    if (!emailQuery.empty) {
+    const emailQuery = await db.collection('users').where('email', '==', email).get();
+    const activeEmailUsers = emailQuery.docs.filter(doc => doc.data().status !== 'terminated');
+    if (activeEmailUsers.length > 0) {
       return res.status(400).json({
         success: false,
         message: 'Email already exists'
@@ -1014,11 +1012,9 @@ router.post('/admin/create-employee', auth, requireAdminRole, async (req, res) =
     }
 
     // Check if employee ID already exists (excluding terminated users)
-    const employeeIdQuery = await db.collection('users')
-      .where('employee_id', '==', employee_id)
-      .where('status', '!=', 'terminated')
-      .get();
-    if (!employeeIdQuery.empty) {
+    const employeeIdQuery = await db.collection('users').where('employee_id', '==', employee_id).get();
+    const activeEmployeeIdUsers = employeeIdQuery.docs.filter(doc => doc.data().status !== 'terminated');
+    if (activeEmployeeIdUsers.length > 0) {
       return res.status(400).json({
         success: false,
         message: 'Employee ID already exists'
@@ -1124,7 +1120,13 @@ router.put('/admin/employees/:userId', auth, requireAdminRole, async (req, res) 
       salary,
       manager_id,
       status,
-      emergency_contact
+      emergency_contact,
+      gender,
+      place_of_birth,
+      date_of_birth,
+      contract_type,
+      last_education,
+      division
     } = req.body;
 
     const updateData = {
@@ -1157,12 +1159,46 @@ router.put('/admin/employees/:userId', auth, requireAdminRole, async (req, res) 
       updateData.is_active = status === 'active';
     }
     if (emergency_contact !== undefined) updateData.emergency_contact = emergency_contact;
+    
+    // Additional employee profile fields
+    if (gender !== undefined) updateData.gender = gender;
+    if (place_of_birth !== undefined) updateData.place_of_birth = place_of_birth;
+    if (date_of_birth !== undefined) updateData.date_of_birth = date_of_birth;
+    if (contract_type !== undefined) updateData.contract_type = contract_type;
+    if (last_education !== undefined) updateData.last_education = last_education;
+    if (division !== undefined) updateData.division = division;
 
     await userRef.update(updateData);
 
+    // Get the updated document to return
+    const updatedDoc = await userRef.get();
+    const updatedData = updatedDoc.data();
+
     res.json({
       success: true,
-      message: 'Employee updated successfully'
+      message: 'Employee updated successfully',
+      data: {
+        id: userId,
+        employee_id: updatedData.employee_id,
+        full_name: updatedData.full_name,
+        email: updatedData.email,
+        role: updatedData.role,
+        department: updatedData.department,
+        division: updatedData.division,
+        position: updatedData.position,
+        phone: updatedData.phone,
+        status: updatedData.status,
+        gender: updatedData.gender,
+        place_of_birth: updatedData.place_of_birth,
+        date_of_birth: updatedData.date_of_birth,
+        contract_type: updatedData.contract_type,
+        last_education: updatedData.last_education,
+        emergency_contact: updatedData.emergency_contact,
+        salary: updatedData.salary,
+        manager_id: updatedData.manager_id,
+        updated_at: updatedData.updated_at,
+        created_at: updatedData.created_at
+      }
     });
 
   } catch (error) {

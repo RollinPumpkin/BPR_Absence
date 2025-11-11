@@ -319,14 +319,20 @@ class EmployeeCard extends StatelessWidget {
                   IconButton(
                     tooltip: 'Edit',
                     icon: const Icon(Icons.edit, color: AppColors.primaryYellow),
-                    onPressed: () {
+                    onPressed: () async {
                       print('✏️ Edit clicked for ${user.fullName}');
-                      Navigator.push(
+                      final result = await Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => EditPage(employee: emp),
                         ),
                       );
+                      
+                      // If edit was successful, refresh the parent list
+                      if (result == true && context.mounted) {
+                        // Trigger the parent's refresh callback
+                        onDeleted?.call();
+                      }
                     },
                   ),
                   IconButton(

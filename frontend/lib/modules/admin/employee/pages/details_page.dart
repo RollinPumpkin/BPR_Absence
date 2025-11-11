@@ -229,12 +229,19 @@ class DetailsPage extends StatelessWidget {
                   ),
                   icon: const Icon(Icons.edit),
                   label: const Text('Edit', style: TextStyle(fontWeight: FontWeight.w700)),
-                  onPressed: () {
+                  onPressed: () async {
                     // Pass the employee data to EditPage for prefilling
-                    Navigator.push(
+                    final result = await Navigator.push(
                       context,
                       MaterialPageRoute(builder: (_) => EditPage(employee: employee)),
                     );
+                    
+                    // If edit was successful, refresh the provider and pop back
+                    if (result == true && context.mounted) {
+                      Provider.of<UserProvider>(context, listen: false).refreshUsers();
+                      // Pop back to employee list to show updated data
+                      Navigator.of(context).pop();
+                    }
                   },
                 ),
                 const SizedBox(width: 10),
