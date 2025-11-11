@@ -34,15 +34,16 @@ router.post('/register', validateRegister, async (req, res) => {
     } = req.body;
 
     const usersRef = db.collection('users');
-    const emailQuery = await usersRef
-      .where('email', '==', email)
-      .where('status', '!=', 'terminated')
-      .get();
-    const employeeIdQuery = await usersRef
-      .where('employee_id', '==', employee_id)
-      .where('status', '!=', 'terminated')
-      .get();
-    if (!emailQuery.empty || !employeeIdQuery.empty) {
+    
+    // Check email (fetch all with this email, then filter out terminated)
+    const emailQuery = await usersRef.where('email', '==', email).get();
+    const activeEmailUsers = emailQuery.docs.filter(doc => doc.data().status !== 'terminated');
+    
+    // Check employee ID (fetch all with this ID, then filter out terminated)
+    const employeeIdQuery = await usersRef.where('employee_id', '==', employee_id).get();
+    const activeEmployeeIdUsers = employeeIdQuery.docs.filter(doc => doc.data().status !== 'terminated');
+    
+    if (activeEmailUsers.length > 0 || activeEmployeeIdUsers.length > 0) {
       return res.status(400).json({
         success: false,
         message: 'User with this email or employee ID already exists'

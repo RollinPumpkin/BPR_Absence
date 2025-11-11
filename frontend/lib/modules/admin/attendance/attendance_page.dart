@@ -575,6 +575,10 @@ class _AttendancePageState extends State<AttendancePage> {
                           style: OutlinedButton.styleFrom(
                             foregroundColor: AppColors.white,
                             backgroundColor: AppColors.primaryRed,
+                            side: const BorderSide(color: AppColors.primaryRed),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                             padding: const EdgeInsets.symmetric(vertical: 12),
                           ),
                         ),
@@ -583,7 +587,7 @@ class _AttendancePageState extends State<AttendancePage> {
 
                       // ATTENDANCE FORM
                       Expanded(
-                        child: ElevatedButton.icon(
+                        child: OutlinedButton.icon(
                           onPressed: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
@@ -595,15 +599,15 @@ class _AttendancePageState extends State<AttendancePage> {
                             Icons.assignment_turned_in_outlined,
                             size: 18,
                           ),
-                          label: const Text('Attendance Form'),
-                          style: ElevatedButton.styleFrom(
+                          label: const Text('Form'),
+                          style: OutlinedButton.styleFrom(
                             backgroundColor: AppColors.primaryBlue,
                             foregroundColor: AppColors.pureWhite,
+                            side: const BorderSide(color: AppColors.primaryBlue),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
                             padding: const EdgeInsets.symmetric(vertical: 12),
-                            elevation: 0,
                           ),
                         ),
                       ),
