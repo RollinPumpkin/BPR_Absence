@@ -11,6 +11,7 @@ node_modules/
 # Firebase credentials
 backend/*firebase*adminsdk*.json
 backend/google-services.json
+frontend/android/app/google-services.json
 
 # Flutter/Dart
 .dart_tool/
