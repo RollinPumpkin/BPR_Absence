@@ -8,7 +8,7 @@ let auth = null;
 const initializeFirebase = () => {
   try {
     // Use service account key file
-    const serviceAccountPath = path.join(__dirname, '..', 'bpr-absens-firebase-adminsdk-fbsvc-3de050422d.json');
+    const serviceAccountPath = path.join(__dirname, '..', 'bpr-absens-firebase-adminsdk-fbsvc-da2d17d44d.json');
     const serviceAccount = require(serviceAccountPath);
 
     admin.initializeApp({
