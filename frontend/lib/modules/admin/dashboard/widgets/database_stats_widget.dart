@@ -107,7 +107,7 @@ class _DatabaseStatsWidgetState extends State<DatabaseStatsWidget> {
         }
 
         // Narrow layout
-        final gap = 10.0;
+        const gap = 10.0;
         final itemWidth = (width - gap) / 2;
         return Wrap(
           spacing: gap,

@@ -520,6 +520,40 @@ router.delete('/qr-codes/:id', auth, adminAuth, async (req, res) => {
   }
 });
 
+// Update user profile (including work schedule)
+router.put('/users/:id', auth, adminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+
+    console.log('📝 Updating user:', id, 'Data:', updateData);
+
+    // Remove sensitive fields that shouldn't be updated via this endpoint
+    delete updateData.password; // Password updates should go through dedicated endpoint
+    delete updateData.created_at;
+    
+    // Add updated_at timestamp
+    updateData.updated_at = getServerTimestamp();
+
+    const userRef = db.collection('users').doc(id);
+    await userRef.update(updateData);
+
+    console.log('✅ User updated successfully');
+
+    res.json({
+      success: true,
+      message: 'User updated successfully'
+    });
+
+  } catch (error) {
+    console.error('❌ Update user error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update user'
+    });
+  }
+});
+
 // Update user status (activate/deactivate)
 router.put('/users/:id/status', auth, adminAuth, async (req, res) => {
   try {

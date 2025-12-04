@@ -419,7 +419,7 @@ class EmployeeExcelService {
       instructionsSheet.setColumnWidth(0, 50.0);
       
       // Save template
-      final fileName = 'employee_import_template.xlsx';
+      const fileName = 'employee_import_template.xlsx';
       var fileBytes = excel.save();
       
       if (fileBytes != null) {

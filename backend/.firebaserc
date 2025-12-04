@@ -1,6 +1,7 @@
 {
   "projects": {
-    "bpr-absence": "bpr-absens"
+    "bpr-absence": "bpr-absens",
+    "default": "bpr-absens"
   },
   "targets": {},
   "etags": {}

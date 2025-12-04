@@ -25,6 +25,11 @@ class _EditPageState extends State<EditPage> {
   final TextEditingController _dobController = TextEditingController();
   final TextEditingController departmentController = TextEditingController();
 
+  // Work Schedule Controllers
+  final TextEditingController workStartTimeController = TextEditingController();
+  final TextEditingController workEndTimeController = TextEditingController();
+  final TextEditingController lateThresholdController = TextEditingController();
+
   // Dropdown values
   String? selectedGender;
   String? selectedContractType;
@@ -76,6 +81,11 @@ class _EditPageState extends State<EditPage> {
         _dobController.text =
             '${emp.dateOfBirth!.day}/${emp.dateOfBirth!.month}/${emp.dateOfBirth!.year}';
       }
+
+      // Prefill work schedule
+      workStartTimeController.text = emp.workStartTime ?? '08:00';
+      workEndTimeController.text = emp.workEndTime ?? '17:00';
+      lateThresholdController.text = (emp.lateThresholdMinutes ?? 15).toString();
     }
   }
 
@@ -144,6 +154,10 @@ class _EditPageState extends State<EditPage> {
         'contract_type': selectedContractType,
         'last_education': selectedEducation,
         'emergency_contact': emergencyContactController.text.trim(),
+        // Work Schedule fields
+        'work_start_time': workStartTimeController.text.trim(),
+        'work_end_time': workEndTimeController.text.trim(),
+        'late_threshold_minutes': int.tryParse(lateThresholdController.text.trim()) ?? 15,
       };
 
       // Add date_of_birth if selected
@@ -263,7 +277,7 @@ class _EditPageState extends State<EditPage> {
     required ValueChanged<String?> onChanged,
   }) {
     return DropdownButtonFormField<String>(
-      value: value,
+      initialValue: value,
       items: items.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
       onChanged: onChanged,
       decoration: _inputDec(label, '-Choose $label'),
@@ -284,6 +298,11 @@ class _EditPageState extends State<EditPage> {
     divisionController.dispose();
     _dobController.dispose();
     departmentController.dispose();
+
+    workStartTimeController.dispose();
+    workEndTimeController.dispose();
+    lateThresholdController.dispose();
+    
     super.dispose();
   }
 
@@ -509,6 +528,68 @@ class _EditPageState extends State<EditPage> {
                       value: selectedEducation,
                       items: const ['High School', 'Diploma', 'Bachelor', 'Master'],
                       onChanged: (v) => setState(() => selectedEducation = v),
+                    ),
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  const _SectionDivider(title: 'Work Schedule'),
+
+                  _field(
+                    child: TextFormField(
+                      controller: workStartTimeController,
+                      readOnly: true,
+                      decoration: _inputDec('Work Start Time', 'HH:mm',
+                          prefixIcon: const Icon(Icons.access_time, size: 18)),
+                      onTap: () async {
+                        final time = await showTimePicker(
+                          context: context,
+                          initialTime: TimeOfDay(
+                            hour: int.tryParse(workStartTimeController.text.split(':').first) ?? 8,
+                            minute: int.tryParse(workStartTimeController.text.split(':').last) ?? 0,
+                          ),
+                        );
+                        if (time != null) {
+                          setState(() {
+                            workStartTimeController.text =
+                                '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+                          });
+                        }
+                      },
+                    ),
+                  ),
+                  _field(
+                    child: TextFormField(
+                      controller: workEndTimeController,
+                      readOnly: true,
+                      decoration: _inputDec('Work End Time', 'HH:mm',
+                          prefixIcon: const Icon(Icons.access_time, size: 18)),
+                      onTap: () async {
+                        final time = await showTimePicker(
+                          context: context,
+                          initialTime: TimeOfDay(
+                            hour: int.tryParse(workEndTimeController.text.split(':').first) ?? 17,
+                            minute: int.tryParse(workEndTimeController.text.split(':').last) ?? 0,
+                          ),
+                        );
+                        if (time != null) {
+                          setState(() {
+                            workEndTimeController.text =
+                                '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+                          });
+                        }
+                      },
+                    ),
+                  ),
+                  _field(
+                    child: TextField(
+                      controller: lateThresholdController,
+                      keyboardType: TextInputType.number,
+                      decoration: _inputDec(
+                        'Late Threshold (Minutes)',
+                        'e.g., 15',
+                        prefixIcon: const Icon(Icons.timer, size: 18),
+                      ),
                     ),
                   ),
 

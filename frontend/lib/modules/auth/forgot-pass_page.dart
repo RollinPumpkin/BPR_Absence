@@ -122,7 +122,7 @@ class _ForgotPassPageState extends State<ForgotPassPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Row(
+        title: const Row(
           children: [
             Icon(Icons.info, color: Colors.orange),
             SizedBox(width: 8),
@@ -133,10 +133,10 @@ class _ForgotPassPageState extends State<ForgotPassPage> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Email service not configured. Use this reset link:'),
-            SizedBox(height: 16),
+            const Text('Email service not configured. Use this reset link:'),
+            const SizedBox(height: 16),
             Container(
-              padding: EdgeInsets.all(12),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: Colors.grey[100],
                 borderRadius: BorderRadius.circular(8),
@@ -145,11 +145,11 @@ class _ForgotPassPageState extends State<ForgotPassPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Reset Token:', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const Text('Reset Token:', style: TextStyle(fontWeight: FontWeight.bold)),
                   SelectableText(resetToken),
-                  SizedBox(height: 8),
-                  Text('Reset Link:', style: TextStyle(fontWeight: FontWeight.bold)),
-                  SelectableText(resetLink, style: TextStyle(fontSize: 12)),
+                  const SizedBox(height: 8),
+                  const Text('Reset Link:', style: TextStyle(fontWeight: FontWeight.bold)),
+                  SelectableText(resetLink, style: const TextStyle(fontSize: 12)),
                 ],
               ),
             ),
@@ -167,7 +167,7 @@ class _ForgotPassPageState extends State<ForgotPassPage> {
                 ),
               );
             },
-            child: Text('Continue'),
+            child: const Text('Continue'),
           ),
         ],
       ),
@@ -206,9 +206,9 @@ class _ForgotPassPageState extends State<ForgotPassPage> {
               const SizedBox(height: 24),
 
               // Input Email
-              Align(
+              const Align(
                 alignment: Alignment.centerLeft,
-                child: const Text(
+                child: Text(
                   "Email",
                   style: TextStyle(fontWeight: FontWeight.w500),
                 ),

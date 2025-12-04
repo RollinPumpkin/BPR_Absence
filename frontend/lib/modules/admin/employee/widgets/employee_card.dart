@@ -194,6 +194,10 @@ class EmployeeCard extends StatelessWidget {
       contractType: user.contractType,  // Now available
       lastEducation: user.lastEducation, // Now available
       emergencyContact: user.emergencyContact, // Add emergency contact mapping
+      // Work Schedule fields
+      workStartTime: user.workStartTime,
+      workEndTime: user.workEndTime,
+      lateThresholdMinutes: user.lateThresholdMinutes,
       // Note: Some fields still might not be available in User model
       // nik: user.nationalId, // Map if needed
       // bank: user.bankName,

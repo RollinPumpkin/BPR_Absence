@@ -36,8 +36,8 @@ class ViewLetterTypePopup extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               // Header
-              Row(
-                children: const [
+              const Row(
+                children: [
                   Expanded(
                     child: Text(
                       'View Letter Types',

@@ -52,7 +52,7 @@ class AttendanceChart extends StatelessWidget {
           gridData: FlGridData(
             drawVerticalLine: false,
             horizontalInterval: 2,
-            getDrawingHorizontalLine: (value) => FlLine(
+            getDrawingHorizontalLine: (value) => const FlLine(
               color: AppColors.neutral100,
               strokeWidth: 1,
             ),

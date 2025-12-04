@@ -1,6 +1,3 @@
-import '../models/attendance.dart';
-import '../models/activity_summary.dart';
-import '../models/user.dart';
 
 class DummyData {
   // Multiple users data for multi-user platform

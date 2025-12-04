@@ -5,10 +5,12 @@ import '../../pages/detail_assignment_page.dart';
 
 class AssignmentCard extends StatelessWidget {
   final Assignment assignment;
+  final VoidCallback? onDeleted;
 
   const AssignmentCard({
     super.key,
     required this.assignment,
+    this.onDeleted,
   });
 
   Color _statusColor(String s) {
@@ -29,11 +31,18 @@ class AssignmentCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        onTap: () {
-          Navigator.push(
+        onTap: () async {
+          final result = await Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const DetailAssignmentPage()),
+            MaterialPageRoute(
+              builder: (_) => DetailAssignmentPage(assignment: assignment),
+            ),
           );
+          
+          // If assignment was deleted (result == true), trigger refresh
+          if (result == true && onDeleted != null) {
+            onDeleted!();
+          }
         },
         child: Container(
           padding: const EdgeInsets.all(16),
@@ -92,15 +101,19 @@ class AssignmentCard extends StatelessWidget {
                 children: [
                   const Icon(Icons.calendar_today, size: 14, color: AppColors.neutral500),
                   const SizedBox(width: 6),
-                  Text(
-                    assignment.formattedDueDate,
-                    style: const TextStyle(
-                      fontSize: 12.5,
-                      color: AppColors.neutral500,
-                      fontWeight: FontWeight.w600,
+                  Expanded(
+                    child: Text(
+                      assignment.startDate != null
+                          ? '${assignment.formattedStartDate} - ${assignment.formattedDueDate}'
+                          : assignment.formattedDueDate,
+                      style: const TextStyle(
+                        fontSize: 12.5,
+                        color: AppColors.neutral500,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
-                  const Spacer(),
+                  const SizedBox(width: 8),
                   // Priority chip
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

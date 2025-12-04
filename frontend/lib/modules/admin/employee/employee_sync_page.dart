@@ -5,7 +5,7 @@ import '../../../data/providers/user_provider.dart';
 import '../../../data/services/employee_sync_service.dart';
 
 class EmployeeSyncPage extends StatefulWidget {
-  const EmployeeSyncPage({Key? key}) : super(key: key);
+  const EmployeeSyncPage({super.key});
 
   @override
   State<EmployeeSyncPage> createState() => _EmployeeSyncPageState();
@@ -256,14 +256,13 @@ class _EmployeeSyncPageState extends State<EmployeeSyncPage> {
                       Text('Error: ${userProvider.errorMessage}', style: const TextStyle(color: Colors.red)),
                     
                     const SizedBox(height: 12),
-                    ElevatedButton.icon(
+                    ElevatedButton(
                       onPressed: userProvider.isLoading ? null : () async {
                         await userProvider.refreshUsers();
                       },
-                      icon: userProvider.isLoading 
+                      child: userProvider.isLoading 
                         ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                        : const Icon(Icons.refresh),
-                      label: const Text('Refresh User Data'),
+                        : const Text('Refresh User Data'),
                     ),
                   ],
                 ),

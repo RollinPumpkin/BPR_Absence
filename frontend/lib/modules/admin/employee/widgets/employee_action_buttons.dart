@@ -1,6 +1,3 @@
-import 'dart:typed_data';
-import 'package:excel/excel.dart';
-import 'package:file_saver/file_saver.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/core/constants/colors.dart';
@@ -8,6 +5,7 @@ import 'package:frontend/modules/admin/employee/pages/add_data_page.dart';
 import 'package:frontend/data/providers/user_provider.dart';
 import 'package:frontend/data/services/employee_excel_service.dart';
 import 'package:frontend/data/models/user.dart';
+import 'package:frontend/modules/admin/employee/widgets/employee_filter.dart';
 
 class EmployeeActionButtons extends StatelessWidget {
   const EmployeeActionButtons({super.key});
@@ -90,52 +88,7 @@ class EmployeeActionButtons extends StatelessWidget {
   void _showFilterDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Filter Employees'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            DropdownButtonFormField<String>(
-              decoration: const InputDecoration(labelText: 'Department'),
-              items: const [
-                DropdownMenuItem(value: '', child: Text('All Departments')),
-                DropdownMenuItem(value: 'IT', child: Text('IT')),
-                DropdownMenuItem(value: 'HR', child: Text('HR')),
-                DropdownMenuItem(value: 'Finance', child: Text('Finance')),
-              ],
-              onChanged: (value) {
-                // TODO: Apply department filter
-              },
-            ),
-            const SizedBox(height: 16),
-            DropdownButtonFormField<String>(
-              decoration: const InputDecoration(labelText: 'Role'),
-              items: const [
-                DropdownMenuItem(value: '', child: Text('All Roles')),
-                DropdownMenuItem(value: 'admin', child: Text('Admin')),
-                DropdownMenuItem(value: 'employee', child: Text('Employee')),
-                DropdownMenuItem(value: 'super_admin', child: Text('Super Admin')),
-              ],
-              onChanged: (value) {
-                // TODO: Apply role filter
-              },
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // TODO: Apply filters
-            },
-            child: const Text('Apply'),
-          ),
-        ],
-      ),
+      builder: (context) => const EmployeeFilter(),
     );
   }
 

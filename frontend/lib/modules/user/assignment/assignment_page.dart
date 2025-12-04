@@ -5,6 +5,8 @@ import 'package:frontend/modules/user/shared/user_nav_items.dart';
 import 'package:frontend/data/services/assignment_service.dart';
 import 'package:frontend/data/models/assignment.dart';
 import 'package:intl/intl.dart';
+import 'package:frontend/core/services/realtime_service.dart';
+import 'dart:async';
 import 'assignment_detail_page.dart';
 
 class UserAssignmentPage extends StatefulWidget {
@@ -14,12 +16,15 @@ class UserAssignmentPage extends StatefulWidget {
   State<UserAssignmentPage> createState() => _UserAssignmentPageState();
 }
 
-class _UserAssignmentPageState extends State<UserAssignmentPage> {
+class _UserAssignmentPageState extends State<UserAssignmentPage> with WidgetsBindingObserver {
   String selectedFilter = "Monthly";
   DateTime? _currentMonth;
   DateTime? _selectedDate;
   
   final AssignmentService _assignmentService = AssignmentService();
+  final RealtimeService _realtimeService = RealtimeService();
+  StreamSubscription? _assignmentsSubscription;
+  
   List<Assignment> _assignments = [];
   bool _isLoading = true;
   String? _error;
@@ -33,38 +38,74 @@ class _UserAssignmentPageState extends State<UserAssignmentPage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _currentMonth = DateTime.now();
     _selectedDate = DateTime.now();
-    _loadAssignments();
+    _initializeRealtime();
   }
 
-  Future<void> _loadAssignments() async {
+  Future<void> _initializeRealtime() async {
+    await _realtimeService.initialize();
+    _realtimeService.startAssignmentsListener();
+    
+    _assignmentsSubscription = _realtimeService.assignmentsStream.listen((assignmentsData) {
+      if (mounted) {
+        setState(() {
+          _assignments = assignmentsData.map((data) => Assignment.fromJson(data)).toList();
+          _isLoading = false;
+        });
+        print('🔄 User Assignments: Realtime updated (${assignmentsData.length} assignments)');
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _assignmentsSubscription?.cancel();
+    _realtimeService.stopAllListeners();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      print('🔄 [Lifecycle] App resumed, reloading assignments...');
+      _loadAssignments();
+    }
+  }
+
+  Future<void> _loadAssignments({bool forceRefresh = false}) async {
     try {
       setState(() {
         _isLoading = true;
         _error = null;
+        _assignments = []; // Clear old data first
       });
 
-      print('📋 [AssignmentPage] Loading assignments...');
-      final assignments = await _assignmentService.getUpcomingAssignments();
+      print('📋 [AssignmentPage] Loading assignments... (forceRefresh: $forceRefresh)');
+      final assignments = await _assignmentService.getUpcomingAssignments(forceRefresh: forceRefresh);
       
-      setState(() {
-        _assignments = assignments;
-        _isLoading = false;
-      });
-      
-      print('✅ [AssignmentPage] Loaded ${assignments.length} assignments');
-      
-      // Force rebuild of daily/weekly views with new data
       if (mounted) {
-        setState(() {});
+        setState(() {
+          _assignments = List.from(assignments); // Create new list instance
+          _isLoading = false;
+        });
+        
+        print('✅ [AssignmentPage] Loaded ${assignments.length} assignments');
+        print('📊 [AssignmentPage] Assignment statuses:');
+        for (var assignment in assignments) {
+          print('  - ${assignment.title}: ${assignment.status}${assignment.completionTime != null ? ' at ${assignment.completionTime}' : ''}');
+        }
       }
     } catch (e) {
       print('❌ [AssignmentPage] Error loading assignments: $e');
-      setState(() {
-        _error = e.toString();
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -87,7 +128,7 @@ class _UserAssignmentPageState extends State<UserAssignmentPage> {
         ),
       ),
 
-      bottomNavigationBar: CustomBottomNavRouter(
+      bottomNavigationBar: const CustomBottomNavRouter(
         currentIndex: 2,
         items: UserNavItems.items,
       ),
@@ -117,19 +158,15 @@ class _UserAssignmentPageState extends State<UserAssignmentPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                "Assignment",
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.black87,
-                ),
-              ),
-              IconButton(
-                onPressed: _loadAssignments,
-                icon: Icon(
-                  Icons.refresh,
-                  color: _isLoading ? Colors.grey : AppColors.primaryBlue,
+              Flexible(
+                child: Text(
+                  "Assignment",
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.black87,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -244,7 +281,7 @@ class _UserAssignmentPageState extends State<UserAssignmentPage> {
         Row(
           children: [
             // Date and Day Column
-            Container(
+            SizedBox(
               width: 80,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -400,7 +437,6 @@ class _UserAssignmentPageState extends State<UserAssignmentPage> {
 
   Widget _buildCalendarHeader() {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         IconButton(
           onPressed: () {
@@ -411,14 +447,21 @@ class _UserAssignmentPageState extends State<UserAssignmentPage> {
               );
             });
           },
-          icon: Icon(Icons.chevron_left, color: AppColors.primaryBlue),
+          icon: const Icon(Icons.chevron_left, color: AppColors.primaryBlue),
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
         ),
-        Text(
-          "${_getMonthName(currentMonth.month)} ${currentMonth.year}",
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: AppColors.primaryBlue,
+        Expanded(
+          child: Text(
+            "${_getMonthName(currentMonth.month)} ${currentMonth.year}",
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppColors.primaryBlue,
+            ),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
           ),
         ),
         IconButton(
@@ -430,7 +473,9 @@ class _UserAssignmentPageState extends State<UserAssignmentPage> {
               );
             });
           },
-          icon: Icon(Icons.chevron_right, color: AppColors.primaryBlue),
+          icon: const Icon(Icons.chevron_right, color: AppColors.primaryBlue),
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
         ),
       ],
     );
@@ -448,15 +493,17 @@ class _UserAssignmentPageState extends State<UserAssignmentPage> {
               .map(
                 (day) => Expanded(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    padding: const EdgeInsets.symmetric(vertical: 6),
                     child: Text(
                       day,
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontWeight: FontWeight.w600,
                         color: AppColors.primaryBlue,
-                        fontSize: 12,
+                        fontSize: 11,
                       ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
                     ),
                   ),
                 ),
@@ -676,13 +723,20 @@ class _UserAssignmentPageState extends State<UserAssignmentPage> {
 
   Widget _buildAssignmentCard(Map<String, dynamic> assignment) {
     return GestureDetector(
-      onTap: () {
-        Navigator.push(
+      onTap: () async {
+        final result = await Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => AssignmentDetailPage(assignment: assignment),
           ),
         );
+        
+        // Reload assignments if completed
+        if (result == true && mounted) {
+          print('🔄 [AssignmentPage] Assignment completed, reloading data...');
+          await _loadAssignments();
+          print('✅ [AssignmentPage] Reload complete, UI should update now');
+        }
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
@@ -780,7 +834,7 @@ class _UserAssignmentPageState extends State<UserAssignmentPage> {
                         color: AppColors.primaryBlue,
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Icon(
+                      child: const Icon(
                         Icons.people,
                         color: AppColors.primaryBlue,
                         size: 20,
@@ -926,11 +980,18 @@ class _UserAssignmentPageState extends State<UserAssignmentPage> {
 
   List<Assignment> _getAssignmentsForDate(DateTime date) {
     // Get real assignments for the specified date
-    return _assignments.where((assignment) {
+    final filtered = _assignments.where((assignment) {
       return assignment.dueDate.year == date.year &&
              assignment.dueDate.month == date.month &&
              assignment.dueDate.day == date.day;
     }).toList();
+    
+    print('📅 [Filter] Found ${filtered.length} assignments for ${date.day}/${date.month}/${date.year}');
+    for (var assignment in filtered) {
+      print('  - ${assignment.title}: status=${assignment.status}, completionTime=${assignment.completionTime}');
+    }
+    
+    return filtered;
   }
 
   Widget _buildRealAssignmentCard(Assignment assignment) {
@@ -945,26 +1006,51 @@ class _UserAssignmentPageState extends State<UserAssignmentPage> {
     final timeString = '${timeFormatter.format(assignment.dueDate)} - Due';
     
     return GestureDetector(
-      onTap: () {
+      onTap: () async {
+        print('👆 [Click] Opening assignment: ${assignment.title}');
+        print('📊 [Click] Current status: ${assignment.status}');
+        print('⏰ [Click] Current completionTime: ${assignment.completionTime}');
+        
         // Convert Assignment to Map for detail page
         final assignmentMap = {
+          'id': assignment.id,
           'title': assignment.title,
           'description': assignment.description,
           'priority': assignment.priority,
           'status': assignment.status,
           'dueDate': assignment.dueDate.toIso8601String(),
+          'startDate': assignment.startDate?.toIso8601String(),
           'createdBy': assignment.createdBy,
-          'category': 'Assignment', // Default category
+          'category': assignment.category,
+          'tags': assignment.tags,
+          'attachments': assignment.attachments,
           'time': timeString,
-          'peopleCount': '1 person', // Default people count
+          'peopleCount': '1 person',
+          // Completion data - IMPORTANT: Pass these fields
+          'completionTime': assignment.completionTime,
+          'completionDate': assignment.completionDate,
+          'completedAt': assignment.completedAt?.toIso8601String(),
+          'completedBy': assignment.completedBy,
         };
         
-        Navigator.push(
+        print('📤 [Click] Passing to detail page with completionTime: ${assignmentMap['completionTime']}');
+        
+        await Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => AssignmentDetailPage(assignment: assignmentMap),
+            builder: (context) => AssignmentDetailPage(
+              key: ValueKey('${assignment.id}_${DateTime.now().millisecondsSinceEpoch}'),
+              assignment: assignmentMap,
+            ),
           ),
         );
+        
+        // ALWAYS reload assignments after returning from detail page
+        if (mounted) {
+          print('🔄 [AssignmentPage] Returned from detail, reloading data...');
+          await _loadAssignments(forceRefresh: true); // Force refresh to bypass cache
+          print('✅ [AssignmentPage] Reload complete');
+        }
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),

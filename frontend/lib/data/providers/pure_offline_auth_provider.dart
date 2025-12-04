@@ -55,7 +55,7 @@ class PureOfflineAuthProvider with ChangeNotifier {
       print('🔐 Pure Offline Login attempt: $email');
       
       // Simulate network delay
-      await Future.delayed(Duration(milliseconds: 300));
+      await Future.delayed(const Duration(milliseconds: 300));
       
       // Find user in dummy data
       final user = DummyData.users.firstWhere(

@@ -30,7 +30,7 @@ class FirebaseAuthService {
       print('✅ Firebase Auth initialized successfully');
     } catch (e) {
       print('❌ Firebase Auth initialization error: $e');
-      throw e;
+      rethrow;
     }
   }
 

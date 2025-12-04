@@ -100,11 +100,11 @@ class AttendanceDetailDialog extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 16),
-                        Expanded(
+                        const Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
+                              Text(
                                 'Nama Lengkap',
                                 style: TextStyle(
                                   fontSize: 16,
@@ -112,8 +112,8 @@ class AttendanceDetailDialog extends StatelessWidget {
                                   color: AppColors.black87,
                                 ),
                               ),
-                              const SizedBox(height: 4),
-                              const Text(
+                              SizedBox(height: 4),
+                              Text(
                                 'Jabatan',
                                 style: TextStyle(
                                   fontSize: 14,
@@ -130,7 +130,7 @@ class AttendanceDetailDialog extends StatelessWidget {
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(color: AppColors.primaryGreen),
                           ),
-                          child: Row(
+                          child: const Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(
@@ -138,7 +138,7 @@ class AttendanceDetailDialog extends StatelessWidget {
                                 size: 14,
                                 color: AppColors.primaryGreen
                               ),
-                              const SizedBox(width: 4),
+                              SizedBox(width: 4),
                               Text(
                                 'Status Approve',
                                 style: TextStyle(

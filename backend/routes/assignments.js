@@ -64,7 +64,7 @@ router.get('/upcoming', auth, async (req, res) => {
       const dueDate = data.dueDate ? (data.dueDate.toDate ? data.dueDate.toDate() : new Date(data.dueDate)) : new Date();
       
       if (dueDate >= today) {
-        assignments.push({
+        const assignmentData = {
           id: doc.id,
           title: data.title || '',
           description: data.description || '',
@@ -75,8 +75,19 @@ router.get('/upcoming', auth, async (req, res) => {
           assignedBy: data.assignedBy || '',
           createdBy: data.createdBy || '',
           createdAt: data.createdAt ? (data.createdAt.toDate ? data.createdAt.toDate() : new Date(data.createdAt)) : new Date(),
-          updatedAt: data.updatedAt ? (data.updatedAt.toDate ? data.updatedAt.toDate() : new Date(data.updatedAt)) : null
-        });
+          updatedAt: data.updatedAt ? (data.updatedAt.toDate ? data.updatedAt.toDate() : new Date(data.updatedAt)) : null,
+          startDate: data.startDate ? (data.startDate.toDate ? data.startDate.toDate() : new Date(data.startDate)) : null,
+          tags: data.tags || [],
+          category: data.category || '',
+          attachments: data.attachments || [],
+          // ALWAYS include completion data (null if not completed)
+          completionTime: data.completionTime || null,
+          completionDate: data.completionDate || null,
+          completedAt: data.completedAt ? (data.completedAt.toDate ? data.completedAt.toDate() : new Date(data.completedAt)) : null,
+          completedBy: data.completedBy || null,
+        };
+        
+        assignments.push(assignmentData);
       }
     });
 
@@ -454,7 +465,8 @@ router.post('/', auth, async (req, res) => {
     const assignmentData = {
       title,
       description,
-      assignedTo,
+      assignedTo, // Array of user IDs
+      assignedToNames: validUsers.map(u => u.name), // Array of user names for display
       assignedBy: req.user.userId,
       createdBy: req.user.userId,
       dueDate: admin.firestore.Timestamp.fromDate(new Date(dueDate)),
@@ -568,6 +580,14 @@ router.put('/:id', auth, async (req, res) => {
       if (status === 'completed') {
         updateData.completedAt = admin.firestore.Timestamp.now();
         updateData.completedBy = req.user.userId;
+        
+        // Store completion date and time from request if provided
+        if (req.body.completionDate) {
+          updateData.completionDate = req.body.completionDate;
+        }
+        if (req.body.completionTime) {
+          updateData.completionTime = req.body.completionTime;
+        }
       }
     }
 

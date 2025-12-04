@@ -1,11 +1,83 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/core/constants/colors.dart';
+import 'package:frontend/data/models/assignment.dart';
+import 'package:frontend/data/services/assignment_service.dart';
+import 'package:intl/intl.dart';
 
-class DetailAssignmentPage extends StatelessWidget {
-  const DetailAssignmentPage({super.key});
+class DetailAssignmentPage extends StatefulWidget {
+  final Assignment assignment;
+  
+  const DetailAssignmentPage({
+    super.key,
+    required this.assignment,
+  });
+
+  @override
+  State<DetailAssignmentPage> createState() => _DetailAssignmentPageState();
+}
+
+class _DetailAssignmentPageState extends State<DetailAssignmentPage> {
+  final AssignmentService _assignmentService = AssignmentService();
+  bool _isDeleting = false;
+
+  Future<void> _deleteAssignment() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Assignment'),
+        content: const Text('Are you sure you want to delete this assignment? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.errorRed),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true || !mounted) return;
+
+    setState(() => _isDeleting = true);
+
+    try {
+      print('[DELETE] Deleting assignment: ${widget.assignment.id}');
+      await _assignmentService.deleteAssignment(widget.assignment.id);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Assignment deleted successfully'),
+            backgroundColor: AppColors.primaryGreen,
+          ),
+        );
+        Navigator.pop(context, true); // Return true to trigger refresh
+      }
+    } catch (e) {
+      print('[ERROR] Failed to delete assignment: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete assignment: $e'),
+            backgroundColor: AppColors.errorRed,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isDeleting = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final assignment = widget.assignment;
+    
     return Scaffold(
       backgroundColor: AppColors.backgroundGray,
       appBar: AppBar(
@@ -23,6 +95,13 @@ class DetailAssignmentPage extends StatelessWidget {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.delete, color: AppColors.errorRed),
+            onPressed: _isDeleting ? null : _deleteAssignment,
+            tooltip: 'Delete Assignment',
+          ),
+        ],
       ),
 
       body: SingleChildScrollView(
@@ -33,103 +112,148 @@ class DetailAssignmentPage extends StatelessWidget {
             _sectionTitle('Nama Kegiatan'),
             const SizedBox(height: 6),
             _buildReadonlyBox(
-              'Muncak Rinjani Ikut Lorenzo',
+              assignment.title,
               maxLines: 2,
             ),
             const SizedBox(height: 16),
 
-            _sectionTitle('Tags'),
-            const SizedBox(height: 6),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: const [
-                _TagChip('Tugas Buku'),
-                _TagChip('Report'),
-                _TagChip('Seminar'),
-                _TagChip('Pelaporan OJK'),
-                _TagChip('Audit'),
-                _TagChip('Training / Pelatihan'),
-                _TagChip('Monitoring & Pengkajian'),
-              ],
-            ),
-            const SizedBox(height: 16),
+            if (assignment.tags.isNotEmpty) ...[
+              _sectionTitle('Tags'),
+              const SizedBox(height: 6),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: assignment.tags.map((tag) => _TagChip(tag)).toList(),
+              ),
+              const SizedBox(height: 16),
+            ],
 
             _sectionTitle('Description'),
             const SizedBox(height: 6),
             _buildReadonlyBox(
-              'Muncak bersama bunga agam dan lorenzo membawa 3 ayam 2 bebek ...',
+              assignment.description,
               maxLines: 4,
             ),
             const SizedBox(height: 16),
 
-            Row(
-              children: [
-                Expanded(
-                  child: _buildReadonlyBox(
-                    '27/08/2025',
-                    label: 'Start Date',
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildReadonlyBox(
-                    'End Date',
-                    label: 'End Date',
-                  ),
-                ),
-              ],
+            _sectionTitle('Due Date'),
+            const SizedBox(height: 6),
+            _buildReadonlyBox(
+              DateFormat('dd/MM/yyyy').format(assignment.dueDate),
             ),
             const SizedBox(height: 16),
 
-            _sectionTitle('Jam'),
+            _sectionTitle('Priority'),
             const SizedBox(height: 6),
-            _buildReadonlyBox('17:45:00'),
+            _buildReadonlyBox(
+              assignment.priority.toUpperCase(),
+            ),
             const SizedBox(height: 16),
 
-            _sectionTitle('Link (Optional)'),
+            _sectionTitle('Category'),
             const SizedBox(height: 6),
-            _buildReadonlyBox('https://wordpress.anjay'),
+            _buildReadonlyBox(
+              assignment.category,
+            ),
             const SizedBox(height: 16),
 
-            _sectionTitle('Employee Assignment'),
+            if (assignment.attachments.isNotEmpty) ...[
+              _sectionTitle('Link (Optional)'),
+              const SizedBox(height: 6),
+              _buildReadonlyBox(assignment.attachments.first),
+              const SizedBox(height: 16),
+            ],
+
+            _sectionTitle('Assigned To'),
             const SizedBox(height: 6),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.pureWhite,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.dividerGray),
-                boxShadow: const [
-                  BoxShadow(
-                    color: AppColors.shadowColor,
-                    blurRadius: 12,
-                    offset: Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  const CircleAvatar(
-                    backgroundColor: AppColors.primaryBlue,
-                    child: Icon(Icons.person, color: AppColors.pureWhite),
-                  ),
-                  const SizedBox(width: 12),
-                  const Expanded(
-                    child: _KV(
-                      label: 'Septa Puma',
-                      value: 'Manager',
-                      boldLabel: true,
+            if (assignment.assignedTo.isEmpty)
+              _buildReadonlyBox('No employees assigned')
+            else
+              ...assignment.assignedTo.map((employeeName) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.pureWhite,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.dividerGray),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: AppColors.shadowColor,
+                          blurRadius: 12,
+                          offset: Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        const CircleAvatar(
+                          backgroundColor: AppColors.primaryBlue,
+                          child: Icon(Icons.person, color: AppColors.pureWhite),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            employeeName,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.neutral800,
+                            ),
+                          ),
+                        ),
+                        _StatusPill(
+                          text: assignment.status,
+                          color: _getStatusColor(assignment.status),
+                        ),
+                      ],
                     ),
                   ),
-                  const _StatusPill(text: 'Active', color: AppColors.primaryGreen),
-                ],
+                );
+              }),
+            
+            const SizedBox(height: 24),
+            
+            // Delete button at bottom
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _isDeleting ? null : _deleteAssignment,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.errorRed,
+                  foregroundColor: AppColors.pureWhite,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                icon: _isDeleting 
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.pureWhite),
+                      ),
+                    )
+                  : const Icon(Icons.delete),
+                label: Text(_isDeleting ? 'Deleting...' : 'Delete Assignment'),
               ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  Color _getStatusColor(String status) {
+    final s = status.toLowerCase();
+    if (s.contains('progress')) return AppColors.primaryYellow;
+    if (s.contains('pending')) return AppColors.accentBlue;
+    if (s.contains('done') || s.contains('complete')) return AppColors.primaryGreen;
+    if (s.contains('overdue') || s.contains('late')) return AppColors.errorRed;
+    return AppColors.neutral800;
   }
 
   // ---------- Helpers (kecil & reusable) ----------
@@ -222,41 +346,6 @@ class _TagChip extends StatelessWidget {
           fontWeight: FontWeight.w600,
         ),
       ),
-    );
-  }
-}
-
-class _KV extends StatelessWidget {
-  final String label;
-  final String value;
-  final bool boldLabel;
-  const _KV({required this.label, required this.value, this.boldLabel = false});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            fontSize: 14,
-            color: AppColors.neutral800,
-            fontWeight: boldLabel ? FontWeight.w800 : FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          value,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            fontSize: 12,
-            color: AppColors.neutral500,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ],
     );
   }
 }

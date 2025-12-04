@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user.dart';
 import '../services/auth_service.dart';
 
@@ -116,6 +117,12 @@ class AuthProvider with ChangeNotifier {
           
           _currentUser = user;
           _isAuthenticated = true;
+          
+          // Save user data to SharedPreferences for attendance tracking
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('user_id', user.id);
+          await prefs.setString('employee_id', user.employeeId);
+          print('✅ Saved user_id: ${user.id} and employee_id: ${user.employeeId} to SharedPreferences');
           
           // Save token to ApiService if available
           if (token != null && token.isNotEmpty) {
@@ -387,7 +394,7 @@ class AuthProvider with ChangeNotifier {
       }
     } catch (e) {
       await logout();
-      throw e;
+      rethrow;
     }
   }
 

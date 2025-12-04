@@ -5,6 +5,8 @@ import 'package:frontend/modules/user/shared/user_nav_items.dart';
 import 'package:frontend/data/services/attendance_service.dart';
 import 'package:frontend/data/models/attendance.dart';
 import 'package:intl/intl.dart';
+import 'package:frontend/core/services/realtime_service.dart';
+import 'dart:async';
 
 import 'widgets/attendance_stats.dart';
 import 'widgets/attendance_history_card.dart';
@@ -20,6 +22,9 @@ class UserAttendancePage extends StatefulWidget {
 
 class _UserAttendancePageState extends State<UserAttendancePage> {
   final AttendanceService _attendanceService = AttendanceService();
+  final RealtimeService _realtimeService = RealtimeService();
+  StreamSubscription? _attendanceSubscription;
+  
   List<Attendance> _recentAttendance = [];
   bool _isLoading = true;
   String? _error;
@@ -27,7 +32,32 @@ class _UserAttendancePageState extends State<UserAttendancePage> {
   @override
   void initState() {
     super.initState();
-    _loadRecentAttendance();
+    _initializeRealtime();
+  }
+
+  Future<void> _initializeRealtime() async {
+    await _realtimeService.initialize();
+    _realtimeService.startAttendanceListener();
+    
+    _attendanceSubscription = _realtimeService.attendanceStream.listen((attendanceData) {
+      if (mounted) {
+        setState(() {
+          _recentAttendance = attendanceData
+              .map((data) => Attendance.fromJson(data))
+              .take(10)
+              .toList();
+          _isLoading = false;
+        });
+        print('🔄 User Attendance: Realtime updated (${attendanceData.length} records)');
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _attendanceSubscription?.cancel();
+    _realtimeService.stopAllListeners();
+    super.dispose();
   }
 
   @override
@@ -49,26 +79,42 @@ class _UserAttendancePageState extends State<UserAttendancePage> {
       }
 
       final response = await _attendanceService.getMonthlySummary();
-      print('[AttendancePage] Debug: Attendance response: ${response.isSuccess}');
+      print('[AttendancePage] Debug: Attendance response success: ${response.success}');
       print('[AttendancePage] Debug: Response message: ${response.message}');
-      print('[AttendancePage] Debug: Response data: ${response.data}');
+      print('[AttendancePage] Debug: Response data is null: ${response.data == null}');
       
-      if (response.isSuccess && response.data != null) {
-        print('[AttendancePage] Debug: Found ${response.data!.attendance.length} attendance records');
-        if (mounted) {
-          setState(() {
-            // Take only the last 5 records for recent history
-            _recentAttendance = response.data!.attendance.take(5).toList();
-            _isLoading = false;
-          });
-        }
-        
-        // Debug each attendance record
-        for (var attendance in _recentAttendance) {
-          print('[AttendancePage] Debug: Attendance - Date: ${attendance.date}, CheckIn: ${attendance.checkInTime}, CheckOut: ${attendance.checkOutTime}');
+      if (response.success) {
+        if (response.data != null) {
+          print('[AttendancePage] Debug: Data object exists');
+          print('[AttendancePage] Debug: Month: ${response.data!.month}');
+          print('[AttendancePage] Debug: Year: ${response.data!.year}');
+          print('[AttendancePage] Debug: Attendance list length: ${response.data!.attendance.length}');
+          print('[AttendancePage] Debug: Stats total days: ${response.data!.stats.totalDays}');
+          
+          if (mounted) {
+            setState(() {
+              // Take only the last 5 records for recent history
+              _recentAttendance = response.data!.attendance.take(5).toList();
+              _isLoading = false;
+            });
+          }
+          
+          // Debug each attendance record
+          for (var i = 0; i < _recentAttendance.length; i++) {
+            final attendance = _recentAttendance[i];
+            print('[AttendancePage] Debug Record $i: Date=${attendance.date}, CheckIn=${attendance.checkInTime}, CheckOut=${attendance.checkOutTime}, Status=${attendance.status}');
+          }
+        } else {
+          print('[AttendancePage] Debug: Response data is NULL despite success=true');
+          if (mounted) {
+            setState(() {
+              _error = 'No data received from server';
+              _isLoading = false;
+            });
+          }
         }
       } else {
-        print('[AttendancePage] Debug: Failed to load - ${response.message}');
+        print('[AttendancePage] Debug: Response failed - ${response.message}');
         if (mounted) {
           setState(() {
             _error = response.message ?? 'Failed to load attendance data';
@@ -76,8 +122,9 @@ class _UserAttendancePageState extends State<UserAttendancePage> {
           });
         }
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       print('[AttendancePage] Debug: Exception loading attendance: $e');
+      print('[AttendancePage] Debug: Stack trace: $stackTrace');
       if (mounted) {
         setState(() {
           _error = 'Error loading attendance data: ${e.toString()}';
@@ -217,8 +264,8 @@ class _UserAttendancePageState extends State<UserAttendancePage> {
                 child: Column(
                   children: [
                     /// Attendance Statistics
-                    Padding(
-                      padding: const EdgeInsets.all(16),
+                    const Padding(
+                      padding: EdgeInsets.all(16),
                       child: AttendanceStats(),
                     ),
 
@@ -228,11 +275,14 @@ class _UserAttendancePageState extends State<UserAttendancePage> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
-                            "Recent History",
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
+                          const Flexible(
+                            child: Text(
+                              "Recent History",
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           TextButton(
@@ -334,7 +384,7 @@ class _UserAttendancePageState extends State<UserAttendancePage> {
         ),
       ),
 
-      bottomNavigationBar: CustomBottomNavRouter(
+      bottomNavigationBar: const CustomBottomNavRouter(
         currentIndex: 1,
         items: UserNavItems.items,
       ),
@@ -361,23 +411,15 @@ class _UserAttendancePageState extends State<UserAttendancePage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text(
-            "My Attendance",
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: AppColors.black87,
-            ),
-          ),
-          IconButton(
-            onPressed: () {
-              print('🔍 Debug: Manual refresh triggered');
-              _loadRecentAttendance();
-            },
-            icon: const Icon(
-              Icons.refresh,
-              color: AppColors.primaryBlue,
-              size: 24,
+          Flexible(
+            child: Text(
+              "My Attendance",
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: AppColors.black87,
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],

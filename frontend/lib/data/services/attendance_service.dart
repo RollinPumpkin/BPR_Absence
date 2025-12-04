@@ -16,7 +16,7 @@ class AttendanceService {
     String? notes,
     String? photoUrl,
   }) async {
-    return await _apiService.post<Attendance>(
+    final response = await _apiService.post<Attendance>(
       ApiConstants.attendance.checkIn,
       data: {
         'latitude': latitude,
@@ -26,6 +26,14 @@ class AttendanceService {
       },
       fromJson: (json) => Attendance.fromJson(json),
     );
+    
+    if (response.success) {
+      // Clear cache to force refresh on next load
+      print('🧹 Clearing API cache after check in...');
+      _apiService.clearCache();
+    }
+    
+    return response;
   }
 
   // Check out
@@ -36,7 +44,7 @@ class AttendanceService {
     String? notes,
     String? photoUrl,
   }) async {
-    return await _apiService.put<Attendance>(
+    final response = await _apiService.put<Attendance>(
       '${ApiConstants.attendance.checkOut}/$attendanceId',
       data: {
         'latitude': latitude,
@@ -46,6 +54,14 @@ class AttendanceService {
       },
       fromJson: (json) => Attendance.fromJson(json),
     );
+    
+    if (response.success) {
+      // Clear cache to force refresh on next load
+      print('🧹 Clearing API cache after check out...');
+      _apiService.clearCache();
+    }
+    
+    return response;
   }
 
   // Get attendance records
@@ -110,16 +126,52 @@ class AttendanceService {
     int? month,
     int? year,
   }) async {
-    final queryParams = <String, dynamic>{};
+    try {
+      print('📊 AttendanceService: Fetching monthly summary...');
+      print('📊 AttendanceService: Month=$month, Year=$year');
+      
+      final queryParams = <String, dynamic>{};
 
-    if (month != null) queryParams['month'] = month;
-    if (year != null) queryParams['year'] = year;
+      if (month != null) queryParams['month'] = month;
+      if (year != null) queryParams['year'] = year;
 
-    return await _apiService.get<AttendanceMonthlySummary>(
-      ApiConstants.attendance.summary,
-      queryParameters: queryParams,
-      fromJson: (json) => AttendanceMonthlySummary.fromJson(json),
-    );
+      print('📊 AttendanceService: Query params: $queryParams');
+      print('📊 AttendanceService: Endpoint: ${ApiConstants.attendance.summary}');
+      print('📊 AttendanceService: Full URL: ${ApiConstants.baseUrl}${ApiConstants.attendance.summary}');
+
+      final response = await _apiService.get<AttendanceMonthlySummary>(
+        ApiConstants.attendance.summary,
+        queryParameters: queryParams,
+        fromJson: (json) {
+          print('📊 AttendanceService: fromJson called with: $json');
+          try {
+            final result = AttendanceMonthlySummary.fromJson(json);
+            print('📊 AttendanceService: Successfully parsed AttendanceMonthlySummary');
+            return result;
+          } catch (e, stackTrace) {
+            print('❌ AttendanceService: Error in fromJson: $e');
+            print('❌ AttendanceService: Stack trace: $stackTrace');
+            rethrow;
+          }
+        },
+      );
+      
+      print('📊 AttendanceService: Response success: ${response.success}');
+      print('📊 AttendanceService: Response message: ${response.message}');
+      print('📊 AttendanceService: Response data null: ${response.data == null}');
+      
+      return response;
+    } catch (e, stackTrace) {
+      print('❌ AttendanceService: Exception caught: $e');
+      print('❌ AttendanceService: Exception type: ${e.runtimeType}');
+      print('❌ AttendanceService: Stack trace: $stackTrace');
+      
+      return ApiResponse<AttendanceMonthlySummary>(
+        success: false,
+        message: 'Failed to fetch attendance summary: ${e.toString()}',
+        error: e.toString(),
+      );
+    }
   }
 
   // Get attendance by ID
@@ -141,19 +193,35 @@ class AttendanceService {
     if (notes != null) data['notes'] = notes;
     if (status != null) data['status'] = status;
 
-    return await _apiService.put<Attendance>(
+    final response = await _apiService.put<Attendance>(
       '${ApiConstants.attendance.list}/$id',
       data: data,
       fromJson: (json) => Attendance.fromJson(json),
     );
+    
+    if (response.success) {
+      // Clear cache to force refresh on next load
+      print('🧹 Clearing API cache after attendance update...');
+      _apiService.clearCache();
+    }
+    
+    return response;
   }
 
   // Delete attendance record (admin only)
   Future<ApiResponse<String>> deleteAttendance(String id) async {
-    return await _apiService.delete<String>(
+    final response = await _apiService.delete<String>(
       '${ApiConstants.attendance.list}/$id',
       fromJson: (json) => json?.toString() ?? 'Attendance deleted successfully',
     );
+    
+    if (response.success) {
+      // Clear cache to force refresh on next load
+      print('🧹 Clearing API cache after attendance deletion...');
+      _apiService.clearCache();
+    }
+    
+    return response;
   }
 
   // Get attendance report for admin
@@ -287,7 +355,7 @@ class AttendanceService {
         'latitude': latitude,
         'longitude': longitude,
         'address': address,
-        'image': await MultipartFile.fromBytes(
+        'image': MultipartFile.fromBytes(
           await image.readAsBytes(),
           filename: image.name.isNotEmpty ? image.name : 'attendance_${DateTime.now().millisecondsSinceEpoch}.jpg',
         ),

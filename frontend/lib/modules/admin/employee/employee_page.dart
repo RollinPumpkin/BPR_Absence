@@ -87,13 +87,6 @@ class _EmployeePageState extends State<EmployeePage> {
             splashRadius: 20,
             tooltip: 'Unit Tests',
           ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () {
-              context.read<UserProvider>().refreshUsers();
-            },
-            splashRadius: 20,
-          ),
         ],
       ),
 

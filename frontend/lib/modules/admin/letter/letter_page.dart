@@ -5,6 +5,8 @@ import 'package:frontend/core/constants/colors.dart';
 import 'package:frontend/data/services/letter_service.dart';
 import 'package:frontend/data/services/api_service.dart';
 import 'package:frontend/data/models/letter.dart';
+import 'package:frontend/core/services/realtime_service.dart';
+import 'dart:async';
 
 import 'widgets/letter_card.dart';
 import 'widgets/add_letter_type_popup.dart';
@@ -26,8 +28,10 @@ class LetterPage extends StatefulWidget {
 class _LetterPageState extends State<LetterPage> {
   final LetterService _letterService = LetterService();
   final ApiService _apiService = ApiService.instance;
+  final RealtimeService _realtimeService = RealtimeService();
   final TextEditingController _searchController = TextEditingController();
   
+  StreamSubscription? _lettersSubscription;
   List<Letter> _allLetters = [];
   List<Letter> _filteredLetters = [];
   bool _isLoading = true;
@@ -37,13 +41,31 @@ class _LetterPageState extends State<LetterPage> {
   @override
   void initState() {
     super.initState();
-    _loadLetters();
+    _initializeRealtime();
     _searchController.addListener(_filterLetters);
+  }
+
+  Future<void> _initializeRealtime() async {
+    await _realtimeService.initialize();
+    _realtimeService.startLettersListener();
+    
+    _lettersSubscription = _realtimeService.lettersStream.listen((lettersData) {
+      if (mounted) {
+        setState(() {
+          _allLetters = lettersData.map((data) => Letter.fromJson(data)).toList();
+          _filterLetters();
+          _isLoading = false;
+        });
+        print('🔄 Admin Letters: Realtime updated (${lettersData.length} letters)');
+      }
+    });
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _lettersSubscription?.cancel();
+    _realtimeService.stopAllListeners();
     super.dispose();
   }
 

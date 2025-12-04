@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../data/providers/auth_provider.dart';
+import '../../widgets/account_request_dialog.dart';
 
 
 class LoginPage extends StatefulWidget {
@@ -67,20 +68,32 @@ class _LoginPageState extends State<LoginPage>
 
   // Get route destination based on user role
   String _getRouteByRole(String role) {
-    switch (role.toLowerCase()) {
+    print('🔍 ROUTE DEBUG: Original role = "$role"');
+    print('🔍 ROUTE DEBUG: Role length = ${role.length}');
+    print('🔍 ROUTE DEBUG: Role type = ${role.runtimeType}');
+    print('🔍 ROUTE DEBUG: Role lowercase = "${role.toLowerCase()}"');
+    print('🔍 ROUTE DEBUG: Role trimmed = "${role.trim()}"');
+    print('🔍 ROUTE DEBUG: Role codeUnits = ${role.codeUnits}');
+    
+    final cleanRole = role.trim().toLowerCase();
+    
+    switch (cleanRole) {
       case 'super_admin':
       case 'admin':
       case 'hr':
       case 'manager':
-        print('🎯 ROLE ROUTING: $role → Admin Dashboard');
+        print('✅ ROLE ROUTING: "$role" → /admin/dashboard');
         return '/admin/dashboard';
       
       case 'employee':
       case 'account_officer':
       case 'security':
       case 'office_boy':
+        print('✅ ROLE ROUTING: "$role" → /user/dashboard');
+        return '/user/dashboard';
+        
       default:
-        print('🎯 ROLE ROUTING: $role → User Dashboard');
+        print('⚠️ ROLE ROUTING: Unknown role "$role" → /user/dashboard (default)');
         return '/user/dashboard';
     }
   }
@@ -129,7 +142,7 @@ class _LoginPageState extends State<LoginPage>
           final userRole = authProvider.currentUser!.role;
           String routeDestination = _getRouteByRole(userRole);
           
-          print('🎯 LOGIN SUCCESS: User ${authProvider.currentUser!.email} (${userRole}) → ${routeDestination}');
+          print('🎯 LOGIN SUCCESS: User ${authProvider.currentUser!.email} ($userRole) → $routeDestination');
           
           // Navigate with error handling to prevent crashes
           try {
@@ -197,17 +210,17 @@ class _LoginPageState extends State<LoginPage>
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const SizedBox(height: 80),
+                  const SizedBox(height: 60),
 
                   // Logo
-                  Image.asset('assets/images/logo.png', height: 80),
-                  const SizedBox(height: 64),
+                  Image.asset('assets/images/logo.png', height: 60),
+                  const SizedBox(height: 48),
 
                   // Email / Phone / ID
                   TextFormField(
                     controller: _emailController,
                     decoration: const InputDecoration(
-                      labelText: "Email / Phone Number / ID Employee",
+                      labelText: "Email / Phone / ID",
                       border: OutlineInputBorder(),
                     ),
                     validator: (value) {
@@ -248,35 +261,55 @@ class _LoginPageState extends State<LoginPage>
 
                   // Remember Me & Forgot Password
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        children: [
-                          Checkbox(
-                            value: _rememberMe,
-                            onChanged: (value) {
-                              setState(() {
-                                _rememberMe = value ?? false;
-                              });
-                            },
-                          ),
-                          const Text("Remember Me"),
-                        ],
+                      Flexible(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Checkbox(
+                              value: _rememberMe,
+                              onChanged: (value) {
+                                setState(() {
+                                  _rememberMe = value ?? false;
+                                });
+                              },
+                            ),
+                            const Flexible(
+                              child: Text(
+                                "Remember Me",
+                                style: TextStyle(fontSize: 12),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.pushNamed(context, '/forgot-password');
-                        },
-                        child: const Text("Lupa Password?"),
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: TextButton(
+                          onPressed: () {
+                            Navigator.pushNamed(context, '/forgot-password');
+                          },
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          child: const Text(
+                            "Lupa Password?",
+                            style: TextStyle(fontSize: 12),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 24),
 
                   // Login Button
                   SizedBox(
                     width: double.infinity,
-                    height: 48,
+                    height: 44,
                     child: ElevatedButton(
                       onPressed: _isLoading ? null : _login,
                       style: ElevatedButton.styleFrom(
@@ -299,46 +332,35 @@ class _LoginPageState extends State<LoginPage>
                   ),
                   const SizedBox(height: 24),
 
-                  // Footer
-                  RichText(
-                    textAlign: TextAlign.center,
-                    text: TextSpan(
-                      text: "By continuing, you agree to our ",
-                      style: const TextStyle(
-                        color: AppColors.neutral500,
-                        fontSize: 12,
+                  // Footer - Add Account Link
+                  GestureDetector(
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) => const AccountRequestDialog(),
+                      );
+                    },
+                    child: RichText(
+                      textAlign: TextAlign.center,
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
+                      text: const TextSpan(
+                        text: "Don't have an account? ",
+                        style: TextStyle(
+                          color: AppColors.neutral500,
+                          fontSize: 11,
+                        ),
+                        children: [
+                          TextSpan(
+                            text: "Request Account",
+                            style: TextStyle(
+                              color: AppColors.primaryBlue,
+                              decoration: TextDecoration.underline,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
                       ),
-                      children: [
-                        TextSpan(
-                          text: "Terms of Service",
-                          style: const TextStyle(
-                            color: AppColors.primaryBlue,
-                            decoration: TextDecoration.underline,
-                          ),
-                          recognizer: TapGestureRecognizer()
-                            ..onTap = () async {
-                              const url = 'https://example.com/terms';
-                              if (await canLaunchUrl(Uri.parse(url))) {
-                                await launchUrl(Uri.parse(url));
-                              }
-                            },
-                        ),
-                        const TextSpan(text: " and "),
-                        TextSpan(
-                          text: "Privacy Policy",
-                          style: const TextStyle(
-                            color: AppColors.primaryBlue,
-                            decoration: TextDecoration.underline,
-                          ),
-                          recognizer: TapGestureRecognizer()
-                            ..onTap = () async {
-                              const url = 'https://example.com/privacy';
-                              if (await canLaunchUrl(Uri.parse(url))) {
-                                await launchUrl(Uri.parse(url));
-                              }
-                            },
-                        ),
-                      ],
                     ),
                   ),
                 ],

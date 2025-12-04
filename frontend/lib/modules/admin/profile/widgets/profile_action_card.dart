@@ -42,7 +42,7 @@ class ProfileActionCard extends StatelessWidget {
           const SizedBox(height: 16),
           
           // Actions List
-          ...actions.map((action) => _buildActionItem(action)).toList(),
+          ...actions.map((action) => _buildActionItem(action)),
         ],
       ),
     );

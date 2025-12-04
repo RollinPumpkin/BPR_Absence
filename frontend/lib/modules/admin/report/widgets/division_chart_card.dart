@@ -25,7 +25,7 @@ class DivisionChartCard extends StatelessWidget {
             height: 160,
             child: LineChart(
               LineChartData(
-                gridData: FlGridData(show: false),
+                gridData: const FlGridData(show: false),
                 titlesData: FlTitlesData(
                   topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                   rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
@@ -80,10 +80,10 @@ class DivisionChartCard extends StatelessWidget {
                     ),
                     belowBarData: BarAreaData(
                       show: true,
-                      gradient: LinearGradient(
+                      gradient: const LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
-                        colors: const [
+                        colors: [
                           Color(0x3300B894),
                           Color(0x1100B894),
                           Colors.transparent

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/core/constants/colors.dart';
 import 'package:frontend/data/providers/auth_provider.dart';
+import 'package:frontend/data/providers/user_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'develop_team_page.dart';
 import 'help_support_page.dart';
 
@@ -42,31 +45,41 @@ class _SettingsPageState extends State<SettingsPage> {
 
               // Preferences
               _buildSectionTitle("Preferences"),
-              _buildSwitchTile("Notification", true, (val) {}),
-              _buildTile("Language", trailing: const Text("English")),
-              _buildTile("Theme", trailing: const Text("Light")),
+              _buildTile(
+                "Notification",
+                trailing: const Icon(Icons.chevron_right, size: 16),
+                onTap: () async {
+                  await openAppSettings();
+                },
+              ),
 
               const SizedBox(height: 16),
 
               // Account
               _buildSectionTitle("Account"),
               _buildTile("Change Password"),
-              _buildSwitchTile("Login with Face ID", false, (val) {}),
-              _buildTile("Manage Devices"),
 
               const SizedBox(height: 16),
 
               // Support
               _buildSectionTitle("Support"),
-              _buildTile("Location Settings"),
-              _buildTile("App Version Info", trailing: const Text("v1.0.0")),
-              _buildTile("Feedback"),
+              _buildTile(
+                "Location Settings",
+                trailing: const Icon(Icons.chevron_right, size: 16),
+                onTap: () async {
+                  await openAppSettings();
+                },
+              ),
 
               const SizedBox(height: 16),
 
               // Information
               _buildSectionTitle("Information"),
-              _buildTile("Terms & Privacy Policy"),
+              _buildTile(
+                "Share Profile to WhatsApp",
+                trailing: const Icon(Icons.share, size: 20, color: Colors.green),
+                onTap: _shareProfileToWhatsApp,
+              ),
               _buildTile(
                 "Help & Support",
                 onTap: () {
@@ -102,6 +115,180 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
+  Future<void> _shareProfileToWhatsApp() async {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final user = userProvider.currentUser;
+
+    if (user == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please wait, loading profile data...'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+      return;
+    }
+
+    // Show dialog with complaint form
+    final TextEditingController complaintController = TextEditingController();
+    
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text(
+            'Share Profile to WhatsApp',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+            ),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Display user info
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '👤 ${user.fullName}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '🏢 ${user.department}',
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Complaint/Message (Optional):',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w500,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: complaintController,
+                  maxLines: 4,
+                  decoration: InputDecoration(
+                    hintText: 'Type your complaint or message here...',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    filled: true,
+                    fillColor: Colors.grey.shade50,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                complaintController.dispose();
+              },
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: Colors.grey),
+              ),
+            ),
+            ElevatedButton.icon(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await _sendToWhatsApp(user, complaintController.text);
+                complaintController.dispose();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+              ),
+              icon: const Icon(Icons.send),
+              label: const Text('Send to WhatsApp'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _sendToWhatsApp(user, String complaint) async {
+    try {
+      // Format profile data dengan keluhan untuk WhatsApp
+      String message = '''
+📋 *PROFILE INFORMATION*
+━━━━━━━━━━━━━━━━━━━━━
+
+👤 *Name:* ${user.fullName}
+🏢 *Division:* ${user.department}
+📧 *Email:* ${user.email}
+🆔 *Employee ID:* ${user.employeeId}
+💼 *Position:* ${user.position}
+📱 *Phone:* ${user.phone}
+''';
+
+      // Add complaint if provided
+      if (complaint.trim().isNotEmpty) {
+        message += '''
+
+━━━━━━━━━━━━━━━━━━━━━
+📝 *COMPLAINT/MESSAGE:*
+━━━━━━━━━━━━━━━━━━━━━
+
+${complaint.trim()}
+''';
+      }
+
+      message += '''
+
+━━━━━━━━━━━━━━━━━━━━━
+_Sent from BPR Absence App_
+      ''';
+
+      final String encodedMessage = Uri.encodeComponent(message);
+      final Uri whatsappUrl = Uri.parse('https://wa.me/?text=$encodedMessage');
+
+      if (await canLaunchUrl(whatsappUrl)) {
+        await launchUrl(whatsappUrl, mode: LaunchMode.externalApplication);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Could not open WhatsApp. Please install WhatsApp first.'),
+              backgroundColor: AppColors.errorRed,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: AppColors.errorRed,
+          ),
+        );
+      }
+    }
+  }
+
   Widget _buildSectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -130,29 +317,6 @@ class _SettingsPageState extends State<SettingsPage> {
             trailing ?? const Icon(Icons.chevron_right, color: Colors.grey),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildSwitchTile(
-      String title, bool value, Function(bool) onChanged) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300),
-        borderRadius: BorderRadius.circular(8),
-        color: AppColors.pureWhite,
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(title, style: const TextStyle(fontSize: 14)),
-          Switch(
-            value: value,
-            onChanged: onChanged,
-          ),
-        ],
       ),
     );
   }

@@ -230,8 +230,8 @@ class _InsightBullet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: const [
+    return const Row(
+      children: [
         Icon(Icons.circle, size: 6, color: AppColors.neutral500),
         SizedBox(width: 8),
       ],

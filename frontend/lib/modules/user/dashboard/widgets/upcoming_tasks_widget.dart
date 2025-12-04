@@ -108,30 +108,21 @@ class _UpcomingTasksWidgetState extends State<UpcomingTasksWidget> {
               ),
             ),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Upcoming Tasks',
-                  style: TextStyle(
-                    color: AppColors.pureWhite,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
+                const Expanded(
+                  child: Text(
+                    'Upcoming Tasks',
+                    style: TextStyle(
+                      color: AppColors.pureWhite,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
+                const SizedBox(width: 8),
                 Row(
                   children: [
-                    // Reload button
-                    IconButton(
-                      onPressed: () {
-                        print('[UpcomingTasksWidget] Manual reload triggered');
-                        _loadUpcomingTasks();
-                      },
-                      icon: const Icon(
-                        Icons.refresh,
-                        color: AppColors.pureWhite,
-                        size: 16,
-                      ),
-                    ),
                     if (_isLoading)
                       const SizedBox(
                         width: 16,
@@ -169,13 +160,13 @@ class _UpcomingTasksWidgetState extends State<UpcomingTasksWidget> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            Icon(
+            const Icon(
               Icons.error_outline,
               color: AppColors.errorRed,
               size: 32,
             ),
             const SizedBox(height: 8),
-            Text(
+            const Text(
               'Error loading tasks',
               style: TextStyle(
                 color: AppColors.errorRed,
@@ -248,7 +239,7 @@ class _UpcomingTasksWidgetState extends State<UpcomingTasksWidget> {
     return Column(
       children: [
         // Task items
-        ...tasksToShow.map((assignment) => _buildTaskItem(assignment)).toList(),
+        ...tasksToShow.map((assignment) => _buildTaskItem(assignment)),
         
         // View All / View Less button
         if (_assignments.length > _maxTasksToShow)
@@ -261,16 +252,6 @@ class _UpcomingTasksWidgetState extends State<UpcomingTasksWidget> {
                   _showAllTasks = !_showAllTasks;
                 });
               },
-              child: Text(
-                _showAllTasks 
-                    ? 'View Less' 
-                    : 'View All (${_assignments.length} tasks)',
-                style: const TextStyle(
-                  color: AppColors.primaryBlue,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
               style: TextButton.styleFrom(
                 backgroundColor: AppColors.primaryBlue.withOpacity(0.05),
                 shape: RoundedRectangleBorder(
@@ -281,6 +262,16 @@ class _UpcomingTasksWidgetState extends State<UpcomingTasksWidget> {
                   ),
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              ),
+              child: Text(
+                _showAllTasks 
+                    ? 'View Less' 
+                    : 'View All (${_assignments.length} tasks)',
+                style: const TextStyle(
+                  color: AppColors.primaryBlue,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
           ),
@@ -316,7 +307,7 @@ class _UpcomingTasksWidgetState extends State<UpcomingTasksWidget> {
     
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(
@@ -330,13 +321,13 @@ class _UpcomingTasksWidgetState extends State<UpcomingTasksWidget> {
           // Priority indicator
           Container(
             width: 4,
-            height: 40,
+            height: 36,
             decoration: BoxDecoration(
               color: priorityColor,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 8),
           
           // Task details
           Expanded(
@@ -346,42 +337,46 @@ class _UpcomingTasksWidgetState extends State<UpcomingTasksWidget> {
                 Text(
                   assignment.title,
                   style: const TextStyle(
-                    fontSize: 14,
+                    fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: AppColors.black87,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 if (assignment.description.isNotEmpty) ...[
                   const SizedBox(height: 2),
                   Text(
                     assignment.description,
-                    style: TextStyle(
-                      fontSize: 12,
+                    style: const TextStyle(
+                      fontSize: 11,
                       color: AppColors.black54,
                     ),
-                    maxLines: 2,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ],
             ),
           ),
+          const SizedBox(width: 8),
           
           // Date and time
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                 decoration: BoxDecoration(
                   color: dateColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: dateColor, width: 1),
                 ),
                 child: Text(
                   isToday ? 'Today' : dateFormatter.format(assignment.dueDate),
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 10,
                     fontWeight: FontWeight.w600,
                     color: dateColor,
                   ),
@@ -391,7 +386,7 @@ class _UpcomingTasksWidgetState extends State<UpcomingTasksWidget> {
               Text(
                 timeFormatter.format(assignment.dueDate),
                 style: const TextStyle(
-                  fontSize: 12,
+                  fontSize: 10,
                   color: AppColors.black54,
                 ),
               ),

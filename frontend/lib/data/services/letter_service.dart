@@ -39,7 +39,7 @@ class LetterService {
       }
     }
 
-    return await _apiService.post<Letter>(
+    final response = await _apiService.post<Letter>(
       ApiConstants.letters.send,
       data: {
         'recipient_id': recipientId,
@@ -57,6 +57,14 @@ class LetterService {
       },
       fromJson: (json) => Letter.fromJson(json),
     );
+    
+    if (response.success) {
+      // Clear cache to force refresh on next load
+      print('🧹 Clearing API cache after letter sent...');
+      _apiService.clearCache();
+    }
+    
+    return response;
   }
 
   // Get received letters
@@ -68,6 +76,7 @@ class LetterService {
     String? priority,
     String? startDate,
     String? endDate,
+    bool forceRefresh = false, // Add force refresh parameter
   }) async {
     final queryParams = <String, dynamic>{
       'page': page,
@@ -83,6 +92,7 @@ class LetterService {
     return await _apiService.get<ListResponse<Letter>>(
       ApiConstants.letters.received,
       queryParameters: queryParams,
+      forceRefresh: forceRefresh, // Pass force refresh to API service
       fromJson: (json) {
         print('🔍 getReceivedLetters fromJson - Input: $json');
         print('🔍 getReceivedLetters fromJson - Input type: ${json.runtimeType}');
@@ -199,7 +209,7 @@ class LetterService {
       }
     }
 
-    return await _apiService.post<Letter>(
+    final response = await _apiService.post<Letter>(
       '${ApiConstants.letters.reply}/$originalLetterId',
       data: {
         'content': content,
@@ -207,6 +217,14 @@ class LetterService {
       },
       fromJson: (json) => Letter.fromJson(json),
     );
+    
+    if (response.success) {
+      // Clear cache to force refresh on next load
+      print('🧹 Clearing API cache after letter reply...');
+      _apiService.clearCache();
+    }
+    
+    return response;
   }
 
   // Get letter templates
@@ -249,18 +267,34 @@ class LetterService {
 
   // Delete letter
   Future<ApiResponse<String>> deleteLetter(String id) async {
-    return await _apiService.delete<String>(
+    final response = await _apiService.delete<String>(
       '${ApiConstants.letters.list}/$id',
       fromJson: (json) => json?.toString() ?? 'Letter deleted successfully',
     );
+    
+    if (response.success) {
+      // Clear cache to force refresh on next load
+      print('🧹 Clearing API cache after letter deletion...');
+      _apiService.clearCache();
+    }
+    
+    return response;
   }
 
   // Archive letter
   Future<ApiResponse<Letter>> archiveLetter(String id) async {
-    return await _apiService.put<Letter>(
+    final response = await _apiService.put<Letter>(
       '${ApiConstants.letters.archive}/$id',
       fromJson: (json) => Letter.fromJson(json),
     );
+    
+    if (response.success) {
+      // Clear cache to force refresh on next load
+      print('🧹 Clearing API cache after letter archive...');
+      _apiService.clearCache();
+    }
+    
+    return response;
   }
 
   // Get archived letters
@@ -399,16 +433,24 @@ class LetterService {
   // Approve letter request
   Future<ApiResponse<Map<String, dynamic>>> approveLetter(
     String letterId, {
-    String? reason,
+    String? approvalNotes,
   }) async {
-    return await _apiService.put<Map<String, dynamic>>(
+    final response = await _apiService.put<Map<String, dynamic>>(
       ApiConstants.letters.statusById(letterId),
       data: {
         'status': 'approved',
-        'reason': reason ?? 'Letter request approved',
+        'approval_notes': approvalNotes ?? 'Letter request approved',
       },
       fromJson: (json) => json as Map<String, dynamic>,
     );
+    
+    if (response.success) {
+      // Clear cache to force refresh on next load
+      print('🧹 Clearing API cache after letter approval...');
+      _apiService.clearCache();
+    }
+    
+    return response;
   }
 
   // Reject letter request
@@ -416,7 +458,7 @@ class LetterService {
     String letterId, {
     String? reason,
   }) async {
-    return await _apiService.put<Map<String, dynamic>>(
+    final response = await _apiService.put<Map<String, dynamic>>(
       ApiConstants.letters.statusById(letterId),
       data: {
         'status': 'rejected',
@@ -424,6 +466,14 @@ class LetterService {
       },
       fromJson: (json) => json as Map<String, dynamic>,
     );
+    
+    if (response.success) {
+      // Clear cache to force refresh on next load
+      print('🧹 Clearing API cache after letter rejection...');
+      _apiService.clearCache();
+    }
+    
+    return response;
   }
 
   // Update letter status (generic method)
@@ -432,7 +482,7 @@ class LetterService {
     String status, {
     String? reason,
   }) async {
-    return await _apiService.put<Map<String, dynamic>>(
+    final response = await _apiService.put<Map<String, dynamic>>(
       ApiConstants.letters.statusById(letterId),
       data: {
         'status': status,
@@ -440,6 +490,14 @@ class LetterService {
       },
       fromJson: (json) => json as Map<String, dynamic>,
     );
+    
+    if (response.success) {
+      // Clear cache to force refresh on next load
+      print('🧹 Clearing API cache after letter status update...');
+      _apiService.clearCache();
+    }
+    
+    return response;
   }
 
   // Export letters

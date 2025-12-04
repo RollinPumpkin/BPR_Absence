@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:frontend/core/constants/colors.dart';
+import 'package:frontend/core/utils/image_compress_helper.dart';
 
 class LetterFormPage extends StatefulWidget {
   final String letterType;
@@ -514,12 +515,14 @@ class _LetterFormPageState extends State<LetterFormPage> {
       );
 
       if (file != null) {
-        final bytes = await file.readAsBytes();
+        // Auto-compress if needed
+        final compressedPath = await ImageCompressHelper.compressImageIfNeeded(file.path);
+        final bytes = await File(compressedPath).readAsBytes();
         setState(() {
           if (kIsWeb) {
             _attachedFileBytes = bytes;
           } else {
-            _attachedFile = File(file.path);
+            _attachedFile = File(compressedPath);
           }
           _attachedFileName = file.name;
         });
@@ -568,8 +571,8 @@ class _LetterFormPageState extends State<LetterFormPage> {
       // Show success message
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('✅ Letter submitted successfully!'),
+          const SnackBar(
+            content: Text('✅ Letter submitted successfully!'),
             backgroundColor: AppColors.primaryGreen,
             behavior: SnackBarBehavior.floating,
           ),

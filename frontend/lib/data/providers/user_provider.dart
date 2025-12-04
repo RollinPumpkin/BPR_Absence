@@ -27,6 +27,7 @@ class UserProvider with ChangeNotifier {
   String? _positionFilter;
   String? _roleFilter;
   bool? _isActiveFilter;
+  bool _showNewDataOnly = false; // New: filter for recently created data
 
   // Getters
   List<User> get users => _users;
@@ -43,6 +44,7 @@ class UserProvider with ChangeNotifier {
   String? get positionFilter => _positionFilter;
   String? get roleFilter => _roleFilter;
   bool? get isActiveFilter => _isActiveFilter;
+  bool get showNewDataOnly => _showNewDataOnly; // New getter
   UserStatistics? get statistics => _statistics;
 
   // Helper methods
@@ -98,10 +100,19 @@ class UserProvider with ChangeNotifier {
           final validItems = <User>[];
           for (int i = 0; i < listResponse.items.length; i++) {
             final item = listResponse.items[i];
-            if (item != null && item.status != 'terminated') {  // Filter out terminated employees
+            if (item.status != 'terminated') {  // Filter out terminated employees
+              // Apply client-side filter for new data if enabled
+              if (_showNewDataOnly && item.createdAt != null) {
+                final daysSinceCreation = DateTime.now().difference(item.createdAt!).inDays;
+                if (daysSinceCreation > 7) {
+                  // Skip this item as it's older than 7 days
+                  continue;
+                }
+              }
+              
               validItems.add(item);
               print('📋 UserProvider: Valid item $i: ${item.fullName} (${item.role}) - Status: ${item.status}');
-            } else if (item != null && item.status == 'terminated') {
+            } else if (item.status == 'terminated') {
               print('⚠️ UserProvider: Terminated employee filtered out: ${item.fullName}');
             } else {
               print('⚠️ UserProvider: Null item found at index $i, skipping');
@@ -115,6 +126,15 @@ class UserProvider with ChangeNotifier {
             _users.addAll(validItems);
             print('📋 UserProvider: Added ${validItems.length} valid items, total now: ${_users.length}');
           }
+          
+          // Sort users by createdAt (newest to oldest)
+          _users.sort((a, b) {
+            if (a.createdAt == null && b.createdAt == null) return 0;
+            if (a.createdAt == null) return 1; // null values go to the end
+            if (b.createdAt == null) return -1;
+            return b.createdAt!.compareTo(a.createdAt!); // Descending order (newest first)
+          });
+          print('📋 UserProvider: Sorted ${_users.length} users by createdAt (newest first)');
           
           if (listResponse.pagination != null) {
             final pagination = listResponse.pagination!;
@@ -193,6 +213,12 @@ class UserProvider with ChangeNotifier {
     await fetchUsers(refresh: true);
   }
 
+  // Filter by new data (created within last 7 days)
+  Future<void> filterByNewData(bool showNewOnly) async {
+    _showNewDataOnly = showNewOnly;
+    await fetchUsers(refresh: true);
+  }
+
   // Clear all filters
   Future<void> clearFilters() async {
     _searchQuery = null;
@@ -200,6 +226,7 @@ class UserProvider with ChangeNotifier {
     _positionFilter = null;
     _roleFilter = null;
     _isActiveFilter = null;
+    _showNewDataOnly = false;
     await fetchUsers(refresh: true);
   }
 
@@ -430,17 +457,29 @@ class UserProvider with ChangeNotifier {
       _setLoading(true);
       _errorMessage = null;
 
+      print('👤 UserProvider: Fetching current user profile...');
       final response = await _userService.getCurrentUser();
       
+      print('👤 UserProvider: Response success: ${response.success}');
+      print('👤 UserProvider: Response message: ${response.message}');
+      print('👤 UserProvider: Response data: ${response.data}');
+      
       if (response.success && response.data != null) {
+        print('👤 UserProvider: Creating User from JSON...');
         _currentUser = User.fromJson(response.data!);
+        print('👤 UserProvider: Current user loaded: ${_currentUser!.fullName}');
+        print('👤 UserProvider: Phone: ${_currentUser!.phone}');
+        print('👤 UserProvider: Position: ${_currentUser!.position}');
+        print('👤 UserProvider: Department: ${_currentUser!.department}');
         await getUserStatisticsForUser(_currentUser!.id);
       } else {
         _errorMessage = response.message ?? 'Failed to load user profile';
+        print('❌ UserProvider: Failed to load profile: $_errorMessage');
       }
     } catch (e) {
       _errorMessage = 'Error loading user profile: $e';
       print('❌ Error in getCurrentUser: $e');
+      print('❌ Stack trace: ${StackTrace.current}');
     } finally {
       _setLoading(false);
       notifyListeners();

@@ -1,19 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/core/constants/colors.dart';
+import 'package:frontend/data/models/assignment.dart';
 import '../../pages/detail_assignment_page.dart';
 
 class AssignmentCard extends StatelessWidget {
-  final String title;
-  final String description;
-  final String status;
-  final String date;
+  final Assignment assignment;
 
   const AssignmentCard({
     super.key,
-    required this.title,
-    required this.description,
-    required this.status,
-    required this.date,
+    required this.assignment,
   });
 
   Color _statusColor(String s) {
@@ -27,7 +22,7 @@ class AssignmentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final statusColor = _statusColor(status);
+    final statusColor = _statusColor(assignment.status);
 
     return Material(
       color: AppColors.pureWhite,
@@ -37,7 +32,9 @@ class AssignmentCard extends StatelessWidget {
         onTap: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const DetailAssignmentPage()),
+            MaterialPageRoute(
+              builder: (_) => DetailAssignmentPage(assignment: assignment),
+            ),
           );
         },
         child: Container(
@@ -62,7 +59,7 @@ class AssignmentCard extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      title,
+                      assignment.title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -73,14 +70,14 @@ class AssignmentCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  _StatusChip(text: status, color: statusColor),
+                  _StatusChip(text: assignment.status, color: statusColor),
                 ],
               ),
               const SizedBox(height: 8),
 
               // Description
               Text(
-                description,
+                assignment.description,
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
@@ -93,8 +90,8 @@ class AssignmentCard extends StatelessWidget {
               const SizedBox(height: 12),
 
               // Date + Profile (ikon kecil biar hidup)
-              Row(
-                children: const [
+              const Row(
+                children: [
                   CircleAvatar(
                     radius: 12,
                     backgroundColor: AppColors.neutral100,
@@ -107,7 +104,7 @@ class AssignmentCard extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                date,
+                assignment.formattedDueDate,
                 style: const TextStyle(
                   fontSize: 12.5,
                   color: AppColors.neutral500,

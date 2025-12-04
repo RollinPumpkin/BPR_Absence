@@ -7,10 +7,12 @@ import 'package:frontend/core/constants/colors.dart';
 
 class MonthlyAssignmentUI extends StatefulWidget {
   final List<Assignment> assignments;
+  final VoidCallback? onRefreshNeeded;
   
   const MonthlyAssignmentUI({
     super.key,
     required this.assignments,
+    this.onRefreshNeeded,
   });
 
   @override
@@ -29,17 +31,62 @@ class _MonthlyAssignmentUIState extends State<MonthlyAssignmentUI> {
     _updateSelectedDayAssignments();
   }
 
+  @override
+  void didUpdateWidget(MonthlyAssignmentUI oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Update selected day assignments when widget is rebuilt with new data
+    if (oldWidget.assignments != widget.assignments) {
+      print('[MONTHLY_UI] Assignments updated - refreshing selected day');
+      _updateSelectedDayAssignments();
+    }
+  }
+
   void _updateSelectedDayAssignments() {
     if (_selectedDay == null) {
       _selectedDayAssignments = [];
       return;
     }
     
+    // Get assignments that fall on selected day (considering date range from startDate to dueDate)
     _selectedDayAssignments = widget.assignments.where((assignment) {
-      return assignment.dueDate.year == _selectedDay!.year &&
-             assignment.dueDate.month == _selectedDay!.month &&
-             assignment.dueDate.day == _selectedDay!.day;
+      final selectedDate = DateTime(_selectedDay!.year, _selectedDay!.month, _selectedDay!.day);
+      final dueDate = DateTime(assignment.dueDate.year, assignment.dueDate.month, assignment.dueDate.day);
+      
+      // If assignment has startDate, check if selected day is within range
+      if (assignment.startDate != null) {
+        final startDate = DateTime(assignment.startDate!.year, assignment.startDate!.month, assignment.startDate!.day);
+        // Selected day must be between startDate and dueDate (inclusive)
+        return (selectedDate.isAtSameMomentAs(startDate) || selectedDate.isAfter(startDate)) &&
+               (selectedDate.isAtSameMomentAs(dueDate) || selectedDate.isBefore(dueDate));
+      } else {
+        // If no startDate, only show on due date
+        return assignment.dueDate.year == _selectedDay!.year &&
+               assignment.dueDate.month == _selectedDay!.month &&
+               assignment.dueDate.day == _selectedDay!.day;
+      }
     }).toList();
+  }
+
+  // Check if a date has any assignments (considering date ranges)
+  bool _hasAssignments(DateTime day) {
+    final checkDate = DateTime(day.year, day.month, day.day);
+    
+    return widget.assignments.any((assignment) {
+      final dueDate = DateTime(assignment.dueDate.year, assignment.dueDate.month, assignment.dueDate.day);
+      
+      // If assignment has startDate, check if day is within range
+      if (assignment.startDate != null) {
+        final startDate = DateTime(assignment.startDate!.year, assignment.startDate!.month, assignment.startDate!.day);
+        // Check if day is between startDate and dueDate (inclusive)
+        return (checkDate.isAtSameMomentAs(startDate) || checkDate.isAfter(startDate)) &&
+               (checkDate.isAtSameMomentAs(dueDate) || checkDate.isBefore(dueDate));
+      } else {
+        // If no startDate, only check due date
+        return assignment.dueDate.year == day.year &&
+               assignment.dueDate.month == day.month &&
+               assignment.dueDate.day == day.day;
+      }
+    });
   }
 
   @override
@@ -63,11 +110,11 @@ class _MonthlyAssignmentUIState extends State<MonthlyAssignmentUI> {
               _updateSelectedDayAssignments();
             });
           },
-          headerStyle: HeaderStyle(
+          headerStyle: const HeaderStyle(
             formatButtonVisible: false,
             titleCentered: true,
-            leftChevronIcon: const Icon(Icons.chevron_left, color: AppColors.black),
-            rightChevronIcon: const Icon(Icons.chevron_right, color: AppColors.black),
+            leftChevronIcon: Icon(Icons.chevron_left, color: AppColors.black),
+            rightChevronIcon: Icon(Icons.chevron_right, color: AppColors.black),
           ),
           calendarStyle: const CalendarStyle(
             todayDecoration: BoxDecoration(
@@ -75,9 +122,43 @@ class _MonthlyAssignmentUIState extends State<MonthlyAssignmentUI> {
               shape: BoxShape.circle,
             ),
             selectedDecoration: BoxDecoration(
-              color: AppColors.darkGray,
+              color: AppColors.primaryYellow,
               shape: BoxShape.circle,
             ),
+            selectedTextStyle: TextStyle(
+              color: AppColors.pureWhite,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          calendarBuilders: CalendarBuilders(
+            defaultBuilder: (context, day, focusedDay) {
+              // Color dates with assignments in red
+              if (_hasAssignments(day)) {
+                final isSelected = isSameDay(_selectedDay, day);
+                final isToday = isSameDay(DateTime.now(), day);
+                
+                // Don't override today or selected styling
+                if (isToday || isSelected) return null;
+                
+                return Container(
+                  margin: const EdgeInsets.all(6),
+                  decoration: const BoxDecoration(
+                    color: AppColors.primaryRed,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Text(
+                      '${day.day}',
+                      style: const TextStyle(
+                        color: AppColors.pureWhite,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                );
+              }
+              return null;
+            },
           ),
         ),
 
@@ -87,13 +168,47 @@ class _MonthlyAssignmentUIState extends State<MonthlyAssignmentUI> {
         SizedBox(
           width: double.infinity,
           child: ElevatedButton.icon(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const AddAssignmentStep1Page(),
-                ),
-              );
+            onPressed: () async {
+              print('[ADD_DATA] Button clicked - navigating to Step 1');
+              try {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const AddAssignmentStep1Page(),
+                  ),
+                );
+                
+                print('[RETURN] Returned from assignment creation with result: $result');
+                
+                // Always trigger refresh to ensure data is up to date
+                if (widget.onRefreshNeeded != null) {
+                  print('[REFRESH] Triggering refresh callback...');
+                  widget.onRefreshNeeded!();
+                  
+                  // Show success message if assignment was created
+                  if (result == true && mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Assignment list refreshed!'),
+                        backgroundColor: AppColors.primaryGreen,
+                        duration: Duration(seconds: 1),
+                      ),
+                    );
+                  }
+                } else {
+                  print('[WARNING] Callback is null - cannot refresh');
+                }
+              } catch (e) {
+                print('[ERROR] Navigation error: $e');
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error: $e'),
+                      backgroundColor: AppColors.errorRed,
+                    ),
+                  );
+                }
+              }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primaryBlue,
@@ -155,8 +270,11 @@ class _MonthlyAssignmentUIState extends State<MonthlyAssignmentUI> {
         else
           ..._selectedDayAssignments.map((assignment) => Padding(
                 padding: const EdgeInsets.only(bottom: 12),
-                child: AssignmentCard(assignment: assignment),
-              )).toList(),
+                child: AssignmentCard(
+                  assignment: assignment,
+                  onDeleted: widget.onRefreshNeeded,
+                ),
+              )),
       ],
     );
   }

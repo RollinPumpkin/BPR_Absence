@@ -75,10 +75,10 @@ class ReportPage extends StatelessWidget {
                   const SizedBox(height: 8),
 
                   // contoh kartu statistik
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
                     child: Column(
-                      children: const [
+                      children: [
                         StatCard(
                           title: 'Sick',
                           subtitle: 'IT Divisi',

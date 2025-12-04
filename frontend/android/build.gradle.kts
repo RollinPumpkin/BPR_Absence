@@ -9,6 +9,14 @@ plugins{
     id("com.google.gms.google-services") version "4.4.3" apply false
 }
 
+// Suppress Java warnings
+gradle.projectsEvaluated {
+    tasks.withType<JavaCompile> {
+        options.compilerArgs.add("-Xlint:-options")
+        options.compilerArgs.add("-Xlint:-deprecation")
+    }
+}
+
 val newBuildDir: Directory =
     rootProject.layout.buildDirectory
         .dir("../../build")

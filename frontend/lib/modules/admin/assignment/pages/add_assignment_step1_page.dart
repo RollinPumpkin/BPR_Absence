@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:frontend/core/constants/colors.dart';
 import 'add_assignment_step2_page.dart';
 import 'stepper_widgets.dart';
+import '../models/assignment_draft.dart';
 
 class AddAssignmentStep1Page extends StatefulWidget {
   const AddAssignmentStep1Page({super.key});
@@ -18,17 +19,7 @@ class _AddAssignmentStep1PageState extends State<AddAssignmentStep1Page> {
   DateTime? startDate;
   DateTime? endDate;
   TimeOfDay? time;
-
-  final List<String> categories = [
-    "Tutup buku",
-    "Rapat",
-    "Seminar",
-    "Pelaporan OJK",
-    "Audit",
-    "Training / Pelatihan",
-    "Monitoring & Pengujian",
-  ];
-  final Set<String> selectedCategories = {};
+  String? selectedPriority; // New: Priority dropdown
 
   @override
   Widget build(BuildContext context) {
@@ -45,9 +36,9 @@ class _AddAssignmentStep1PageState extends State<AddAssignmentStep1Page> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // 🔹 Stepper Indicator
-            Row(
+            const Row(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: const [
+              children: [
                 StepCircle(number: "1", isActive: true),
                 StepLine(),
                 StepCircle(number: "2", isActive: false),
@@ -73,27 +64,28 @@ class _AddAssignmentStep1PageState extends State<AddAssignmentStep1Page> {
 
             const SizedBox(height: 18),
 
-            // 🔹 Kategori
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: categories.map((cat) {
-                return FilterChip(
-                  label: Text(cat),
-                  selected: selectedCategories.contains(cat),
-                  selectedColor: AppColors.primaryGreen.withOpacity(0.15),
-                  checkmarkColor: AppColors.primaryGreen,
-                  onSelected: (val) {
-                    setState(() {
-                      if (val) {
-                        selectedCategories.add(cat);
-                      } else {
-                        selectedCategories.remove(cat);
-                      }
-                    });
-                  },
-                );
-              }).toList(),
+            // 🔹 Priority Dropdown
+            const Text(
+              "Priority *",
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+            ),
+            const SizedBox(height: 6),
+            DropdownButtonFormField<String>(
+              initialValue: selectedPriority,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                hintText: "Select Priority",
+              ),
+              items: const [
+                DropdownMenuItem(value: "low", child: Text("Low")),
+                DropdownMenuItem(value: "medium", child: Text("Medium")),
+                DropdownMenuItem(value: "high", child: Text("High")),
+              ],
+              onChanged: (value) {
+                setState(() {
+                  selectedPriority = value;
+                });
+              },
             ),
 
             const SizedBox(height: 20),
@@ -120,19 +112,22 @@ class _AddAssignmentStep1PageState extends State<AddAssignmentStep1Page> {
               children: [
                 Expanded(
                   child: TextField(
-                    decoration: InputDecoration(
-                      border: const OutlineInputBorder(),
-                      labelText: "Start Date",
-                      hintText: startDate == null
-                          ? "dd/mm/yy"
+                    controller: TextEditingController(
+                      text: startDate == null
+                          ? ""
                           : "${startDate!.day}/${startDate!.month}/${startDate!.year}",
-                      suffixIcon: const Icon(Icons.calendar_today, size: 20),
+                    ),
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      labelText: "Start Date",
+                      hintText: "dd/mm/yyyy",
+                      suffixIcon: Icon(Icons.calendar_today, size: 20),
                     ),
                     readOnly: true,
                     onTap: () async {
                       final picked = await showDatePicker(
                         context: context,
-                        initialDate: DateTime.now(),
+                        initialDate: startDate ?? DateTime.now(),
                         firstDate: DateTime(2020),
                         lastDate: DateTime(2030),
                       );
@@ -145,19 +140,22 @@ class _AddAssignmentStep1PageState extends State<AddAssignmentStep1Page> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: TextField(
-                    decoration: InputDecoration(
-                      border: const OutlineInputBorder(),
-                      labelText: "End Date",
-                      hintText: endDate == null
-                          ? "dd/mm/yy"
+                    controller: TextEditingController(
+                      text: endDate == null
+                          ? ""
                           : "${endDate!.day}/${endDate!.month}/${endDate!.year}",
-                      suffixIcon: const Icon(Icons.calendar_today, size: 20),
+                    ),
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      labelText: "End Date",
+                      hintText: "dd/mm/yyyy",
+                      suffixIcon: Icon(Icons.calendar_today, size: 20),
                     ),
                     readOnly: true,
                     onTap: () async {
                       final picked = await showDatePicker(
                         context: context,
-                        initialDate: DateTime.now(),
+                        initialDate: endDate ?? startDate ?? DateTime.now(),
                         firstDate: DateTime(2020),
                         lastDate: DateTime(2030),
                       );
@@ -172,21 +170,24 @@ class _AddAssignmentStep1PageState extends State<AddAssignmentStep1Page> {
 
             const SizedBox(height: 20),
 
-            // 🔹 Jam
+            // 🔹 Time
             TextField(
-              decoration: InputDecoration(
-                border: const OutlineInputBorder(),
-                labelText: "Jam",
-                hintText: time == null
-                    ? "00 : 00"
-                    : "${time!.hour.toString().padLeft(2, '0')} : ${time!.minute.toString().padLeft(2, '0')}",
-                suffixIcon: const Icon(Icons.access_time, size: 20),
+              controller: TextEditingController(
+                text: time == null
+                    ? ""
+                    : "${time!.hour.toString().padLeft(2, '0')}:${time!.minute.toString().padLeft(2, '0')}",
+              ),
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                labelText: "Time",
+                hintText: "00:00",
+                suffixIcon: Icon(Icons.access_time, size: 20),
               ),
               readOnly: true,
               onTap: () async {
                 final picked = await showTimePicker(
                   context: context,
-                  initialTime: TimeOfDay.now(),
+                  initialTime: time ?? TimeOfDay.now(),
                 );
                 if (picked != null) {
                   setState(() => time = picked);
@@ -232,10 +233,45 @@ class _AddAssignmentStep1PageState extends State<AddAssignmentStep1Page> {
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
                     onPressed: () {
+                      // Validate required fields
+                      if (nameController.text.trim().isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text("Please enter assignment name")),
+                        );
+                        return;
+                      }
+                      if (descController.text.trim().isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text("Please enter description")),
+                        );
+                        return;
+                      }
+                      if (selectedPriority == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text("Please select priority")),
+                        );
+                        return;
+                      }
+                      
+                      // Create draft with form data
+                      final draft = AssignmentDraft(
+                        name: nameController.text.trim(),
+                        description: descController.text.trim(),
+                        startDate: startDate,
+                        endDate: endDate,
+                        time: time,
+                        categories: [], // Empty categories since we removed chips
+                        priority: selectedPriority!, // Add priority
+                        link: linkController.text.trim().isEmpty 
+                            ? null 
+                            : linkController.text.trim(),
+                      );
+                      
+                      // Pass draft to Step 2
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => const AddAssignmentStep2Page(),
+                          builder: (_) => AddAssignmentStep2Page(draft: draft),
                         ),
                       );
                     },

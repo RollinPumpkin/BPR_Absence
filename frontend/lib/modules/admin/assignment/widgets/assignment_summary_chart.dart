@@ -47,20 +47,20 @@ class AssignmentSummaryChart extends StatelessWidget {
       child: Column(
         children: [
           // Title + legend
-          Row(
+          const Row(
             children: [
-              const Text(
+              Text(
                 'Assignment Overview',
                 style: TextStyle(
                   fontWeight: FontWeight.w800,
                   color: AppColors.neutral800,
                 ),
               ),
-              const Spacer(),
+              Spacer(),
               _Legend(color: AppColors.accentBlue, label: 'Assigned'),
-              const SizedBox(width: 10),
+              SizedBox(width: 10),
               _Legend(color: AppColors.primaryYellow, label: 'In Progress'),
-              const SizedBox(width: 10),
+              SizedBox(width: 10),
               _Legend(color: AppColors.primaryGreen, label: 'Done'),
             ],
           ),
@@ -75,7 +75,7 @@ class AssignmentSummaryChart extends StatelessWidget {
                 gridData: FlGridData(
                   drawVerticalLine: false,
                   horizontalInterval: 2,
-                  getDrawingHorizontalLine: (value) => FlLine(
+                  getDrawingHorizontalLine: (value) => const FlLine(
                     color: AppColors.dividerGray,
                     strokeWidth: 1,
                   ),
@@ -161,7 +161,7 @@ class AssignmentSummaryChart extends StatelessWidget {
       isCurved: true,
       barWidth: 3,
       color: color,
-      dotData: FlDotData(show: true),
+      dotData: const FlDotData(show: true),
       belowBarData: BarAreaData(show: true, color: color.withOpacity(.12)),
       spots: List.generate(points.length, (i) => FlSpot(i.toDouble(), points[i].toDouble())),
     );

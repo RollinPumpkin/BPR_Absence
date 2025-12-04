@@ -53,7 +53,7 @@ class ActivitySummary {
   String get daysDisplay => workingDays.toString();
   String get tasksDisplay => totalTasks.toString();
   String get summaryText => totalHours > 0 
-      ? 'You worked ${hoursDisplay} hours this ${period.toLowerCase()}! Great job!'
+      ? 'You worked $hoursDisplay hours this ${period.toLowerCase()}! Great job!'
       : 'Ready to start your productive work!';
 }
 

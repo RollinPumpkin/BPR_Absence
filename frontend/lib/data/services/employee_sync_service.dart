@@ -101,7 +101,7 @@ class EmployeeSyncService {
       };
       
       print('🎯 Sync completed!');
-      print('📊 Summary: ${summary}');
+      print('📊 Summary: $summary');
       
       return ApiResponse<Map<String, dynamic>>(
         success: true,

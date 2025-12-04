@@ -11,6 +11,8 @@ import 'package:frontend/data/providers/user_provider.dart';
 import 'package:frontend/data/models/user.dart';
 import 'package:frontend/data/models/attendance.dart';
 import 'package:frontend/data/services/attendance_service.dart';
+import 'package:frontend/core/services/realtime_service.dart';
+import 'dart:async';
 
 import 'widgets/date_row.dart';
 import 'widgets/attendance_stat.dart';
@@ -28,6 +30,9 @@ class AttendancePage extends StatefulWidget {
 
 class _AttendancePageState extends State<AttendancePage> {
   final AttendanceService _attendanceService = AttendanceService();
+  final RealtimeService _realtimeService = RealtimeService();
+  
+  StreamSubscription? _attendanceSubscription;
   List<Attendance> _attendanceRecords = [];
   List<Attendance> _filteredAttendanceRecords = [];
   bool _isLoading = true;
@@ -38,8 +43,31 @@ class _AttendancePageState extends State<AttendancePage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadAttendanceData();
+      _initializeRealtime();
     });
+  }
+
+  Future<void> _initializeRealtime() async {
+    await _realtimeService.initialize();
+    _realtimeService.startAttendanceListener();
+    
+    _attendanceSubscription = _realtimeService.attendanceStream.listen((attendanceData) {
+      if (mounted) {
+        setState(() {
+          _attendanceRecords = attendanceData.map((data) => Attendance.fromJson(data)).toList();
+          _filteredAttendanceRecords = _attendanceRecords;
+          _isLoading = false;
+        });
+        print('🔄 Admin Attendance: Realtime updated (${attendanceData.length} records)');
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _attendanceSubscription?.cancel();
+    _realtimeService.stopAllListeners();
+    super.dispose();
   }
 
   Future<void> _loadAttendanceData() async {
@@ -224,7 +252,7 @@ class _AttendancePageState extends State<AttendancePage> {
       };
 
       // Debug log for each item
-      print('👤 ${displayItem['name']} - Status: ${displayItem['status']} (${status}) - Date: ${displayItem['date']}');
+      print('👤 ${displayItem['name']} - Status: ${displayItem['status']} ($status) - Date: ${displayItem['date']}');
       
       return displayItem;
     }).toList();
@@ -359,7 +387,7 @@ class _AttendancePageState extends State<AttendancePage> {
       if (saved == null) throw 'Failed to generate file bytes';
       final bytes = Uint8List.fromList(saved);
       
-      final filterText = _selectedStatusFilter != null ? '_${_selectedStatusFilter}' : '';
+      final filterText = _selectedStatusFilter != null ? '_$_selectedStatusFilter' : '';
       final filename = 'attendance_report${filterText}_${DateTime.now().millisecondsSinceEpoch}.xlsx';
 
       await FileSaver.instance.saveFile(
@@ -460,12 +488,7 @@ class _AttendancePageState extends State<AttendancePage> {
             fontWeight: FontWeight.w800,
           ),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh, color: AppColors.neutral500),
-            onPressed: _loadAttendanceData,
-          ),
-        ],
+
       ),
 
       body: _isLoading
@@ -655,7 +678,7 @@ class _AttendancePageState extends State<AttendancePage> {
                       user: null, // We don't have User object, just attendance data
                       onDelete: () => _handleDelete(att),
                     );
-                  }).toList(),
+                  }),
               ],
             ),
           ),

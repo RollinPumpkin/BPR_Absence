@@ -5,6 +5,7 @@ import 'stat_card.dart';
 import 'database_stats_widget.dart';
 import 'package:frontend/core/constants/colors.dart';
 import 'package:frontend/data/providers/auth_provider.dart';
+import 'package:frontend/widgets/notification_bell.dart';
 
 class DashboardHeader extends StatelessWidget {
   final String profileRoute;
@@ -70,19 +71,29 @@ class DashboardHeader extends StatelessWidget {
               ),
               Row(
                 children: [
-                  const CircleAvatar(
-                    backgroundColor: AppColors.pureWhite,
-                    child: Icon(Icons.notifications, color: AppColors.accentBlue),
-                  ),
+                  const NotificationBell(),
                   const SizedBox(width: 10),
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).pushReplacementNamed(profileRoute),
-                    child: CircleAvatar(
-                      radius: 22,
-                      backgroundColor: AppColors.pureWhite,
-                      backgroundImage: NetworkImage(avatarUrl),
-                      onBackgroundImageError: (_, __) {},
-                    ),
+                  Consumer<AuthProvider>(
+                    builder: (context, authProvider, _) {
+                      final currentUser = authProvider.currentUser;
+                      final hasPhoto = currentUser?.profilePicture != null && 
+                                      currentUser!.profilePicture!.isNotEmpty;
+                      
+                      return GestureDetector(
+                        onTap: () => Navigator.of(context).pushReplacementNamed(profileRoute),
+                        child: CircleAvatar(
+                          radius: 22,
+                          backgroundColor: AppColors.pureWhite,
+                          backgroundImage: hasPhoto 
+                              ? NetworkImage(currentUser.profilePicture!)
+                              : null,
+                          onBackgroundImageError: (_, __) {},
+                          child: !hasPhoto
+                              ? const Icon(Icons.person, color: Colors.grey)
+                              : null,
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),
@@ -153,9 +164,9 @@ class _StatsResponsive extends StatelessWidget {
         final narrow = w < 370;
 
         if (!narrow) {
-          return Row(
+          return const Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
+            children: [
               Expanded(child: StatCard(title: "Total",  value: "160", color: AppColors.primaryBlue)),
               SizedBox(width: 10),
               Expanded(child: StatCard(title: "Active", value: "150", color: AppColors.primaryYellow)),
@@ -167,7 +178,7 @@ class _StatsResponsive extends StatelessWidget {
           );
         }
 
-        final gap = 10.0;
+        const gap = 10.0;
         final itemWidth = (w - gap) / 2;
         return Wrap(
           spacing: gap,

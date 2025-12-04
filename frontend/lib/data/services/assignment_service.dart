@@ -1,5 +1,3 @@
-import 'package:dio/dio.dart';
-import 'dart:convert';
 import 'api_service.dart';
 import '../constants/api_constants.dart';
 import '../models/assignment.dart';
@@ -54,9 +52,9 @@ class AssignmentService {
     }
   }
 
-  Future<List<Assignment>> getUpcomingAssignments() async {
+  Future<List<Assignment>> getUpcomingAssignments({bool forceRefresh = false}) async {
     try {
-      print('🚀 Fetching upcoming assignments...');
+      print('🚀 Fetching upcoming assignments... (forceRefresh: $forceRefresh)');
       print('📍 Using endpoint: ${ApiConstants.assignments.upcoming}');
       print('🌐 Full URL: ${ApiConstants.baseUrl}${ApiConstants.assignments.upcoming}');
       
@@ -65,6 +63,7 @@ class AssignmentService {
       
       final response = await _apiService.get<Map<String, dynamic>>(
         ApiConstants.assignments.upcoming,
+        forceRefresh: forceRefresh, // Pass forceRefresh to API service
         fromJson: (data) {
           print('🔄 Processing response data: $data');
           if (data == null) {
@@ -140,6 +139,7 @@ class AssignmentService {
     int page = 1,
     int limit = 20,
     String? status,
+    bool forceRefresh = false,
   }) async {
     try {
       final queryParams = <String, dynamic>{
@@ -154,6 +154,7 @@ class AssignmentService {
       final response = await _apiService.get<Map<String, dynamic>>(
         ApiConstants.assignments.list,
         queryParameters: queryParams,
+        forceRefresh: forceRefresh,
         fromJson: (data) {
           // Enhanced null safety for response data
           if (data == null) {
@@ -270,6 +271,71 @@ class AssignmentService {
     }
   }
 
+  // Create a new assignment
+  Future<Map<String, dynamic>> createAssignment(Map<String, dynamic> assignmentData) async {
+    try {
+      print('🚀 Creating assignment with data: $assignmentData');
+      
+      final response = await _apiService.post<Map<String, dynamic>>(
+        ApiConstants.assignments.create,
+        data: assignmentData,
+        fromJson: (data) => data as Map<String, dynamic>,
+      );
+
+      print('📱 Create assignment response: ${response.success}');
+      print('📱 Response message: ${response.message}');
+      
+      if (response.success && response.data != null) {
+        print('✅ Assignment created successfully');
+        
+        // Clear cache to force refresh on next load
+        print('🧹 Clearing API cache after assignment creation...');
+        _apiService.clearCache();
+        
+        return response.data!;
+      } else {
+        final errorMsg = response.message ?? response.error ?? 'Failed to create assignment';
+        print('❌ API Error: $errorMsg');
+        throw Exception(errorMsg);
+      }
+    } catch (e, stackTrace) {
+      print('💥 Exception in createAssignment: $e');
+      print('💥 Stack trace: $stackTrace');
+      rethrow;
+    }
+  }
+
+  // Delete an assignment
+  Future<void> deleteAssignment(String assignmentId) async {
+    try {
+      print('[DELETE_SERVICE] Deleting assignment: $assignmentId');
+      
+      final response = await _apiService.delete<Map<String, dynamic>>(
+        '${ApiConstants.assignments.base}/$assignmentId',
+        fromJson: (data) => data as Map<String, dynamic>,
+      );
+
+      print('[DELETE_SERVICE] Delete response: ${response.success}');
+      print('[DELETE_SERVICE] Response message: ${response.message}');
+      
+      if (!response.success) {
+        final errorMsg = response.message ?? response.error ?? 'Failed to delete assignment';
+        print('[DELETE_SERVICE] Error: $errorMsg');
+        throw Exception(errorMsg);
+      }
+      
+      print('[DELETE_SERVICE] Assignment deleted successfully');
+      
+      // Clear cache to force refresh on next load
+      print('🧹 Clearing API cache after assignment deletion...');
+      _apiService.clearCache();
+    } catch (e, stackTrace) {
+      print('[DELETE_SERVICE] Exception: $e');
+      print('[DELETE_SERVICE] Stack trace: $stackTrace');
+      rethrow;
+    }
+  }
+
   // Helper method to get tasks for today
   List<Assignment> getTodayTasks(List<Assignment> assignments) {
     final today = DateTime.now();
@@ -287,5 +353,31 @@ class AssignmentService {
              assignment.dueDate.month == date.month &&
              assignment.dueDate.day == date.day;
     });
+  }
+  
+  // Update assignment (for completion, status change, etc.)
+  Future<void> updateAssignment(String assignmentId, Map<String, dynamic> updateData) async {
+    try {
+      print('📝 [AssignmentService] Updating assignment: $assignmentId');
+      print('📝 Update data: $updateData');
+      
+      final response = await _apiService.put(
+        '/assignments/$assignmentId',
+        data: updateData,
+      );
+      
+      if (!response.success) {
+        throw Exception(response.message ?? 'Failed to update assignment');
+      }
+      
+      print('✅ [AssignmentService] Assignment updated successfully');
+      
+      // Clear all cache after update so next fetch gets fresh data
+      print('🧹 Clearing API cache after assignment update...');
+      _apiService.clearCache();
+    } catch (e) {
+      print('❌ [AssignmentService] Error updating assignment: $e');
+      rethrow;
+    }
   }
 }

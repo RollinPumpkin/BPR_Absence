@@ -14,9 +14,9 @@ class ContactInfoCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.mediumGray),
       ),
-      child: Column(
+      child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
+        children: [
           Text("Contact info",
               style: TextStyle(fontSize: 14, color: AppColors.mediumGray)),
           SizedBox(height: 8),

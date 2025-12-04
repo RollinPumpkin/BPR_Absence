@@ -122,10 +122,10 @@ class AttendanceDetailDialog extends StatelessWidget {
                 const SizedBox(height: 12),
 
                 // Location Information
-                _SectionBox(
+                const _SectionBox(
                   title: 'Location Information',
                   child: Column(
-                    children: const [
+                    children: [
                       _TwoColRow(
                         leftLabel: 'Location',
                         leftValue: 'Office',

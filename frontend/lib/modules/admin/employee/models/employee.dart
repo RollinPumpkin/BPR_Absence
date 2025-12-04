@@ -29,6 +29,11 @@ class Employee {
   final String? warningLetterType; // 'SP1' | 'SP2' | 'SP3' | 'None'
   final String? emergencyContact;
 
+  // Work Schedule
+  final String? workStartTime; // HH:mm format e.g., '08:00'
+  final String? workEndTime; // HH:mm format e.g., '17:00'
+  final int? lateThresholdMinutes; // e.g., 15 minutes
+
   const Employee({
     this.id,
     this.fullName,
@@ -50,6 +55,9 @@ class Employee {
     this.accountNumber,
     this.warningLetterType,
     this.emergencyContact,
+    this.workStartTime,
+    this.workEndTime,
+    this.lateThresholdMinutes,
   });
 
   Employee copyWith({
@@ -72,6 +80,9 @@ class Employee {
     String? accountNumber,
     String? warningLetterType,
     String? emergencyContact,
+    String? workStartTime,
+    String? workEndTime,
+    int? lateThresholdMinutes,
   }) {
     return Employee(
       fullName: fullName ?? this.fullName,
@@ -93,6 +104,9 @@ class Employee {
       accountNumber: accountNumber ?? this.accountNumber,
       warningLetterType: warningLetterType ?? this.warningLetterType,
       emergencyContact: emergencyContact ?? this.emergencyContact,
+      workStartTime: workStartTime ?? this.workStartTime,
+      workEndTime: workEndTime ?? this.workEndTime,
+      lateThresholdMinutes: lateThresholdMinutes ?? this.lateThresholdMinutes,
     );
   }
 }

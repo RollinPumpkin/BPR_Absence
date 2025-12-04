@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
 import '../../../core/services/firestore_letter_service.dart';
 import '../../../core/services/user_context_service.dart';
+import '../../../core/utils/image_compress_helper.dart';
 import '../../../data/providers/auth_provider.dart';
 
 class LetterFormPage extends StatefulWidget {
@@ -30,8 +31,8 @@ class _LetterFormPageState extends State<LetterFormPage> {
   DateTime? validUntilDate;
   bool _isLoading = false;
   bool _userLoaded = false;
-  List<File> _selectedFiles = [];
-  List<XFile> _selectedImages = [];
+  final List<File> _selectedFiles = [];
+  final List<XFile> _selectedImages = [];
   
   final List<String> letterTypes = [
     'medical_certificate',
@@ -303,7 +304,7 @@ class _LetterFormPageState extends State<LetterFormPage> {
             border: Border.all(color: Colors.grey.shade300),
           ),
           child: DropdownButtonFormField<String>(
-            value: selectedLetterType,
+            initialValue: selectedLetterType,
             decoration: const InputDecoration(
               hintText: "-Choose Letter Type-",
               border: InputBorder.none,
@@ -347,7 +348,7 @@ class _LetterFormPageState extends State<LetterFormPage> {
             border: Border.all(color: Colors.grey.shade300),
           ),
           child: DropdownButtonFormField<String>(
-            value: selectedPriority,
+            initialValue: selectedPriority,
             decoration: const InputDecoration(
               border: InputBorder.none,
               contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -869,34 +870,64 @@ class _LetterFormPageState extends State<LetterFormPage> {
       print('[LetterForm] Debug: Form - actualUserId: $actualUserId');
       print('[LetterForm] Debug: Form - primaryUserId (final): $primaryUserId');
       
+      // Use actualUserId (Firebase UID) for recipient_id field
+      // This is what backend expects for querying
+      final firebaseUserId = letter.recipientId; // This is actualUserId
+      
       final letterData = {
         'letterNumber': letter.letterNumber,
         'letterType': letter.letterType,
         'subject': letter.subject,
         'content': letter.content,
-        'user_id': primaryUserId, // Primary field for querying user's letters
-        'recipientId': letter.recipientId,
+        // Fields for backend query (snake_case with Firebase UID)
+        'recipient_id': firebaseUserId, // Firebase UID - for backend query
+        'recipient_name': letter.recipientName,
+        'recipient_employee_id': primaryUserId, // Employee ID like REAL001
+        'recipient_department': letter.recipientDepartment,
+        // Also keep camelCase for compatibility with old data
+        'recipientId': firebaseUserId,
         'recipientName': letter.recipientName,
-        'recipientEmployeeId': primaryUserId, // Keep consistent with user_id
+        'recipientEmployeeId': primaryUserId,
         'recipientDepartment': letter.recipientDepartment,
         'recipientEmail': userEmail ?? '',
+        // Sender fields
+        'sender_id': letter.senderId,
+        'sender_name': letter.senderName,
+        'sender_position': letter.senderPosition,
         'senderId': letter.senderId,
         'senderName': letter.senderName,
         'senderPosition': letter.senderPosition,
+        // Letter fields
         'status': letter.status,
         'priority': letter.priority,
+        'letter_type': letter.letterType, // Add snake_case version
+        'created_at': Timestamp.fromDate(letter.createdAt),
+        'updated_at': Timestamp.fromDate(letter.updatedAt),
         'createdAt': Timestamp.fromDate(letter.createdAt),
         'updatedAt': Timestamp.fromDate(letter.updatedAt),
         'validUntil': validUntilDate != null ? Timestamp.fromDate(validUntilDate!) : null,
       };
       
-      print('[LetterForm] Debug: Saving letter with user_id: $primaryUserId');
+      print('[LetterForm] Debug: Saving letter with recipient_id (Firebase UID): $firebaseUserId');
+      print('[LetterForm] Debug: Saving letter with recipient_employee_id: $primaryUserId');
       print('[LetterForm] Debug: Letter data: ${letterData['subject']} - ${letterData['status']}');
       
+      // Add letter to Firestore
       final docRef = await firestore.collection('letters').add(letterData);
-      print('[LetterForm] Debug: Letter added successfully to Firestore with ID: ${docRef.id}');
+      print('[LetterForm] Debug: Letter added to Firestore with ID: ${docRef.id}');
+      
+      // Verify the document was actually saved by reading it back
+      final savedDoc = await docRef.get();
+      if (savedDoc.exists) {
+        print('[LetterForm] Debug: ✅ VERIFIED: Letter successfully saved to Firestore');
+        print('[LetterForm] Debug: Saved data: ${savedDoc.data()}');
+      } else {
+        print('[LetterForm] Debug: ❌ WARNING: Document was created but does not exist when read back!');
+        throw Exception('Letter was not properly saved to Firestore');
+      }
+      
       print('[LetterForm] Debug: Letter subject: ${letterData['subject']}');
-      print('[LetterForm] Debug: Letter user_id: ${letterData['user_id']}');
+      print('[LetterForm] Debug: Letter recipient_id: ${letterData['recipient_id']}');
       print('[LetterForm] Debug: Letter status: ${letterData['status']}');
       
       _showSuccessMessage('Letter submitted successfully!');
@@ -956,12 +987,16 @@ class _LetterFormPageState extends State<LetterFormPage> {
         source: ImageSource.camera,
         maxWidth: 1920,
         maxHeight: 1920,
-        imageQuality: 80,
+        imageQuality: 85,
       );
       
       if (image != null) {
+        // Auto-compress if needed
+        final compressedPath = await ImageCompressHelper.compressImageIfNeeded(image.path);
+        final compressedImage = XFile(compressedPath);
+        
         setState(() {
-          _selectedImages.add(image);
+          _selectedImages.add(compressedImage);
         });
         _showSuccessMessage('Photo captured successfully!');
       }
@@ -975,14 +1010,19 @@ class _LetterFormPageState extends State<LetterFormPage> {
       final List<XFile> images = await _imagePicker.pickMultiImage(
         maxWidth: 1920,
         maxHeight: 1920,
-        imageQuality: 80,
+        imageQuality: 85,
       );
       
       if (images.isNotEmpty) {
+        // Auto-compress all images if needed
+        final imagePaths = images.map((img) => img.path).toList();
+        final compressedPaths = await ImageCompressHelper.compressImagesIfNeeded(imagePaths);
+        final compressedImages = compressedPaths.map((path) => XFile(path)).toList();
+        
         setState(() {
-          _selectedImages.addAll(images);
+          _selectedImages.addAll(compressedImages);
         });
-        _showSuccessMessage('${images.length} image(s) selected!');
+        _showSuccessMessage('${compressedImages.length} image(s) selected!');
       }
     } catch (e) {
       _showErrorMessage('Failed to select images: $e');

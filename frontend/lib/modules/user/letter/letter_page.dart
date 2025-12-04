@@ -147,13 +147,15 @@ class _UserLetterPageState extends State<UserLetterPage>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   "Choose Letter Type",
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
                     color: AppColors.black87,
                   ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
                 const SizedBox(height: 16),
 
@@ -266,7 +268,7 @@ class _UserLetterPageState extends State<UserLetterPage>
         ],
       ),
       
-      bottomNavigationBar: CustomBottomNavRouter(
+      bottomNavigationBar: const CustomBottomNavRouter(
         currentIndex: 3,
         items: UserNavItems.items,
       ),
@@ -283,7 +285,7 @@ class _UserLetterPageState extends State<UserLetterPage>
           });
         },
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
           decoration: BoxDecoration(
             color: isSelected ? AppColors.primaryBlue : Colors.grey[200],
             borderRadius: BorderRadius.circular(20),
@@ -293,9 +295,11 @@ class _UserLetterPageState extends State<UserLetterPage>
             textAlign: TextAlign.center,
             style: TextStyle(
               color: isSelected ? Colors.white : Colors.grey[700],
-              fontSize: 12,
+              fontSize: 11,
               fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
             ),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
           ),
         ),
       ),

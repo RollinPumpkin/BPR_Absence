@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:frontend/core/constants/colors.dart';
 import 'package:frontend/core/widgets/custom_bottom_nav_router.dart';
 import 'package:frontend/modules/user/shared/user_nav_items.dart';
+import 'package:provider/provider.dart';
+import 'package:frontend/data/providers/auth_provider.dart';
 
 import 'settings_page.dart';
 
@@ -37,43 +39,57 @@ class _UserProfilePageState extends State<UserProfilePage> {
                           color: const Color(0xFFB91C1C), // Red color
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: Row(
-                          children: [
-                            const CircleAvatar(
-                              radius: 30,
-                              backgroundColor: AppColors.pureWhite,
-                              child: Icon(
-                                Icons.person,
-                                size: 40,
-                                color: AppColors.pureWhite,
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    "Anindya Nurhaliza Putri",
-                                    style: TextStyle(
-                                      color: AppColors.pureWhite,
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                        child: Consumer<AuthProvider>(
+                          builder: (context, authProvider, _) {
+                            final currentUser = authProvider.currentUser;
+                            final hasPhoto = currentUser?.profilePicture != null && 
+                                            currentUser!.profilePicture!.isNotEmpty;
+                            
+                            return Row(
+                              children: [
+                                CircleAvatar(
+                                  radius: 30,
+                                  backgroundColor: AppColors.pureWhite,
+                                  backgroundImage: hasPhoto 
+                                      ? NetworkImage(currentUser.profilePicture!)
+                                      : null,
+                                  onBackgroundImageError: (_, __) {},
+                                  child: !hasPhoto
+                                      ? const Icon(
+                                          Icons.person,
+                                          size: 40,
+                                          color: Colors.grey,
+                                        )
+                                      : null,
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        currentUser?.fullName ?? "User",
+                                        style: const TextStyle(
+                                          color: AppColors.pureWhite,
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      const Text(
+                                        "Last update 1 day ago",
+                                        style: TextStyle(
+                                          color: AppColors.pureWhite,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  const SizedBox(height: 4),
-                                  const Text(
-                                    "Last update 1 day ago",
-                                    style: TextStyle(
-                                      color: AppColors.pureWhite,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
               ),
             ),
             const SizedBox(height: 20),
@@ -97,25 +113,25 @@ class _UserProfilePageState extends State<UserProfilePage> {
                     ),
                   ],
                 ),
-                child: Column(
+                child: const Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       "Contact info",
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.grey,
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    const Text(
+                    SizedBox(height: 12),
+                    Text(
                       "Email",
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey,
                       ),
                     ),
-                    const Text(
+                    Text(
                       "Anin.pulupulu@dahbbDSAS",
                       style: TextStyle(
                         fontSize: 16,
@@ -123,15 +139,15 @@ class _UserProfilePageState extends State<UserProfilePage> {
                         color: AppColors.black87,
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    const Text(
+                    SizedBox(height: 12),
+                    Text(
                       "Phone Number",
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey,
                       ),
                     ),
-                    const Text(
+                    Text(
                       "+62 8888881111",
                       style: TextStyle(
                         fontSize: 16,
@@ -164,25 +180,25 @@ class _UserProfilePageState extends State<UserProfilePage> {
                     ),
                   ],
                 ),
-                child: Column(
+                child: const Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       "Information",
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.grey,
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    const Text(
+                    SizedBox(height: 12),
+                    Text(
                       "Position",
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey,
                       ),
                     ),
-                    const Text(
+                    Text(
                       "Manager",
                       style: TextStyle(
                         fontSize: 16,
@@ -190,15 +206,15 @@ class _UserProfilePageState extends State<UserProfilePage> {
                         color: AppColors.black87,
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    const Text(
+                    SizedBox(height: 12),
+                    Text(
                       "Branch",
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey,
                       ),
                     ),
-                    const Text(
+                    Text(
                       "Manajement",
                       style: TextStyle(
                         fontSize: 16,
@@ -206,15 +222,15 @@ class _UserProfilePageState extends State<UserProfilePage> {
                         color: AppColors.black87,
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    const Text(
+                    SizedBox(height: 12),
+                    Text(
                       "Start Date",
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey,
                       ),
                     ),
-                    const Text(
+                    Text(
                       "Dec 32, 2045",
                       style: TextStyle(
                         fontSize: 16,
@@ -246,7 +262,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
         ),
       ),
       
-      bottomNavigationBar: CustomBottomNavRouter(
+      bottomNavigationBar: const CustomBottomNavRouter(
         currentIndex: 4,
         items: UserNavItems.items,
       ),
@@ -390,22 +406,22 @@ class _UserProfilePageState extends State<UserProfilePage> {
           const SizedBox(height: 16),
 
           // Taken and Remaining
-          Row(
+          const Row(
             children: [
               // Taken
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       "Taken",
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.grey,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    const Text(
+                    SizedBox(height: 4),
+                    Text(
                       "4 Days",
                       style: TextStyle(
                         fontSize: 18,
@@ -416,21 +432,21 @@ class _UserProfilePageState extends State<UserProfilePage> {
                   ],
                 ),
               ),
-              const SizedBox(width: 16),
+              SizedBox(width: 16),
               // Remaining
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       "Remaining",
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.grey,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    const Text(
+                    SizedBox(height: 4),
+                    Text(
                       "8 Days",
                       style: TextStyle(
                         fontSize: 18,

@@ -46,7 +46,7 @@ const upload = multer({
 
 /**
  * POST /api/attendance/submit
- * Submit attendance with image
+ * Submit attendance with image and late detection based on user's work schedule
  */
 router.post('/submit', auth, upload.single('image'), async (req, res) => {
   try {
@@ -104,6 +104,39 @@ router.post('/submit', auth, upload.single('image'), async (req, res) => {
       });
     }
 
+    // Get user's work schedule for late detection
+    let workStartTime = '08:00';
+    let lateThresholdMinutes = 15;
+    let attendanceStatus = 'submitted';
+
+    try {
+      const userDoc = await db.collection('users').doc(req.user.userId).get();
+      if (userDoc.exists) {
+        const userData = userDoc.data();
+        workStartTime = userData.work_start_time || '08:00';
+        lateThresholdMinutes = userData.late_threshold_minutes || 15;
+
+        // Check if late (only for attendance type)
+        if (type === 'attendance') {
+          const currentTime = moment().format('HH:mm');
+          const workStart = moment(workStartTime, 'HH:mm');
+          const currentMoment = moment(currentTime, 'HH:mm');
+          const lateThreshold = workStart.clone().add(lateThresholdMinutes, 'minutes');
+
+          if (currentMoment.isAfter(lateThreshold)) {
+            attendanceStatus = 'late';
+            console.log(`⏰ Late detected: Current ${currentTime} > Threshold ${lateThreshold.format('HH:mm')}`);
+          } else {
+            attendanceStatus = 'present';
+            console.log(`✅ On time: Current ${currentTime} <= Threshold ${lateThreshold.format('HH:mm')}`);
+          }
+        }
+      }
+    } catch (scheduleError) {
+      console.error('⚠️ Could not fetch work schedule:', scheduleError);
+      // Continue with default values
+    }
+
     // Create attendance document
     const attendanceData = {
       user_id: req.user.userId,
@@ -124,7 +157,9 @@ router.post('/submit', auth, upload.single('image'), async (req, res) => {
         path: req.file.path
       },
       notes: notes || '',
-      status: 'submitted',
+      status: attendanceStatus,
+      work_start_time: workStartTime,
+      late_threshold_minutes: lateThresholdMinutes,
       created_at: getServerTimestamp(),
       updated_at: getServerTimestamp()
     };
@@ -132,7 +167,7 @@ router.post('/submit', auth, upload.single('image'), async (req, res) => {
     // Save to Firestore
     const docRef = await db.collection('attendance_submissions').add(attendanceData);
     
-    console.log('✅ Attendance saved with ID:', docRef.id);
+    console.log('✅ Attendance saved with ID:', docRef.id, 'Status:', attendanceStatus);
 
     // Return success response
     res.status(201).json({
@@ -143,6 +178,8 @@ router.post('/submit', auth, upload.single('image'), async (req, res) => {
         type: type,
         start_date: startDate,
         end_date: endDate,
+        status: attendanceStatus,
+        is_late: attendanceStatus === 'late',
         location: {
           latitude: lat,
           longitude: lng,
@@ -767,7 +804,65 @@ router.delete('/leave-requests/:id', auth, async (req, res) => {
 });
 
 // Get attendance summary for current month
+// Test endpoint to verify if issue is with Firestore data
+router.get('/test-summary', auth, async (req, res) => {
+  console.log('🧪 TEST ENDPOINT CALLED');
+  
+  const testData = {
+    success: true,
+    data: {
+      month: 11,
+      year: 2025,
+      attendance: [
+        {
+          id: "test1",
+          date: "2025-11-13",
+          user_id: "test",
+          employee_id: "TEST001",
+          check_in_time: "08:00:00",
+          check_out_time: "17:00:00",
+          status: "present",
+          type: "Clock Out",
+          check_in_location: {
+            latitude: -7.9363916,
+            longitude: 112.6248523,
+            address: "Test Location"
+          },
+          check_out_location: {
+            latitude: -7.9363429,
+            longitude: 112.6248778,
+            address: "Test Location"
+          }
+        }
+      ],
+      stats: {
+        total_days: 1,
+        present_days: 1,
+        late_days: 0,
+        absent_days: 0,
+        sick_days: 0,
+        leave_days: 0,
+        total_hours_worked: 8,
+        total_overtime_hours: 0,
+        average_hours_per_day: "8.00"
+      }
+    }
+  };
+  
+  console.log('🧪 Sending test response');
+  return res.json(testData);
+});
+
 router.get('/summary', auth, async (req, res) => {
+  console.log('\n========================================');
+  console.log('🔵 ATTENDANCE SUMMARY REQUEST RECEIVED');
+  console.log('========================================');
+  console.log('📍 Endpoint: GET /attendance/summary');
+  console.log('👤 User ID:', req.user?.userId);
+  console.log('👤 Employee ID:', req.user?.employeeId);
+  console.log('📋 Query params:', req.query);
+  console.log('========================================\n');
+  
   try {
     const { month, year } = req.query;
     const currentDate = new Date();
@@ -777,12 +872,33 @@ router.get('/summary', auth, async (req, res) => {
     const startDate = `${targetYear}-${targetMonth.toString().padStart(2, '0')}-01`;
     const endDate = `${targetYear}-${targetMonth.toString().padStart(2, '0')}-31`;
 
-    const attendanceSnapshot = await db.collection('attendance')
+    console.log(`📅 Fetching attendance summary for user ${req.user.userId} - ${targetMonth}/${targetYear}`);
+    console.log(`📅 Date range: ${startDate} to ${endDate}`);
+
+    // Simple query without range filters to avoid index issues
+    let attendanceSnapshot = await db.collection('attendance')
       .where('user_id', '==', req.user.userId)
-      .where('date', '>=', startDate)
-      .where('date', '<=', endDate)
-      .orderBy('date', 'desc')
       .get();
+
+    console.log(`📊 Found ${attendanceSnapshot.size} total records by user_id`);
+
+    // If no records found with user_id, try with employee_id
+    if (attendanceSnapshot.empty) {
+      // Get user's employee_id from users collection
+      const userDoc = await db.collection('users').doc(req.user.userId).get();
+      if (userDoc.exists) {
+        const employeeId = userDoc.data().employee_id;
+        console.log(`👤 User's employee_id: ${employeeId}`);
+        
+        if (employeeId) {
+          attendanceSnapshot = await db.collection('attendance')
+            .where('employee_id', '==', employeeId)
+            .get();
+          
+          console.log(`📊 Found ${attendanceSnapshot.size} total records by employee_id`);
+        }
+      }
+    }
 
     const attendance = [];
     let stats = {
@@ -798,8 +914,39 @@ router.get('/summary', auth, async (req, res) => {
     };
 
     attendanceSnapshot.forEach(doc => {
-      const data = { id: doc.id, ...doc.data() };
-      attendance.push(data);
+      const data = doc.data();
+      
+      // Filter by date range in memory
+      const recordDate = String(data.date || '');
+      if (recordDate < startDate || recordDate > endDate) {
+        return; // Skip records outside date range
+      }
+      
+      // Convert Firestore data to plain object immediately
+      const record = {
+        id: doc.id,
+        date: String(data.date || ''),
+        user_id: String(data.user_id || ''),
+        employee_id: String(data.employee_id || ''),
+        check_in_time: String(data.check_in_time || ''),
+        check_out_time: String(data.check_out_time || ''),
+        status: String(data.status || ''),
+        type: String(data.type || ''),
+        total_hours_worked: Number(data.total_hours_worked || 0),
+        overtime_hours: Number(data.overtime_hours || 0),
+        check_in_location: data.check_in_location ? {
+          latitude: Number(data.check_in_location.latitude || 0),
+          longitude: Number(data.check_in_location.longitude || 0),
+          address: String(data.check_in_location.address || '')
+        } : null,
+        check_out_location: data.check_out_location ? {
+          latitude: Number(data.check_out_location.latitude || 0),
+          longitude: Number(data.check_out_location.longitude || 0),
+          address: String(data.check_out_location.address || '')
+        } : null
+      };
+      
+      attendance.push(record);
       
       stats.total_days++;
       switch (data.status) {
@@ -813,9 +960,11 @@ router.get('/summary', auth, async (req, res) => {
           stats.absent_days++;
           break;
         case 'sick':
+        case 'sick_leave':
           stats.sick_days++;
           break;
         case 'leave':
+        case 'annual_leave':
           stats.leave_days++;
           break;
       }
@@ -829,26 +978,61 @@ router.get('/summary', auth, async (req, res) => {
       }
     });
 
+    // Sort attendance by date descending in-memory
+    attendance.sort((a, b) => {
+      if (a.date > b.date) return -1;
+      if (a.date < b.date) return 1;
+      return 0;
+    });
+
     // Calculate average hours per day
     if (stats.total_days > 0) {
       stats.average_hours_per_day = (stats.total_hours_worked / stats.total_days).toFixed(2);
+    } else {
+      stats.average_hours_per_day = "0.00";
     }
 
-    res.json({
+    console.log(`✅ Returning ${attendance.length} attendance records with stats:`, stats);
+
+    const responseData = {
       success: true,
       data: {
-        month: targetMonth,
-        year: targetYear,
-        attendance,
-        stats
+        month: parseInt(targetMonth),
+        year: parseInt(targetYear),
+        attendance: attendance,
+        stats: stats
       }
+    };
+    
+    console.log('\n========================================');
+    console.log('✅ SENDING RESPONSE');
+    console.log('========================================');
+    console.log('Total records:', attendance.length);
+    console.log('Stats:', stats);
+    console.log('Response size (approx):', JSON.stringify(responseData).length, 'bytes');
+    console.log('========================================\n');
+    
+    // Explicitly set headers to prevent compression issues
+    res.set({
+      'Content-Type': 'application/json; charset=utf-8',
+      'Content-Encoding': 'identity',
+      'Cache-Control': 'no-cache, no-store, must-revalidate'
     });
+    
+    return res.json(responseData);
 
   } catch (error) {
-    console.error('Get attendance summary error:', error);
-    res.status(500).json({
+    console.error('\n========================================');
+    console.error('❌ ATTENDANCE SUMMARY ERROR');
+    console.error('========================================');
+    console.error('Error:', error);
+    console.error('Stack:', error.stack);
+    console.error('========================================\n');
+    
+    return res.status(500).json({
       success: false,
-      message: 'Failed to get attendance summary'
+      message: 'Failed to get attendance summary',
+      error: error.message
     });
   }
 });

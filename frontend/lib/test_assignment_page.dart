@@ -3,7 +3,7 @@ import 'package:frontend/data/services/api_service.dart';
 import 'package:frontend/data/services/assignment_service.dart';
 
 class AssignmentTestPage extends StatefulWidget {
-  const AssignmentTestPage({Key? key}) : super(key: key);
+  const AssignmentTestPage({super.key});
 
   @override
   State<AssignmentTestPage> createState() => _AssignmentTestPageState();

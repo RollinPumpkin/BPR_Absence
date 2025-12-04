@@ -9,7 +9,7 @@ class AddLetterTypePopup extends StatelessWidget {
     final typeController = TextEditingController();
     final contentController = TextEditingController();
 
-    InputDecoration _dec(String label) => InputDecoration(
+    InputDecoration dec(String label) => InputDecoration(
           labelText: label,
           filled: true,
           fillColor: AppColors.pureWhite,
@@ -71,12 +71,12 @@ class AddLetterTypePopup extends StatelessWidget {
               TextField(
                 controller: typeController,
                 autofocus: true,
-                decoration: _dec('Letter Type Name'),
+                decoration: dec('Letter Type Name'),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: contentController,
-                decoration: _dec('Contents'),
+                decoration: dec('Contents'),
               ),
 
               const SizedBox(height: 16),

@@ -7,7 +7,7 @@ import '../data/services/user_service.dart';
 import '../data/models/user.dart';
 
 class UserFetchUnitTest extends StatefulWidget {
-  const UserFetchUnitTest({Key? key}) : super(key: key);
+  const UserFetchUnitTest({super.key});
 
   @override
   State<UserFetchUnitTest> createState() => _UserFetchUnitTestState();

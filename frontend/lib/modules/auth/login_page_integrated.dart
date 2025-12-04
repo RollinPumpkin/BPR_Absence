@@ -231,7 +231,7 @@ class _LoginPageIntegratedState extends State<LoginPageIntegrated>
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: AppColors.primaryBlue), // Changed from AppColors.primary
+                              borderSide: const BorderSide(color: AppColors.primaryBlue), // Changed from AppColors.primary
                             ),
                           ),
                           validator: (value) {
@@ -273,7 +273,7 @@ class _LoginPageIntegratedState extends State<LoginPageIntegrated>
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: AppColors.primaryBlue), // Changed from AppColors.primary
+                              borderSide: const BorderSide(color: AppColors.primaryBlue), // Changed from AppColors.primary
                             ),
                           ),
                           validator: (value) {
@@ -409,7 +409,7 @@ class _LoginPageIntegratedState extends State<LoginPageIntegrated>
                                   const TextSpan(text: 'By signing in, you agree to our '),
                                   TextSpan(
                                     text: 'Terms of Service',
-                                    style: TextStyle(
+                                    style: const TextStyle(
                                       color: AppColors.primaryBlue, // Changed from AppColors.primary
                                       decoration: TextDecoration.underline,
                                     ),
@@ -421,7 +421,7 @@ class _LoginPageIntegratedState extends State<LoginPageIntegrated>
                                   const TextSpan(text: ' and '),
                                   TextSpan(
                                     text: 'Privacy Policy',
-                                    style: TextStyle(
+                                    style: const TextStyle(
                                       color: AppColors.primaryBlue, // Changed from AppColors.primary
                                       decoration: TextDecoration.underline,
                                     ),

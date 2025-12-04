@@ -30,6 +30,11 @@ class User {
   final DateTime? hireDate;
   final double? salary;
 
+  // Work Schedule
+  final String? workStartTime;       // HH:mm format e.g., "08:00"
+  final String? workEndTime;         // HH:mm format e.g., "17:00"
+  final int? lateThresholdMinutes;   // e.g., 15 minutes
+
   User({
     required this.id,
     required this.employeeId,
@@ -59,6 +64,9 @@ class User {
     this.bankName,
     this.hireDate,
     this.salary,
+    this.workStartTime,
+    this.workEndTime,
+    this.lateThresholdMinutes,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -130,6 +138,13 @@ class User {
         bankName: json['bank_name']?.toString(),
         hireDate: _parseDateTime(json['hire_date'] ?? json['hireDate']),
         salary: safeDoubleParse(json['salary']),
+        workStartTime: json['work_start_time']?.toString(),
+        workEndTime: json['work_end_time']?.toString(),
+        lateThresholdMinutes: json['late_threshold_minutes'] is int 
+          ? json['late_threshold_minutes'] as int
+          : (json['late_threshold_minutes'] is String 
+            ? int.tryParse(json['late_threshold_minutes'])
+            : null),
       );
     } catch (e) {
       print('❌ Error in User.fromJson: $e');
@@ -205,6 +220,9 @@ class User {
       'bank_name': bankName,
       'hire_date': hireDate?.toIso8601String(),
       'salary': salary,
+      'work_start_time': workStartTime,
+      'work_end_time': workEndTime,
+      'late_threshold_minutes': lateThresholdMinutes,
     };
   }
 

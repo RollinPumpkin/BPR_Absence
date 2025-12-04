@@ -16,11 +16,11 @@ class _AddLetterPageState extends State<AddLetterPage> {
 
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
-  final TextEditingController _statusController = TextEditingController();
   final TextEditingController _dateController = TextEditingController();
 
   String? _employeeId;
   String? _letterType;
+  String? _selectedStatus; // Changed from TextEditingController to String dropdown
   List<PlatformFile> _files = [];
   String? _filesError; // error untuk upload box
 
@@ -28,7 +28,6 @@ class _AddLetterPageState extends State<AddLetterPage> {
   void dispose() {
     _nameController.dispose();
     _descriptionController.dispose();
-    _statusController.dispose();
     _dateController.dispose();
     super.dispose();
   }
@@ -124,8 +123,8 @@ class _AddLetterPageState extends State<AddLetterPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Header
-                Row(
-                  children: const [
+                const Row(
+                  children: [
                     _BackButtonRounded(),
                     SizedBox(width: 8),
                     Text(
@@ -144,7 +143,7 @@ class _AddLetterPageState extends State<AddLetterPage> {
                 Text('Employee', style: _labelStyle),
                 const SizedBox(height: 6),
                 DropdownButtonFormField<String>(
-                  value: _employeeId,
+                  initialValue: _employeeId,
                   decoration: _inputDec('-Choose Employee'),
                   items: const [
                     DropdownMenuItem(value: '1', child: Text('Septa Puma')),
@@ -159,7 +158,7 @@ class _AddLetterPageState extends State<AddLetterPage> {
                 Text('Letter Type', style: _labelStyle),
                 const SizedBox(height: 6),
                 DropdownButtonFormField<String>(
-                  value: _letterType,
+                  initialValue: _letterType,
                   decoration: _inputDec('-Choose Letter Type'),
                   items: const [
                     DropdownMenuItem(value: 'doctor', child: Text("Doctor's Note")),
@@ -193,10 +192,25 @@ class _AddLetterPageState extends State<AddLetterPage> {
                 // Letter Status
                 Text('Letter Status', style: _labelStyle),
                 const SizedBox(height: 6),
-                TextFormField(
-                  controller: _statusController,
-                  decoration: _inputDec('Enter the Status'),
-                  validator: (v) => (v == null || v.trim().isEmpty) ? 'This field is required' : null,
+                DropdownButtonFormField<String>(
+                  initialValue: _selectedStatus,
+                  decoration: _inputDec('Select Status'),
+                  items: const [
+                    DropdownMenuItem(
+                      value: 'active',
+                      child: Text('Active'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'inactive',
+                      child: Text('Inactive'),
+                    ),
+                  ],
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedStatus = value;
+                    });
+                  },
+                  validator: (v) => v == null ? 'Please select a status' : null,
                 ),
                 const SizedBox(height: 16),
 
@@ -315,9 +329,9 @@ class UploadEvidenceBox extends StatelessWidget {
 class _DropHint extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return const Column(
       mainAxisSize: MainAxisSize.min,
-      children: const [
+      children: [
         Icon(Icons.image_outlined, size: 40, color: AppColors.neutral500),
         SizedBox(height: 8),
         Text('Drag and Drop Here', style: TextStyle(color: AppColors.neutral500)),

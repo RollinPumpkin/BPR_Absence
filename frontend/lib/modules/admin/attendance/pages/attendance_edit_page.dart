@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:frontend/core/constants/colors.dart';
+import 'package:frontend/core/utils/image_compress_helper.dart';
+import 'dart:io';
 
 class AttendanceEditPage extends StatefulWidget {
   final String employeeName;
@@ -227,7 +229,9 @@ class _AttendanceEditPageState extends State<AttendanceEditPage> {
           imageQuality: 85,
         );
         if (x != null) {
-          final bytes = await x.readAsBytes();
+          // Auto-compress if needed
+          final compressedPath = await ImageCompressHelper.compressImageIfNeeded(x.path);
+          final bytes = await File(compressedPath).readAsBytes();
           setState(() {
             _proofImageBytes = bytes;
             _proofImageName = x.name;
@@ -296,7 +300,7 @@ class _AttendanceEditPageState extends State<AttendanceEditPage> {
                   ),
                   _gap12,
                   DropdownButtonFormField<String>(
-                    value: _attendanceType,
+                    initialValue: _attendanceType,
                     items: const [
                       'Check In',
                       'Check Out',
@@ -382,7 +386,7 @@ class _AttendanceEditPageState extends State<AttendanceEditPage> {
                 title: 'Location',
                 children: [
                   DropdownButtonFormField<String>(
-                    value: _location,
+                    initialValue: _location,
                     items: const ['Office', 'Home', 'Other']
                         .map((e) => DropdownMenuItem(value: e, child: Text(e)))
                         .toList(),

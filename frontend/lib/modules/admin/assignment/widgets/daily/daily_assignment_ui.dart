@@ -70,10 +70,7 @@ class DailyAssignmentUI extends StatelessWidget {
             itemBuilder: (context, index) {
               final assignment = todayAssignments[index];
               return AssignmentCard(
-                title: assignment.title,
-                date: assignment.formattedDueDate,
-                description: assignment.description,
-                status: assignment.status,
+                assignment: assignment,
               );
             },
           ),

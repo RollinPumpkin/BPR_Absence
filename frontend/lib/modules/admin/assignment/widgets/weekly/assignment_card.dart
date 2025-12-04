@@ -32,7 +32,9 @@ class AssignmentCard extends StatelessWidget {
         onTap: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const DetailAssignmentPage()),
+            MaterialPageRoute(
+              builder: (_) => DetailAssignmentPage(assignment: assignment),
+            ),
           );
         },
         child: Container(

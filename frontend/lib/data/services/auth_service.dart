@@ -137,6 +137,13 @@ class AuthService {
       }
     }
     
+    print('🔐 AUTH_SERVICE: Starting login...');
+    print('🔐 AUTH_SERVICE: Email: $email');
+    print('🔐 AUTH_SERVICE: API URL: ${ApiConstants.baseUrl}${ApiConstants.auth.login}');
+    print('🔐 AUTH_SERVICE: Timeout: 120 seconds');
+    
+    final startTime = DateTime.now();
+    
     final response = await _apiService.post(
       ApiConstants.auth.login,
       data: {
@@ -144,6 +151,11 @@ class AuthService {
         'password': password,
       },
     );
+    
+    final duration = DateTime.now().difference(startTime);
+    print('🔐 AUTH_SERVICE: Login response received in ${duration.inSeconds}s');
+    print('🔐 AUTH_SERVICE: Response success: ${response.success}');
+    print('🔐 AUTH_SERVICE: Response message: ${response.message}');
 
     return response;
   }
@@ -230,11 +242,19 @@ class AuthService {
     if (department != null) data['department'] = department;
     if (position != null) data['position'] = position;
 
-    return await _apiService.put<User>(
+    final response = await _apiService.put<User>(
       ApiConstants.auth.updateProfile,
       data: data,
       fromJson: (json) => User.fromJson(json),
     );
+    
+    if (response.success) {
+      // Clear cache to force refresh on next load
+      print('🧹 Clearing API cache after profile update...');
+      _apiService.clearCache();
+    }
+    
+    return response;
   }
 
   // Change password

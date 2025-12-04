@@ -20,7 +20,7 @@ class StatusBreakdownChart extends StatelessWidget {
       return SizedBox(
         width: size,
         height: size,
-        child: Center(
+        child: const Center(
           child: Text(
             'No Data',
             style: TextStyle(

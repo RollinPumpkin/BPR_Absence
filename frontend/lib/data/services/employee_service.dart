@@ -37,12 +37,20 @@ class EmployeeService {
 
   // Create new employee
   static Future<ApiResponse<Map<String, dynamic>>> createEmployee(Map<String, dynamic> employeeData) async {
-    return await ApiService.instance.post<Map<String, dynamic>>('/users/admin/create-employee', data: employeeData);
+    final response = await ApiService.instance.post<Map<String, dynamic>>('/users/admin/create-employee', data: employeeData);
+    
+    if (response.success) {
+      // Clear cache to force refresh on next load
+      print('🧹 Clearing API cache after employee creation...');
+      ApiService.instance.clearCache();
+    }
+    
+    return response;
   }
 
   // Update employee
   static Future<ApiResponse<Map<String, dynamic>>> updateEmployee(String employeeId, Map<String, dynamic> updateData) async {
-    return await ApiService.instance.put<Map<String, dynamic>>(
+    final response = await ApiService.instance.put<Map<String, dynamic>>(
       '$_baseEndpoint/$employeeId',
       data: updateData,
       fromJson: (json) {
@@ -51,11 +59,19 @@ class EmployeeService {
         return <String, dynamic>{'raw': json};
       },
     );
+    
+    if (response.success) {
+      // Clear cache to force refresh on next load
+      print('🧹 Clearing API cache after employee update...');
+      ApiService.instance.clearCache();
+    }
+    
+    return response;
   }
 
   // Delete employee
   static Future<ApiResponse<Map<String, dynamic>>> deleteEmployee(String employeeId) async {
-    return await ApiService.instance.delete<Map<String, dynamic>>(
+    final response = await ApiService.instance.delete<Map<String, dynamic>>(
       '$_baseEndpoint/$employeeId',
       fromJson: (json) {
         if (json == null) return <String, dynamic>{};
@@ -63,6 +79,14 @@ class EmployeeService {
         return <String, dynamic>{'raw': json};
       },
     );
+    
+    if (response.success) {
+      // Clear cache to force refresh on next load
+      print('🧹 Clearing API cache after employee deletion...');
+      ApiService.instance.clearCache();
+    }
+    
+    return response;
   }
 
   // Update employee status
@@ -71,7 +95,15 @@ class EmployeeService {
       'status': status,
       if (reason != null) 'reason': reason,
     };
-    return await ApiService.instance.patch<Map<String, dynamic>>('$_baseEndpoint/$employeeId/status', data);
+    final response = await ApiService.instance.patch<Map<String, dynamic>>('$_baseEndpoint/$employeeId/status', data);
+    
+    if (response.success) {
+      // Clear cache to force refresh on next load
+      print('🧹 Clearing API cache after employee status update...');
+      ApiService.instance.clearCache();
+    }
+    
+    return response;
   }
 
   // Reset employee password

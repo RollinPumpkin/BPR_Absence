@@ -83,7 +83,7 @@ class CheckEmailPage extends StatelessWidget {
                     const TextSpan(text: "We sent a password reset link to your email\n"),
                     TextSpan(
                       text: email ?? "your-email@gmail.com",
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: AppColors.primaryBlue,
                         fontWeight: FontWeight.w500,
                       ),
@@ -144,7 +144,7 @@ class CheckEmailPage extends StatelessWidget {
                             ),
                           );
                         },
-                        child: Text(
+                        child: const Text(
                           "Click here to resend!",
                           style: TextStyle(
                             color: AppColors.primaryBlue,
@@ -165,7 +165,7 @@ class CheckEmailPage extends StatelessWidget {
                 onTap: () {
                   Navigator.pop(context);
                 },
-                child: Row(
+                child: const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
@@ -173,8 +173,8 @@ class CheckEmailPage extends StatelessWidget {
                       size: 16,
                       color: AppColors.black87,
                     ),
-                    const SizedBox(width: 4),
-                    const Text(
+                    SizedBox(width: 4),
+                    Text(
                       "Back to log in",
                       style: TextStyle(
                         fontSize: 16,

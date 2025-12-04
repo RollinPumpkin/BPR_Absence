@@ -126,11 +126,19 @@ class UserService {
 
   // Update user
   Future<ApiResponse<User>> updateUser(String id, Map<String, dynamic> userData) async {
-    return await _apiService.put<User>(
+    final response = await _apiService.put<User>(
       '${ApiConstants.users.list}/$id',
       data: userData,
       fromJson: (json) => User.fromJson(json),
     );
+    
+    if (response.success) {
+      // Clear cache to force refresh on next load
+      print('🧹 Clearing API cache after user update...');
+      _apiService.clearCache();
+    }
+    
+    return response;
   }
 
   // Delete user
@@ -140,29 +148,53 @@ class UserService {
 
   // Activate user
   Future<ApiResponse<User>> activateUser(String id) async {
-    return await _apiService.post<User>(
+    final response = await _apiService.post<User>(
       ApiConstants.users.activate,
       data: {'id': id},
       fromJson: (json) => User.fromJson(json),
     );
+    
+    if (response.success) {
+      // Clear cache to force refresh on next load
+      print('🧹 Clearing API cache after user activation...');
+      _apiService.clearCache();
+    }
+    
+    return response;
   }
 
   // Deactivate user
   Future<ApiResponse<User>> deactivateUser(String id) async {
-    return await _apiService.post<User>(
+    final response = await _apiService.post<User>(
       ApiConstants.users.deactivate,
       data: {'id': id},
       fromJson: (json) => User.fromJson(json),
     );
+    
+    if (response.success) {
+      // Clear cache to force refresh on next load
+      print('🧹 Clearing API cache after user deactivation...');
+      _apiService.clearCache();
+    }
+    
+    return response;
   }
 
   // Reset password
   Future<ApiResponse<Map<String, dynamic>>> resetPassword(String id) async {
-    return await _apiService.post<Map<String, dynamic>>(
+    final response = await _apiService.post<Map<String, dynamic>>(
       ApiConstants.users.resetPassword,
       data: {'id': id},
       fromJson: (json) => json,
     );
+    
+    if (response.success) {
+      // Clear cache to force refresh on next load
+      print('🧹 Clearing API cache after password reset...');
+      _apiService.clearCache();
+    }
+    
+    return response;
   }
 
   // Get users by department
@@ -213,7 +245,7 @@ class UserService {
     List<String> userIds,
     Map<String, dynamic> updates,
   ) async {
-    return await _apiService.post<Map<String, dynamic>>(
+    final response = await _apiService.post<Map<String, dynamic>>(
       ApiConstants.users.bulkUpdate,
       data: {
         'userIds': userIds,
@@ -221,6 +253,14 @@ class UserService {
       },
       fromJson: (json) => json,
     );
+    
+    if (response.success) {
+      // Clear cache to force refresh on next load
+      print('🧹 Clearing API cache after bulk update users...');
+      _apiService.clearCache();
+    }
+    
+    return response;
   }
 
   // Get user profile summary
@@ -236,7 +276,7 @@ class UserService {
     String currentPassword,
     String newPassword,
   ) async {
-    return await _apiService.post<Map<String, dynamic>>(
+    final response = await _apiService.post<Map<String, dynamic>>(
       '${ApiConstants.users.list}/change-password',
       data: {
         'currentPassword': currentPassword,
@@ -244,15 +284,31 @@ class UserService {
       },
       fromJson: (json) => json,
     );
+    
+    if (response.success) {
+      // Clear cache to force refresh on next load
+      print('🧹 Clearing API cache after password change...');
+      _apiService.clearCache();
+    }
+    
+    return response;
   }
 
   // Update user profile
   Future<ApiResponse<User>> updateProfile(Map<String, dynamic> profileData) async {
-    return await _apiService.put<User>(
+    final response = await _apiService.put<User>(
       '${ApiConstants.users.list}/profile',
       data: profileData,
       fromJson: (json) => User.fromJson(json),
     );
+    
+    if (response.success) {
+      // Clear cache to force refresh on next load
+      print('🧹 Clearing API cache after profile update...');
+      _apiService.clearCache();
+    }
+    
+    return response;
   }
 
   // Upload profile picture
@@ -260,11 +316,19 @@ class UserService {
     String filePath,
   ) async {
     // This would typically use multipart upload
-    return await _apiService.post<Map<String, dynamic>>(
+    final response = await _apiService.post<Map<String, dynamic>>(
       '${ApiConstants.users.list}/profile-picture',
       data: {'filePath': filePath},
       fromJson: (json) => json,
     );
+    
+    if (response.success) {
+      // Clear cache to force refresh on next load
+      print('🧹 Clearing API cache after profile picture upload...');
+      _apiService.clearCache();
+    }
+    
+    return response;
   }
 
   // Get user attendance summary
@@ -333,20 +397,47 @@ class UserService {
   // Get current user profile
   Future<ApiResponse<Map<String, dynamic>>> getCurrentUser() async {
     final response = await _apiService.get<Map<String, dynamic>>(
-      '/profile',
+      '/profile',  // Calls /api/profile which is mounted in server.js
       fromJson: (json) => json,
     );
     
-    // Extract profile data from nested structure if present
-    if (response.success && response.data != null && response.data!['profile'] != null) {
-      return ApiResponse<Map<String, dynamic>>(
-        success: response.success,
-        message: response.message,
-        data: response.data!['profile'] as Map<String, dynamic>,
-      );
+    // Extract user data from nested structure
+    // Backend returns: { success: true, data: { profile: {...} } }
+    if (response.success && response.data != null) {
+      // The profile route returns data.profile
+      final userData = response.data!['profile'];
+      if (userData != null) {
+        return ApiResponse<Map<String, dynamic>>(
+          success: response.success,
+          message: response.message,
+          data: userData as Map<String, dynamic>,
+        );
+      }
     }
     
     return response;
+  }
+
+  // Update user profile (email and phone)
+  Future<void> updateUserProfile(String userId, Map<String, dynamic> data) async {
+    try {
+      print('[UPDATE_PROFILE] Updating user $userId with data: $data');
+      
+      final response = await _apiService.put<Map<String, dynamic>>(
+        '${ApiConstants.users.list}/$userId',
+        data: data,
+        fromJson: (json) => json,
+      );
+
+      if (!response.success) {
+        throw Exception(response.message ?? 'Failed to update profile');
+      }
+      
+      print('[UPDATE_PROFILE] Profile updated successfully');
+    } catch (e) {
+      print('[UPDATE_PROFILE] Error: $e');
+      rethrow;
+    }
   }
 
   // Get user statistics with user ID parameter

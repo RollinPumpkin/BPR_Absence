@@ -278,14 +278,20 @@ const validateRegister = (req, res, next) => {
 };
 
 const validateLogin = (req, res, next) => {
+  console.log('🔍 VALIDATION: Login request body:', req.body);
+  console.log('🔍 VALIDATION: Request from:', req.ip || req.connection.remoteAddress);
+  
   const { error } = loginSchema.validate(req.body);
   if (error) {
+    console.log('❌ VALIDATION FAILED:', error.details[0].message);
     return res.status(400).json({
       success: false,
       message: 'Validation error',
       details: error.details[0].message
     });
   }
+  
+  console.log('✅ VALIDATION PASSED - forwarding to login handler');
   next();
 };
 

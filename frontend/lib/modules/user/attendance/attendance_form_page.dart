@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
+import 'dart:html' as html;
+import 'dart:ui_web' as ui_web;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
@@ -57,6 +59,7 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
   ];
   
   late Timer _timer;
+  StreamSubscription<QuerySnapshot>? _attendanceListener;
   
   // Determine available options based on current clock status
   List<String> get availableOptions {
@@ -70,6 +73,7 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
   String currentDate = '';
   final TextEditingController _notesController = TextEditingController();
   final _attendanceService = DummyAttendanceService();
+  String? mapViewId; // Unique map view ID
 
   @override
   void initState() {
@@ -78,14 +82,98 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       _updateTime();
     });
+    
+    // Fallback: If page was opened from Clock Out button, set status directly FIRST
+    if (widget.type == 'clock_out') {
+      isUserClockedIn = true;
+      selectedAbsentType = clockOutTypes.first;
+      print('[AttendanceForm] OVERRIDE: Set to Clock Out mode based on widget.type');
+    } else if (widget.type == 'clock_in') {
+      isUserClockedIn = false;
+      selectedAbsentType = clockInTypes.first;
+      print('[AttendanceForm] OVERRIDE: Set to Clock In mode based on widget.type');
+    }
+    
+    _initializeDatesBasedOnType();
     _getCurrentLocation();
     // Initialize camera permission (for web, this will be set to true automatically)
     _requestCameraPermission();
-    _checkUserClockStatus(); // Check current clock status
-    _initializeDatesBasedOnType();
+    
+    // Setup realtime listener for clock status (but won't override widget.type)
+    if (widget.type != 'clock_out' && widget.type != 'clock_in') {
+      _setupRealtimeClockStatusListener();
+    } else {
+      // Even if widget.type is set, do initial check for data consistency
+      _checkUserClockStatus();
+    }
   }
   
-  // Check if user is currently clocked in
+  // Setup realtime listener for attendance status changes
+  Future<void> _setupRealtimeClockStatusListener() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final employeeId = prefs.getString('employee_id') ?? '';
+      final userId = prefs.getString('user_id') ?? '';
+      
+      if (employeeId.isEmpty && userId.isEmpty) {
+        print('❌ No employee_id or user_id found for realtime listener');
+        return;
+      }
+
+      // Get today's date
+      final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+      
+      // Create Firestore query
+      Query attendanceQuery = FirebaseFirestore.instance.collection('attendance');
+      
+      if (employeeId.isNotEmpty) {
+        attendanceQuery = attendanceQuery.where('employee_id', isEqualTo: employeeId);
+        print('🔄 Setting up realtime listener with employee_id: $employeeId');
+      } else {
+        attendanceQuery = attendanceQuery.where('user_id', isEqualTo: userId);
+        print('🔄 Setting up realtime listener with user_id: $userId');
+      }
+      
+      // Setup realtime listener
+      _attendanceListener = attendanceQuery
+          .where('date', isEqualTo: today)
+          .orderBy('created_at', descending: true)
+          .limit(1)
+          .snapshots()
+          .listen((snapshot) {
+        if (!mounted) return;
+        
+        bool isCurrentlyClockedIn = false;
+        
+        if (snapshot.docs.isNotEmpty) {
+          final attendanceData = snapshot.docs.first.data() as Map<String, dynamic>;
+          final checkInTime = attendanceData['check_in_time'];
+          final checkOutTime = attendanceData['check_out_time'];
+          
+          isCurrentlyClockedIn = checkInTime != null && checkOutTime == null;
+          
+          print('🔄 REALTIME UPDATE - Attendance changed:');
+          print('🕐 Check in: $checkInTime');
+          print('🕑 Check out: $checkOutTime');
+          print('📊 Status: ${isCurrentlyClockedIn ? "Clocked In" : "Clocked Out"}');
+        } else {
+          print('🔄 REALTIME UPDATE - No attendance record for today');
+        }
+        
+        setState(() {
+          isUserClockedIn = isCurrentlyClockedIn;
+          selectedAbsentType = isUserClockedIn ? clockOutTypes.first : clockInTypes.first;
+        });
+      }, onError: (error) {
+        print('❌ Realtime listener error: $error');
+      });
+      
+    } catch (e) {
+      print('❌ Error setting up realtime listener: $e');
+    }
+  }
+  
+  // Check if user is currently clocked in (one-time check)
   Future<void> _checkUserClockStatus() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -175,7 +263,9 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
   @override
   void dispose() {
     _timer.cancel();
+    _attendanceListener?.cancel();
     _notesController.dispose();
+    print('🔄 Realtime listener cancelled');
     super.dispose();
   }
 
@@ -310,6 +400,8 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
   }
 
   Future<void> _getCurrentLocation() async {
+    if (!mounted) return;
+    
     setState(() {
       isLoadingLocation = true;
       detailAddress = 'Getting location...';
@@ -327,6 +419,8 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
       
       print('📍 Position received: ${position.latitude}, ${position.longitude}');
       
+      if (!mounted) return;
+      
       setState(() {
         currentPosition = position;
         latitude = position.latitude;
@@ -338,10 +432,15 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
         position.longitude
       );
 
+      if (!mounted) return;
+      
       setState(() {
-        detailAddress = address ?? 'Unknown location';
+        detailAddress = address ?? 'Unable to get address';
         isLoadingLocation = false;
       });
+
+      // Initialize map after getting location
+      _initializeMap();
 
       // Initialize web map if running on web
       /* if (kIsWeb && currentPosition != null) {
@@ -357,11 +456,13 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
       } */
     } catch (e) {
       print('Error getting location: $e');
+      if (!mounted) return;
       setState(() {
         detailAddress = 'Failed to get location';
         isLoadingLocation = false;
       });
     } finally {
+      if (!mounted) return;
       setState(() {
         isLoadingLocation = false;
       });
@@ -370,20 +471,66 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
 
   Future<String?> _getAddressFromLatLng(double latitude, double longitude) async {
     try {
+      print('🗺️ Getting address for: $latitude, $longitude');
+      
+      // Use BigDataCloud reverse geocoding API (no CORS issues, free tier available)
       final url = Uri.parse(
-        'https://nominatim.openstreetmap.org/reverse?format=json&lat=$latitude&lon=$longitude&zoom=18&addressdetails=1'
+        'https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=$latitude&longitude=$longitude&localityLanguage=id'
       );
       
       final response = await http.get(url);
       
+      print('🗺️ Address API response status: ${response.statusCode}');
+      
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        return data['display_name'] ?? 'Unknown location';
+        
+        // Build a readable address from components
+        final List<String> addressParts = [];
+        
+        if (data['locality'] != null && data['locality'].toString().isNotEmpty) {
+          addressParts.add(data['locality']);
+        }
+        
+        // Safely access administrative levels
+        if (data['localityInfo'] != null && data['localityInfo']['administrative'] != null) {
+          final admin = data['localityInfo']['administrative'] as List<dynamic>?;
+          if (admin != null && admin.length > 3 && admin[3]['name'] != null) {
+            addressParts.add(admin[3]['name']);
+          }
+          if (admin != null && admin.length > 2 && admin[2]['name'] != null) {
+            addressParts.add(admin[2]['name']);
+          }
+        }
+        
+        if (data['principalSubdivision'] != null && data['principalSubdivision'].toString().isNotEmpty) {
+          addressParts.add(data['principalSubdivision']);
+        }
+        
+        String address;
+        if (addressParts.isNotEmpty) {
+          address = addressParts.join(', ');
+        } else {
+          // Fallback to informative name
+          if (data['localityInfo'] != null && data['localityInfo']['informative'] != null) {
+            final informative = data['localityInfo']['informative'] as List<dynamic>?;
+            address = (informative != null && informative.isNotEmpty && informative[0]['name'] != null)
+                ? informative[0]['name']
+                : 'Address not found';
+          } else {
+            address = 'Address not found';
+          }
+        }
+        
+        print('🗺️ Address found: $address');
+        return address;
+      } else {
+        print('🗺️ Address API error: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error getting address: $e');
+      print('🗺️ Error getting address: $e');
     }
-    return null;
+    return 'Address not available';
   }
 
   // Web camera capture method - not needed for mobile
@@ -644,7 +791,7 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
       final ByteData? byteData = await squareImage.toByteData(format: ui.ImageByteFormat.png);
       if (byteData != null) {
         final compressedBytes = byteData.buffer.asUint8List();
-        print('[AttendanceForm] Image compressed to square: ${targetSize}x${targetSize}, size: ${compressedBytes.length} bytes');
+        print('[AttendanceForm] Image compressed to square: ${targetSize}x$targetSize, size: ${compressedBytes.length} bytes');
         return compressedBytes;
       }
       
@@ -796,6 +943,11 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
         _updateClockStatus();
         
         if (mounted) {
+          // Determine the display type based on widget.type or selectedAbsentType
+          final displayType = widget.type == 'clock_in' ? 'Clock In' : 
+                             widget.type == 'clock_out' ? 'Clock Out' : 
+                             selectedAbsentType;
+          
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Column(
@@ -807,7 +959,7 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 4),
-                  Text('Type: $selectedAbsentType'),
+                  Text('Type: $displayType'),
                   Text('Date: ${DateFormat('dd/MM/yyyy').format(startDate!)}'),
                   if (startDate != endDate)
                     Text('Until: ${DateFormat('dd/MM/yyyy').format(endDate!)}'),
@@ -895,24 +1047,53 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
     }
   }
 
-  void _refreshLocation() {
-    _getCurrentLocation();
-  }
-
   void _initializeMap() {
-    /*if (kIsWeb) {
-      try {
-        if (currentPosition != null) {
-          LeafletService.initializeMap(
-            'map-container',
-            currentPosition!.latitude, 
-            currentPosition!.longitude
-          );
-        }
-      } catch (e) {
-        print('Error initializing map: $e');
-      }
-    }*/
+    if (!kIsWeb || latitude == null || longitude == null) return;
+
+    // Generate unique view ID with timestamp to avoid collision
+    mapViewId = 'map-view-${DateTime.now().millisecondsSinceEpoch}';
+    
+    // Check if already registered, if yes return early
+    try {
+      // Register view factory only once
+      ui_web.platformViewRegistry.registerViewFactory(mapViewId!, (int viewId) {
+        final mapDiv = html.DivElement()
+          ..id = mapViewId!
+          ..style.width = '100%'
+          ..style.height = '100%';
+
+        // Initialize Leaflet map after a short delay to ensure div is in DOM
+        Future.delayed(const Duration(milliseconds: 300), () {
+          final script = html.ScriptElement()
+            ..text = '''
+              if (typeof L !== 'undefined') {
+                var map = L.map('$mapViewId', {
+                  dragging: true,
+                  touchZoom: true,
+                  scrollWheelZoom: true,
+                  doubleClickZoom: true,
+                  boxZoom: false,
+                  keyboard: false,
+                  zoomControl: true
+                }).setView([${latitude!}, ${longitude!}], 15);
+                
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                  attribution: '© OpenStreetMap contributors'
+                }).addTo(map);
+                
+                L.marker([${latitude!}, ${longitude!}], {
+                  draggable: false
+                }).addTo(map);
+              }
+            ''';
+          html.document.body!.append(script);
+        });
+
+        return mapDiv;
+      });
+    } catch (e) {
+      print('Map view already registered or error: $e');
+    }
   }
 
   @override
@@ -938,7 +1119,7 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -954,7 +1135,7 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
             const SizedBox(height: 8),
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
                 color: AppColors.pureWhite,
                 borderRadius: BorderRadius.circular(8),
@@ -974,7 +1155,7 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
             // Clock Status Indicator
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
                 color: isUserClockedIn ? AppColors.primaryGreen.withOpacity(0.1) : AppColors.primaryBlue.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
@@ -991,43 +1172,18 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                     size: 20,
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    isUserClockedIn ? 'Currently Clocked In' : 'Ready to Clock In',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: isUserClockedIn ? AppColors.primaryGreen : AppColors.primaryBlue,
+                  Expanded(
+                    child: Text(
+                      isUserClockedIn ? 'Currently Clocked In' : 'Ready to Clock In',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: isUserClockedIn ? AppColors.primaryGreen : AppColors.primaryBlue,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
-              ),
-            ),
-            
-            // DEBUG: Toggle Clock Status Button (for testing)
-            const SizedBox(height: 8),
-            Container(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  setState(() {
-                    isUserClockedIn = !isUserClockedIn;
-                    selectedAbsentType = isUserClockedIn ? clockOutTypes.first : clockInTypes.first;
-                    _initializeDatesBasedOnType();
-                  });
-                  print('[AttendanceForm] DEBUG: Clock status toggled to ${isUserClockedIn ? "Clocked In" : "Clocked Out"}');
-                  print('[AttendanceForm] DEBUG: Selected type: $selectedAbsentType');
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orange,
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                ),
-                child: Text(
-                  'DEBUG: Toggle to ${isUserClockedIn ? "Clock Out Mode" : "Clock In Mode"}',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Colors.white,
-                  ),
-                ),
               ),
             ),
             
@@ -1036,7 +1192,7 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
             // Absent Type Dropdown
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               decoration: BoxDecoration(
                 color: AppColors.pureWhite,
                 borderRadius: BorderRadius.circular(8),
@@ -1059,7 +1215,7 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                     return DropdownMenuItem<String>(
                       value: type,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
                         decoration: BoxDecoration(
                           color: backgroundColor,
                           borderRadius: BorderRadius.circular(4),
@@ -1098,10 +1254,11 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                       const Text(
                         'Start Date',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 12,
                           fontWeight: FontWeight.w500,
                           color: AppColors.black87,
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 8),
                       GestureDetector(
@@ -1110,7 +1267,7 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                             : () => _selectDate(context, true),
                         child: Container(
                           width: double.infinity,
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
                           decoration: BoxDecoration(
                             color: (selectedAbsentType == 'Clock In' || selectedAbsentType == 'Clock Out') 
                                 ? Colors.grey.shade200 
@@ -1123,21 +1280,24 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                                 ? DateFormat('dd/MM/yyyy').format(startDate!)
                                 : 'Select start date',
                             style: TextStyle(
-                              fontSize: 16,
+                              fontSize: 12,
                               color: startDate != null ? AppColors.black87 : Colors.grey,
                             ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ),
                       if (selectedAbsentType == 'Clock In' || selectedAbsentType == 'Clock Out')
                         const Text(
                           'Auto-selected for clock in/out',
-                          style: TextStyle(fontSize: 12, color: Colors.grey),
+                          style: TextStyle(fontSize: 11, color: Colors.grey),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
                         ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1145,10 +1305,11 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                       const Text(
                         'End Date',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 12,
                           fontWeight: FontWeight.w500,
                           color: AppColors.black87,
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 8),
                       GestureDetector(
@@ -1157,7 +1318,7 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                             : () => _selectDate(context, false),
                         child: Container(
                           width: double.infinity,
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
                           decoration: BoxDecoration(
                             color: (selectedAbsentType == 'Clock In' || selectedAbsentType == 'Clock Out') 
                                 ? Colors.grey.shade200 
@@ -1170,16 +1331,19 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                                 ? DateFormat('dd/MM/yyyy').format(endDate!)
                                 : 'Select end date',
                             style: TextStyle(
-                              fontSize: 16,
+                              fontSize: 12,
                               color: endDate != null ? AppColors.black87 : Colors.grey,
                             ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ),
                       if (selectedAbsentType == 'Clock In' || selectedAbsentType == 'Clock Out')
                         const Text(
                           'Auto-selected for clock in/out',
-                          style: TextStyle(fontSize: 12, color: Colors.grey),
+                          style: TextStyle(fontSize: 11, color: Colors.grey),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
                         ),
                     ],
                   ),
@@ -1201,17 +1365,20 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                 ),
                 child: Row(
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.timer,
                       color: AppColors.primaryBlue,
                       size: 20,
                     ),
                     const SizedBox(width: 8),
-                    Text(
-                      'Duration: ${_calculateDuration()}',
-                      style: const TextStyle(
-                        color: AppColors.primaryBlue,
-                        fontWeight: FontWeight.w500,
+                    Expanded(
+                      child: Text(
+                        'Duration: ${_calculateDuration()}',
+                        style: const TextStyle(
+                          color: AppColors.primaryBlue,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
@@ -1366,7 +1533,7 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                                 color: AppColors.primaryBlue.withValues(alpha: 0.1),
                                 shape: BoxShape.circle,
                               ),
-                              child: Icon(
+                              child: const Icon(
                                 Icons.camera_alt,
                                 color: AppColors.primaryBlue,
                                 size: 24,
@@ -1432,15 +1599,15 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: AppColors.primaryYellow.withValues(alpha: 0.3)),
                 ),
-                child: Row(
+                child: const Row(
                   children: [
                     Icon(
                       Icons.warning,
                       color: AppColors.primaryYellow,
                       size: 20,
                     ),
-                    const SizedBox(width: 8),
-                    const Expanded(
+                    SizedBox(width: 8),
+                    Expanded(
                       child: Text(
                         'Photo is required for attendance submission',
                         style: TextStyle(
@@ -1464,15 +1631,15 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: AppColors.primaryGreen.withValues(alpha: 0.3)),
               ),
-              child: Row(
+              child: const Row(
                 children: [
                   Icon(
                     Icons.location_on,
                     color: AppColors.primaryGreen,
                     size: 20,
                   ),
-                  const SizedBox(width: 8),
-                  const Expanded(
+                  SizedBox(width: 8),
+                  Expanded(
                     child: Text(
                       'Location detected automatically for attendance verification',
                       style: TextStyle(
@@ -1487,38 +1654,7 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
 
             const SizedBox(height: 20),
 
-            // Location Details Header
-            const Text(
-              'Location Details',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: AppColors.black87,
-              ),
-            ),
-            const SizedBox(height: 8),
-
-            // Location dropdown (placeholder)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: AppColors.pureWhite,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey.shade300),
-              ),
-              child: Text(
-                selectedLocation,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: selectedLocation == 'Choose Location' ? Colors.grey : AppColors.black87,
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Address display
+            // Address display only
             const Text(
               'Address',
               style: TextStyle(
@@ -1536,108 +1672,76 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: Colors.grey.shade300),
               ),
-              child: Text(
-                detailAddress,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: isLoadingLocation ? Colors.grey : AppColors.black87,
-                ),
+              child: Row(
+                children: [
+                  if (isLoadingLocation)
+                    const Padding(
+                      padding: EdgeInsets.only(right: 8),
+                      child: SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ),
+                  Expanded(
+                    child: Text(
+                      detailAddress,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: isLoadingLocation ? Colors.grey : AppColors.black87,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            if (isLoadingLocation)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Row(
-                  children: [
-                    const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                    const SizedBox(width: 8),
-                    TextButton.icon(
-                      onPressed: _refreshLocation,
-                      icon: const Icon(Icons.refresh, color: AppColors.primaryBlue),
-                      label: const Text('Refresh'),
-                    ),
-                  ],
-                ),
-              ),
 
             const SizedBox(height: 20),
 
-            // Coordinate display
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Latitude',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.black87,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: AppColors.pureWhite,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.grey.shade300),
-                        ),
-                        child: Text(
-                          latitude != null ? latitude!.toStringAsFixed(6) : '-',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: latitude != null ? AppColors.black87 : Colors.grey,
-                          ),
-                        ),
-                      ),
-                    ],
+            // Map View
+            if (latitude != null && longitude != null)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Location Map',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.black87,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Longitude',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.black87,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: AppColors.pureWhite,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.grey.shade300),
-                        ),
-                        child: Text(
-                          longitude != null ? longitude!.toStringAsFixed(6) : '-',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: longitude != null ? AppColors.black87 : Colors.grey,
-                          ),
-                        ),
-                      ),
-                    ],
+                  const SizedBox(height: 8),
+                  Container(
+                    height: 200,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey.shade300),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: kIsWeb && mapViewId != null
+                          ? HtmlElementView(
+                              viewType: mapViewId!,
+                            )
+                          : kIsWeb
+                            ? const Center(
+                                child: CircularProgressIndicator(),
+                              )
+                            : Center(
+                                child: Text(
+                                  'Map view only available on web',
+                                  style: TextStyle(color: Colors.grey.shade600),
+                                ),
+                              ),
+                    ),
                   ),
-                ),
-              ],
-            ),
+                  const SizedBox(height: 20),
+                ],
+              ),
 
-            const SizedBox(height: 30),
+            const SizedBox(height: 10),
 
             // Submit Button
             SizedBox(
@@ -1654,7 +1758,7 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                 ),
                 onPressed: isSaving ? null : _saveAttendance,
                 child: isSaving
-                    ? Row(
+                    ? const Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           SizedBox(
@@ -1665,8 +1769,8 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
                               valueColor: AlwaysStoppedAnimation<Color>(AppColors.pureWhite),
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          const Text(
+                          SizedBox(width: 12),
+                          Text(
                             'Saving...',
                             style: TextStyle(
                               color: AppColors.pureWhite,
@@ -1735,6 +1839,7 @@ class DummyAttendanceService {
         'user_id': userId, // Keep for backward compatibility
         'date': today,
         'created_at': FieldValue.serverTimestamp(),
+        'updated_at': FieldValue.serverTimestamp(),
       };
 
       if (type == 'Clock In') {
@@ -1746,6 +1851,8 @@ class DummyAttendanceService {
             'latitude': latitude,
             'longitude': longitude,
           },
+          'status': 'present', // Set status for clock in
+          'type': 'clock_in',
         });
         
         if (attendanceQuery.docs.isNotEmpty) {
@@ -1758,6 +1865,10 @@ class DummyAttendanceService {
         
       } else if (['Clock Out', 'Annual Leave', 'Sick Leave'].contains(type)) {
         // Clock Out (including leave types)
+        final status = type == 'Clock Out' ? 'present' : 
+                      type == 'Annual Leave' ? 'annual_leave' : 
+                      type == 'Sick Leave' ? 'sick_leave' : 'present';
+        
         attendanceData.addAll({
           'check_out_time': currentTime,
           'check_out_location': {
@@ -1766,6 +1877,7 @@ class DummyAttendanceService {
             'longitude': longitude,
           },
           'type': type, // Store the leave type if applicable
+          'status': status, // Set appropriate status
         });
         
         if (attendanceQuery.docs.isNotEmpty) {
@@ -1781,6 +1893,7 @@ class DummyAttendanceService {
         // Absent - no check in/out times, just mark as absent
         attendanceData.addAll({
           'type': 'Absent',
+          'status': 'absent', // Set status as absent
           'location': {
             'address': address,
             'latitude': latitude,

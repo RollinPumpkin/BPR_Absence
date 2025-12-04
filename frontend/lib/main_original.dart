@@ -34,7 +34,6 @@ import 'modules/user/attendance/attendance_form_page.dart';
 import 'modules/user/assignment/assignment_page.dart' as user_assign;
 import 'modules/user/letters/letters_page.dart' as user_letters;
 import 'modules/user/profile/profile_page.dart' as user_profile;
-import 'data/services/api_service.dart';
 
 class _CustomNavigatorObserver extends NavigatorObserver {
   @override

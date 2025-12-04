@@ -21,15 +21,24 @@ class ApiService {
   ApiService._internal() {
     _dio = Dio(BaseOptions(
       baseUrl: ApiConstants.baseUrl,
-      connectTimeout: const Duration(seconds: 30),
-      receiveTimeout: const Duration(seconds: 30),
-      sendTimeout: const Duration(seconds: 30),
+      connectTimeout: const Duration(seconds: 120), // 2 minutes for mobile
+      receiveTimeout: const Duration(seconds: 120),
+      sendTimeout: const Duration(seconds: 120),
+      responseType: ResponseType.json,
+      validateStatus: (status) {
+        return status != null && status < 500;
+      },
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
         'Accept-Encoding': 'gzip, deflate, br',
         'User-Agent': 'BPR-Absence-App/1.0.0',
+        'Connection': 'keep-alive', // Keep connection alive
       },
+      // Additional options for better mobile connectivity
+      persistentConnection: true,
+      followRedirects: true,
+      maxRedirects: 5,
     ));
 
     _setupInterceptors();
@@ -46,6 +55,8 @@ class ApiService {
     // Request interceptor to add auth token and handle caching
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
+        print('🔍 Interceptor - Current token status: ${_token != null ? "EXISTS" : "NULL"}');
+        
         // Add auth token if available
         if (_token != null) {
           options.headers['Authorization'] = 'Bearer $_token';
@@ -53,6 +64,17 @@ class ApiService {
           print('🔑 Token length: ${_token!.length}');
         } else {
           print('⚠️ No token available for request: ${options.method} ${options.path}');
+          print('⚠️ Attempting to reload token from storage...');
+          
+          // Try to reload token from storage
+          await _loadToken();
+          
+          if (_token != null) {
+            options.headers['Authorization'] = 'Bearer $_token';
+            print('✅ Token reloaded successfully from storage');
+          } else {
+            print('❌ Still no token after reload - user may need to login');
+          }
         }
         
         // Add detailed request tracking for debugging
@@ -64,7 +86,7 @@ class ApiService {
         options.extra['startTime'] = startTime;
         
         print('🚀 Request: ${options.method} ${options.path}');
-        if (options.queryParameters?.isNotEmpty == true) {
+        if (options.queryParameters.isNotEmpty == true) {
           print('📋 Query Parameters: ${options.queryParameters}');
         }
         
@@ -75,6 +97,14 @@ class ApiService {
         if (startTime != null) {
           final duration = DateTime.now().difference(startTime);
           print('✅ Response: ${response.statusCode} ${response.statusMessage} (${duration.inMilliseconds}ms)');
+          print('✅ Response Data Type: ${response.data.runtimeType}');
+          
+          // Log raw response for debugging JSON parsing issues
+          if (response.data is! Map && response.data is! List) {
+            final rawData = response.data.toString();
+            final preview = rawData.length > 500 ? rawData.substring(0, 500) : rawData;
+            print('⚠️ Response is NOT JSON! Raw data: $preview');
+          }
         }
         
         handler.next(response);
@@ -97,18 +127,32 @@ class ApiService {
       },
     ));
 
-    // Add simple retry logic for network failures
+    // Enhanced retry logic for network failures with exponential backoff
     _dio.interceptors.add(InterceptorsWrapper(
       onError: (error, handler) async {
+        final retryCount = error.requestOptions.extra['retryCount'] ?? 0;
+        const maxRetries = 3; // Increased retry attempts
+        
         // Retry on network errors and timeouts
-        if (_shouldRetry(error) && error.requestOptions.extra['retryCount'] == null) {
-          error.requestOptions.extra['retryCount'] = 1;
+        if (_shouldRetry(error) && retryCount < maxRetries) {
+          error.requestOptions.extra['retryCount'] = retryCount + 1;
+          
+          // Exponential backoff: 2s, 4s, 8s
+          final delaySeconds = 2 * (retryCount + 1);
+          print('⏳ Retry attempt ${retryCount + 1}/$maxRetries after ${delaySeconds}s...');
+          
           try {
-            await Future.delayed(const Duration(seconds: 1));
+            await Future.delayed(Duration(seconds: delaySeconds.toInt()));
+            print('🔄 Retrying request to ${error.requestOptions.path}');
             final response = await _dio.fetch(error.requestOptions);
+            print('✅ Retry successful!');
             handler.resolve(response);
             return;
           } catch (e) {
+            print('❌ Retry failed: $e');
+            if (retryCount + 1 >= maxRetries) {
+              print('❌ Max retries reached');
+            }
             // Fall through to default error handling
           }
         }
@@ -186,6 +230,11 @@ class ApiService {
     print('🧹 Cache cleared');
   }
 
+  // Public method to clear all cache
+  void clearCache() {
+    _clearCache();
+  }
+
   // Clear specific cache entry
   void clearCacheForEndpoint(String endpoint) {
     _cache.removeWhere((key, value) => key.startsWith(endpoint));
@@ -194,11 +243,19 @@ class ApiService {
 
   // Check if request should be retried
   bool _shouldRetry(DioException error) {
-    return error.type == DioExceptionType.connectionTimeout ||
+    final shouldRetry = error.type == DioExceptionType.connectionTimeout ||
            error.type == DioExceptionType.sendTimeout ||
            error.type == DioExceptionType.receiveTimeout ||
            error.type == DioExceptionType.connectionError ||
            (error.response?.statusCode ?? 0) >= 500;
+    
+    if (shouldRetry) {
+      print('🔄 Request eligible for retry - Error type: ${error.type}');
+    } else {
+      print('❌ Request NOT eligible for retry - Error type: ${error.type}');
+    }
+    
+    return shouldRetry;
   }
 
   // Generic GET request with caching
@@ -228,25 +285,130 @@ class ApiService {
       final response = await _dio.get(
         endpoint,
         queryParameters: queryParameters,
+        options: Options(
+          responseType: ResponseType.plain, // Use PLAIN to get raw string first
+          headers: {
+            'Accept': 'application/json',
+          },
+        ),
       );
 
       print('🌐 Raw HTTP Response Status: ${response.statusCode}');
-      print('🌐 Raw HTTP Response Data: ${response.data}');
-
-      final apiResponse = _handleResponse<T>(response, fromJson);
-      print('🔄 Processed API Response: success=${apiResponse.success}, message=${apiResponse.message}');
+      print('🌐 Raw HTTP Response Data Type: ${response.data.runtimeType}');
+      print('🌐 Raw Response (first 1000 chars): ${response.data.toString().substring(0, response.data.toString().length > 1000 ? 1000 : response.data.toString().length)}');
       
-      // Cache successful responses
+      // Manually parse JSON from plain text response
+      dynamic jsonData;
+      try {
+        if (response.data is String) {
+          final stringData = response.data as String;
+          print('📝 Response is String, length: ${stringData.length}');
+          
+          // Check for empty response
+          if (stringData.isEmpty) {
+            print('❌ Backend returned empty string!');
+            return ApiResponse<T>(
+              success: false,
+              message: 'Server returned empty response',
+              error: 'Empty response body',
+            );
+          }
+          
+          // Try to parse JSON
+          jsonData = jsonDecode(stringData);
+          print('✅ Successfully parsed JSON from string');
+        } else {
+          jsonData = response.data;
+          print('✅ Response data already parsed');
+        }
+      } catch (jsonError) {
+        print('❌ JSON Parse Error: $jsonError');
+        print('❌ Raw data causing error: ${response.data.toString().substring(0, response.data.toString().length > 500 ? 500 : response.data.toString().length)}');
+        return ApiResponse<T>(
+          success: false,
+          message: 'Failed to parse server response',
+          error: jsonError.toString(),
+        );
+      }
+      
+      // Check for null response
+      if (jsonData == null) {
+        print('❌ Backend returned null response!');
+        return ApiResponse<T>(
+          success: false,
+          message: 'Server returned empty response',
+          error: 'Null response body',
+        );
+      }
+      
+      print('🌐 Response data preview: ${jsonData.toString().substring(0, jsonData.toString().length > 500 ? 500 : jsonData.toString().length)}');
+      
+      // Check if response is valid JSON structure
+      if (jsonData is! Map && jsonData is! List) {
+        final rawData = jsonData.toString();
+        print('❌ Parsed data is NOT a Map or List! Type: ${jsonData.runtimeType}');
+        print('❌ Raw data: ${rawData.substring(0, rawData.length > 500 ? 500 : rawData.length)}');
+        
+        return ApiResponse<T>(
+          success: false,
+          message: 'Server returned invalid response structure',
+          error: 'Expected Map/List but got ${jsonData.runtimeType}',
+        );
+      }
+      
+      // Create a new Response object with parsed JSON
+      final jsonResponse = Response(
+        requestOptions: response.requestOptions,
+        data: jsonData,
+        statusCode: response.statusCode,
+        statusMessage: response.statusMessage,
+        headers: response.headers,
+      );
+      
+      print('🌐 Parsed JSON Response Data: $jsonData');
+      if (jsonData is Map) {
+        print('🌐 Response keys: ${(jsonData).keys}');
+        print('🌐 Response success: ${(jsonData)['success']}');
+        print('🌐 Response message: ${(jsonData)['message']}');
+        print('🌐 Response data field: ${(jsonData)['data']}');
+        print('🌐 Response data field type: ${(jsonData)['data'].runtimeType}');
+      }
+
+      final apiResponse = _handleResponse<T>(jsonResponse, fromJson);
+      print('🔄 Processed API Response: success=${apiResponse.success}, message=${apiResponse.message}');
+      print('🔄 Processed API Response data: ${apiResponse.data}');
+      print('🔄 Processed API Response data type: ${apiResponse.data.runtimeType}');
+      
+      // Cache successful responses - use parsed jsonData instead of original response.data
       if (useCache && apiResponse.success && apiResponse.data != null) {
-        _cacheResponse(cacheKey, response.data['data'] ?? response.data);
+        if (jsonData is Map) {
+          _cacheResponse(cacheKey, jsonData['data'] ?? jsonData);
+        } else {
+          _cacheResponse(cacheKey, jsonData);
+        }
       }
 
       return apiResponse;
     } on DioException catch (e) {
-      print('💥 DioException in GET request: ${e.type}');
-      print('💥 DioException message: ${e.message}');
-      print('💥 DioException response: ${e.response?.data}');
-      print('💥 DioException status: ${e.response?.statusCode}');
+      print('💥 DioException in GET request');
+      print('💥 Error Type: ${e.type}');
+      print('💥 Error Message: ${e.message}');
+      print('💥 Response Status: ${e.response?.statusCode}');
+      print('💥 Response Data: ${e.response?.data}');
+      print('💥 Request URL: ${e.requestOptions.uri}');
+      print('💥 Request Headers: ${e.requestOptions.headers}');
+      
+      // Additional diagnostics for mobile
+      if (e.type == DioExceptionType.connectionTimeout) {
+        print('⏱️ CONNECTION TIMEOUT DETECTED!');
+        print('⏱️ Check: 1) Is backend running? 2) Is IP correct? 3) Are you on same WiFi?');
+        print('⏱️ Server URL: ${ApiConstants.baseUrl}');
+      } else if (e.type == DioExceptionType.connectionError) {
+        print('🔌 CONNECTION ERROR DETECTED!');
+        print('🔌 Possible causes: 1) Wrong IP 2) Firewall blocking 3) Different network');
+        print('🔌 Server URL: ${ApiConstants.baseUrl}');
+      }
+      
       return _handleError<T>(e);
     }
   }
@@ -260,11 +422,19 @@ class ApiService {
     List<String>? invalidateCacheEndpoints,
   }) async {
     try {
+      print('📤 POST Request to: $endpoint');
+      print('📤 POST Data: ${data.toString().length > 200 ? data.toString().substring(0, 200) + "..." : data}');
+      
+      final startTime = DateTime.now();
+      
       final response = await _dio.post(
         endpoint,
         data: data,
         queryParameters: queryParameters,
       );
+      
+      final duration = DateTime.now().difference(startTime);
+      print('✅ POST Response received in ${duration.inSeconds}s');
 
       final apiResponse = _handleResponse<T>(response, fromJson);
       
@@ -277,6 +447,24 @@ class ApiService {
 
       return apiResponse;
     } on DioException catch (e) {
+      print('💥 DioException in POST request');
+      print('💥 Error Type: ${e.type}');
+      print('💥 Error Message: ${e.message}');
+      print('💥 Response Status: ${e.response?.statusCode}');
+      print('💥 Response Data: ${e.response?.data}');
+      print('💥 Request URL: ${e.requestOptions.uri}');
+      
+      // Additional diagnostics for mobile
+      if (e.type == DioExceptionType.connectionTimeout) {
+        print('⏱️ CONNECTION TIMEOUT on POST!');
+        print('⏱️ This usually means backend is unreachable');
+        print('⏱️ Server: ${ApiConstants.baseUrl}');
+      } else if (e.type == DioExceptionType.connectionError) {
+        print('🔌 CONNECTION ERROR on POST!');
+        print('🔌 Check network connectivity and server IP');
+        print('🔌 Server: ${ApiConstants.baseUrl}');
+      }
+      
       return _handleError<T>(e);
     }
   }
@@ -484,8 +672,17 @@ class ApiService {
           }
         } catch (e, stackTrace) {
           print('❌ _handleResponse - Error parsing data: $e');
+          print('❌ _handleResponse - Error type: ${e.runtimeType}');
           print('❌ _handleResponse - Stack trace: $stackTrace');
-          resultData = null;
+          print('❌ _handleResponse - Raw data that failed to parse: ${data['data']}');
+          print('❌ _handleResponse - Raw data type: ${data['data'].runtimeType}');
+          print('❌ _handleResponse - Full response data: $data');
+          // Return error response instead of success with null data
+          return ApiResponse<T>(
+            success: false,
+            message: 'Failed to parse response data: ${e.toString()}',
+            error: e.toString(),
+          );
         }
 
         return ApiResponse<T>(
@@ -537,6 +734,10 @@ class ApiService {
     String? errorDetails;
     String? errorCode;
 
+    print('🚨 DioException Type: ${error.type}');
+    print('🚨 DioException Message: ${error.message}');
+    print('🚨 DioException Response: ${error.response}');
+
     switch (error.type) {
       case DioExceptionType.connectionTimeout:
         message = 'Connection timeout. Please check your internet connection.';
@@ -554,6 +755,9 @@ class ApiService {
         final statusCode = error.response?.statusCode;
         final responseData = error.response?.data;
         
+        print('🚨 Bad Response Status: $statusCode');
+        print('🚨 Bad Response Data: $responseData');
+        
         if (responseData is Map<String, dynamic>) {
           message = responseData['message'] ?? _getStatusMessage(statusCode);
           errorDetails = responseData['error']?.toString();
@@ -570,10 +774,13 @@ class ApiService {
       case DioExceptionType.connectionError:
         message = 'Unable to connect to server. Please check your internet connection.';
         errorCode = 'CONNECTION_ERROR';
+        print('🚨 Connection Error Details: ${error.error}');
         break;
       case DioExceptionType.unknown:
         message = error.message ?? 'Unknown network error occurred';
         errorCode = 'UNKNOWN_ERROR';
+        print('🚨 Unknown Error Details: ${error.error}');
+        print('🚨 Unknown Error Type: ${error.error.runtimeType}');
         break;
       default:
         message = 'Network error occurred';
@@ -585,6 +792,7 @@ class ApiService {
     if (errorDetails != null) {
       print('📋 Error Details: $errorDetails');
     }
+    print('🚨 Full Error Object: $error');
 
     return ApiResponse<T>(
       success: false,

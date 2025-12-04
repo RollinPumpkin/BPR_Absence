@@ -49,7 +49,7 @@ class AttendanceChart extends StatelessWidget {
           const SizedBox(height: 16),
           
           /// Chart Area
-          Container(
+          SizedBox(
             height: 150,
             width: double.infinity,
             child: CustomPaint(
@@ -130,10 +130,10 @@ class MultiLineAttendanceChartPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     // Define colors for each attendance type
-    final presentColor = AppColors.primaryGreen;
-    final lateColor = AppColors.vibrantOrange;
-    final absentColor = AppColors.errorRed;
-    final leaveColor = AppColors.primaryBlue;
+    const presentColor = AppColors.primaryGreen;
+    const lateColor = AppColors.vibrantOrange;
+    const absentColor = AppColors.errorRed;
+    const leaveColor = AppColors.primaryBlue;
 
     // Sample data for 7 days (Monday to Sunday)
     // Values represent count of people in each category per day
@@ -143,7 +143,7 @@ class MultiLineAttendanceChartPainter extends CustomPainter {
     final leaveData = [0.0, 1.0, 0.0, 1.0, 2.0, 12.0, 21.0]; // More leave on weekends
 
     // Calculate max value for scaling
-    final maxValue = 30.0; // Max expected attendance count
+    const maxValue = 30.0; // Max expected attendance count
 
     // Calculate positions for 7 days
     final dayWidth = size.width / 6; // 6 intervals for 7 points

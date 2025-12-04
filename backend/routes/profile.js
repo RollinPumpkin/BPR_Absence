@@ -29,13 +29,13 @@ router.get('/', auth, async (req, res) => {
     const { password, ...profileData } = userData;
     
     // Convert timestamps to readable format
-    if (profileData.created_at) {
+    if (profileData.created_at && typeof profileData.created_at.toDate === 'function') {
       profileData.created_at = profileData.created_at.toDate();
     }
-    if (profileData.updated_at) {
+    if (profileData.updated_at && typeof profileData.updated_at.toDate === 'function') {
       profileData.updated_at = profileData.updated_at.toDate();
     }
-    if (profileData.last_login) {
+    if (profileData.last_login && typeof profileData.last_login.toDate === 'function') {
       profileData.last_login = profileData.last_login.toDate();
     }
 
@@ -261,13 +261,13 @@ router.get('/user/:userId', auth, adminAuth, async (req, res) => {
     const { password, ...profileData } = userData;
 
     // Convert timestamps
-    if (profileData.created_at) {
+    if (profileData.created_at && typeof profileData.created_at.toDate === 'function') {
       profileData.created_at = profileData.created_at.toDate();
     }
-    if (profileData.updated_at) {
+    if (profileData.updated_at && typeof profileData.updated_at.toDate === 'function') {
       profileData.updated_at = profileData.updated_at.toDate();
     }
-    if (profileData.last_login) {
+    if (profileData.last_login && typeof profileData.last_login.toDate === 'function') {
       profileData.last_login = profileData.last_login.toDate();
     }
 

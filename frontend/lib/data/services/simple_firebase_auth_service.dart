@@ -33,7 +33,7 @@ class SimpleFirebaseAuthService {
       print('✅ SimpleFirebaseAuthService initialized successfully');
     } catch (e) {
       print('❌ SimpleFirebaseAuthService initialization error: $e');
-      throw e;
+      rethrow;
     }
   }
 

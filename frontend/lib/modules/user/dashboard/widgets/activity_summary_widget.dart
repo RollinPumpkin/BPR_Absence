@@ -91,16 +91,19 @@ class _ActivitySummaryWidgetState extends State<ActivitySummaryWidget> {
               ),
             ),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  "Activity Summary",
-                  style: TextStyle(
-                    color: AppColors.pureWhite,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
+                const Expanded(
+                  child: Text(
+                    "Activity Summary",
+                    style: TextStyle(
+                      color: AppColors.pureWhite,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
+                const SizedBox(width: 8),
                 if (_isLoading)
                   const SizedBox(
                     width: 16,
@@ -110,15 +113,7 @@ class _ActivitySummaryWidgetState extends State<ActivitySummaryWidget> {
                       valueColor: AlwaysStoppedAnimation<Color>(AppColors.pureWhite),
                     ),
                   )
-                else if (_error != null)
-                  GestureDetector(
-                    onTap: _loadActivityData,
-                    child: const Icon(
-                      Icons.refresh,
-                      color: AppColors.pureWhite,
-                      size: 20,
-                    ),
-                  ),
+
               ],
             ),
           ),
@@ -136,7 +131,7 @@ class _ActivitySummaryWidgetState extends State<ActivitySummaryWidget> {
                 : _error != null
                     ? Column(
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.error_outline,
                             color: AppColors.errorRed,
                             size: 48,
@@ -193,7 +188,7 @@ class _ActivitySummaryWidgetState extends State<ActivitySummaryWidget> {
         Text(
           value,
           style: TextStyle(
-            fontSize: 24,
+            fontSize: 20,
             fontWeight: FontWeight.bold,
             color: color,
           ),
@@ -202,7 +197,7 @@ class _ActivitySummaryWidgetState extends State<ActivitySummaryWidget> {
         Text(
           label,
           style: TextStyle(
-            fontSize: 14,
+            fontSize: 12,
             color: Colors.grey.shade600,
           ),
         ),

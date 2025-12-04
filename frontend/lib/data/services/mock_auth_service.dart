@@ -24,7 +24,7 @@ class MockAuthService {
       print('🔐 Mock Login attempt: $email');
       
       // Simulate network delay
-      await Future.delayed(Duration(milliseconds: 500));
+      await Future.delayed(const Duration(milliseconds: 500));
       
       // Find user in dummy data
       final user = DummyData.users.firstWhere(

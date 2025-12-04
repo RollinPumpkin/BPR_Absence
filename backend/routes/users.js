@@ -435,9 +435,12 @@ router.get('/:userId', auth, async (req, res) => {
 // Get user profile
 router.get('/profile', auth, async (req, res) => {
   try {
+    console.log('📋 GET /profile - User ID:', req.user.userId);
+    
     const userDoc = await db.collection('users').doc(req.user.userId).get();
 
     if (!userDoc.exists) {
+      console.log('❌ User not found:', req.user.userId);
       return res.status(404).json({
         success: false,
         message: 'User not found'
@@ -445,6 +448,8 @@ router.get('/profile', auth, async (req, res) => {
     }
 
     const userData = userDoc.data();
+    console.log('✅ User data retrieved:', userData.full_name || userData.email);
+    
     delete userData.password; // Remove password from response
 
     res.json({
@@ -458,10 +463,12 @@ router.get('/profile', auth, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Get profile error:', error);
+    console.error('❌ Get profile error:', error);
+    console.error('Error stack:', error.stack);
     res.status(500).json({
       success: false,
-      message: 'Failed to get profile'
+      message: 'Failed to get profile',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
@@ -505,6 +512,22 @@ router.post('/profile/picture', auth, upload.single('profile_image'), async (req
       return res.status(400).json({
         success: false,
         message: 'No file uploaded'
+      });
+    }
+
+    // Validate file size (max 2MB)
+    const maxSize = 2 * 1024 * 1024; // 2MB in bytes
+    if (req.file.size > maxSize) {
+      // Delete the uploaded file
+      const fs = require('fs');
+      const filePath = req.file.path;
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+      
+      return res.status(400).json({
+        success: false,
+        message: 'File size exceeds 2MB limit'
       });
     }
 

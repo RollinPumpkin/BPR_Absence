@@ -35,71 +35,145 @@ router.get('/', auth, async (req, res) => {
     });
 
     const isAdmin = req.user.role === 'admin' || req.user.role === 'super_admin';
-    let lettersRef = db.collection('letters');
 
     console.log('🔒 Is Admin:', isAdmin);
+    console.log('👤 User ID to filter:', req.user.userId);
 
-    // For admin users, get all letters
-    // For regular users, filter by recipient_id
-    if (!isAdmin) {
-      console.log('👥 Filtering by recipient_id:', req.user.userId);
-      lettersRef = lettersRef.where('recipient_id', '==', req.user.userId);
-    } else {
-      console.log('👑 Admin access - getting all letters');
-    }
-
-    // Simple ordering without complex where clauses for now
-    lettersRef = lettersRef.orderBy('created_at', 'desc').limit(parseInt(limit));
+    // Get all letters WITHOUT orderBy to avoid issues with missing/inconsistent field names
+    // We'll sort in memory after fetching all documents
+    const lettersRef = db.collection('letters');
 
     const snapshot = await lettersRef.get();
+    console.log(`📊 Total letters in database: ${snapshot.size}`);
+    
     const allLetters = [];
     
     // Get user details for each letter
     for (const doc of snapshot.docs) {
       const letterData = { id: doc.id, ...doc.data() };
       
-      // Apply filters in memory for now (until indexes are ready)
+      console.log(`🔍 Processing letter ${doc.id}:`);
+      console.log(`   - recipient_id: ${letterData.recipient_id}`);
+      console.log(`   - recipientId: ${letterData.recipientId}`);
+      console.log(`   - user_id: ${letterData.user_id}`);
+      console.log(`   - Looking for userId: ${req.user.userId}`);
+      
+      // Apply filters in memory
       let includeRecord = true;
       
-      if (type && letterData.letter_type !== type) includeRecord = false;
+      // Filter by user (support multiple field name formats)
+      if (!isAdmin) {
+        const isRecipient = 
+          letterData.recipient_id === req.user.userId || 
+          letterData.recipientId === req.user.userId ||
+          letterData.user_id === req.user.userId;
+        
+        console.log(`   - Is recipient match: ${isRecipient}`);
+        
+        if (!isRecipient) {
+          includeRecord = false;
+        }
+      }
+      
+      // Support both letter_type and letterType
+      const letterType = letterData.letter_type || letterData.letterType;
+      if (type && letterType !== type) includeRecord = false;
+      
       if (status && letterData.status !== status) includeRecord = false;
-      if (recipient_id && isAdmin && letterData.recipient_id !== recipient_id) includeRecord = false;
-      if (start_date && letterData.created_at && letterData.created_at.toDate() < new Date(start_date)) includeRecord = false;
-      if (end_date && letterData.created_at && letterData.created_at.toDate() > new Date(end_date)) includeRecord = false;
+      
+      // Admin filter
+      if (recipient_id && isAdmin) {
+        const isTargetRecipient = 
+          letterData.recipient_id === recipient_id || 
+          letterData.recipientId === recipient_id ||
+          letterData.user_id === recipient_id;
+        if (!isTargetRecipient) includeRecord = false;
+      }
+      
+      // Date filters
+      const createdAt = letterData.created_at || letterData.createdAt;
+      if (start_date && createdAt && createdAt.toDate() < new Date(start_date)) includeRecord = false;
+      if (end_date && createdAt && createdAt.toDate() > new Date(end_date)) includeRecord = false;
       
       if (!includeRecord) continue;
       
-      // Get recipient details
-      if (letterData.recipient_id) {
+      // Normalize field names for frontend consistency
+      // Support both snake_case and camelCase fields
+      const normalizedLetter = {
+        id: letterData.id,
+        letter_number: letterData.letter_number || letterData.letterNumber,
+        letter_type: letterData.letter_type || letterData.letterType,
+        subject: letterData.subject,
+        content: letterData.content,
+        recipient_id: letterData.recipient_id || letterData.recipientId || letterData.user_id,
+        recipient_name: letterData.recipient_name || letterData.recipientName,
+        recipient_employee_id: letterData.recipient_employee_id || letterData.recipientEmployeeId,
+        recipient_department: letterData.recipient_department || letterData.recipientDepartment,
+        sender_id: letterData.sender_id || letterData.senderId,
+        sender_name: letterData.sender_name || letterData.senderName,
+        sender_position: letterData.sender_position || letterData.senderPosition,
+        status: letterData.status,
+        priority: letterData.priority,
+        created_at: letterData.created_at || letterData.createdAt,
+        updated_at: letterData.updated_at || letterData.updatedAt,
+        // Optional fields
+        expires_at: letterData.expires_at || letterData.validUntil,
+        approval_history: letterData.approval_history,
+        requires_response: letterData.requires_response || letterData.requiresResponse,
+        response_deadline: letterData.response_deadline || letterData.responseDeadline,
+        response_content: letterData.response_content || letterData.responseMessage,
+        response_date: letterData.response_date || letterData.responseDate,
+      };
+      
+      // Get recipient details if not already present
+      const recipientId = normalizedLetter.recipient_id;
+      if (recipientId && !normalizedLetter.recipient_name) {
         try {
-          const userDoc = await db.collection('users').doc(letterData.recipient_id).get();
+          const userDoc = await db.collection('users').doc(recipientId).get();
           if (userDoc.exists) {
             const userData = userDoc.data();
-            letterData.recipient_name = userData.full_name;
-            letterData.recipient_employee_id = userData.employee_id;
-            letterData.recipient_department = userData.department;
+            normalizedLetter.recipient_name = userData.full_name;
+            normalizedLetter.recipient_employee_id = userData.employee_id;
+            normalizedLetter.recipient_department = userData.department;
           }
         } catch (userError) {
           console.error('Error fetching recipient details:', userError);
         }
       }
 
-      // Get sender details
-      if (letterData.sender_id) {
+      // Get sender details if not already present
+      const senderId = normalizedLetter.sender_id;
+      if (senderId && !normalizedLetter.sender_name) {
         try {
-          const senderDoc = await db.collection('users').doc(letterData.sender_id).get();
+          const senderDoc = await db.collection('users').doc(senderId).get();
           if (senderDoc.exists) {
             const senderData = senderDoc.data();
-            letterData.sender_name = senderData.full_name;
-            letterData.sender_position = senderData.position;
+            normalizedLetter.sender_name = senderData.full_name;
+            normalizedLetter.sender_position = senderData.position;
           }
         } catch (senderError) {
           console.error('Error fetching sender details:', senderError);
         }
       }
 
-      allLetters.push(letterData);
+      allLetters.push(normalizedLetter);
     }
+
+    // Sort by created_at date (newest first) - support both field formats
+    allLetters.sort((a, b) => {
+      const dateA = a.created_at || a.createdAt;
+      const dateB = b.created_at || b.createdAt;
+      
+      if (!dateA && !dateB) return 0;
+      if (!dateA) return 1; // Put items without date at the end
+      if (!dateB) return -1;
+      
+      // Convert Firestore Timestamp to Date if needed
+      const timestampA = dateA.toDate ? dateA.toDate() : new Date(dateA);
+      const timestampB = dateB.toDate ? dateB.toDate() : new Date(dateB);
+      
+      return timestampB - timestampA; // Descending order (newest first)
+    });
 
     // Apply search filter if provided
     let filteredLetters = allLetters;
@@ -113,18 +187,21 @@ router.get('/', auth, async (req, res) => {
       );
     }
 
-    // Get total count for pagination
-    let totalQuery = db.collection('letters');
-    if (!isAdmin) {
-      totalQuery = totalQuery.where('recipient_id', '==', req.user.userId);
-    }
-    const totalSnapshot = await totalQuery.get();
-    const totalRecords = totalSnapshot.size;
+    // Apply limit for pagination
+    const startIndex = (parseInt(page) - 1) * parseInt(limit);
+    const endIndex = startIndex + parseInt(limit);
+    const paginatedLetters = filteredLetters.slice(startIndex, endIndex);
+    
+    const totalRecords = filteredLetters.length;
+    
+    console.log(`📊 Total letters after filter: ${allLetters.length}`);
+    console.log(`📊 Filtered letters: ${filteredLetters.length}`);
+    console.log(`📄 Returning page ${page} (${paginatedLetters.length} items)`);
 
     res.json({
       success: true,
       data: {
-        letters: filteredLetters,
+        letters: paginatedLetters,
         pagination: {
           current_page: parseInt(page),
           total_pages: Math.ceil(totalRecords / parseInt(limit)),
@@ -177,70 +254,127 @@ router.get('/received', auth, async (req, res) => {
     });
 
     const isAdmin = req.user.role === 'admin' || req.user.role === 'super_admin';
-    let lettersRef = db.collection('letters');
 
-    // For admin users, get all received letters
-    // For regular users, filter by recipient_id
-    if (!isAdmin) {
-      console.log('👥 Filtering by recipient_id:', req.user.userId);
-      lettersRef = lettersRef.where('recipient_id', '==', req.user.userId);
-    } else {
-      console.log('👑 Admin access - getting all received letters');
-    }
+    console.log('🔒 Is Admin:', isAdmin);
+    console.log('👤 User ID to filter:', req.user.userId);
 
-    // Filter by status to only show received letters (approved/rejected/processed)
-    // Use simple approach - get all and filter in memory for now
+    // Get all letters WITHOUT orderBy to support inconsistent field names
+    const lettersRef = db.collection('letters');
+    const snapshot = await lettersRef.get();
     
-    // Apply additional filters first
+    console.log(`📊 Total letters in database: ${snapshot.size}`);
+    
+    const allLetters = [];
+    
+    // Process each letter
+    for (const doc of snapshot.docs) {
+      const letterData = { id: doc.id, ...doc.data() };
+      
+      console.log(`� Processing letter ${doc.id}:`);
+      console.log(`   - recipient_id: ${letterData.recipient_id}`);
+      console.log(`   - recipientId: ${letterData.recipientId}`);
+      console.log(`   - user_id: ${letterData.user_id}`);
+      console.log(`   - Looking for userId: ${req.user.userId}`);
+      
+      let includeRecord = true;
+      
+      // Filter by user (support multiple field name formats)
+      if (!isAdmin) {
+        const isRecipient = 
+          letterData.recipient_id === req.user.userId || 
+          letterData.recipientId === req.user.userId ||
+          letterData.user_id === req.user.userId;
+        
+        console.log(`   - Is recipient match: ${isRecipient}`);
+        
+        if (!isRecipient) {
+          includeRecord = false;
+        }
+      }
+      
+      if (!includeRecord) continue;
+      
+      // Normalize letter data (same as main endpoint)
+      const normalizedLetter = {
+        id: letterData.id,
+        letter_number: letterData.letter_number || letterData.letterNumber,
+        letter_type: letterData.letter_type || letterData.letterType,
+        subject: letterData.subject,
+        content: letterData.content,
+        recipient_id: letterData.recipient_id || letterData.recipientId || letterData.user_id,
+        recipient_name: letterData.recipient_name || letterData.recipientName,
+        recipient_employee_id: letterData.recipient_employee_id || letterData.recipientEmployeeId,
+        recipient_department: letterData.recipient_department || letterData.recipientDepartment,
+        sender_id: letterData.sender_id || letterData.senderId,
+        sender_name: letterData.sender_name || letterData.senderName,
+        sender_position: letterData.sender_position || letterData.senderPosition,
+        status: letterData.status,
+        priority: letterData.priority,
+        created_at: letterData.created_at || letterData.createdAt,
+        updated_at: letterData.updated_at || letterData.updatedAt,
+      };
+      
+      allLetters.push(normalizedLetter);
+    }
+    
+    console.log(`📊 Total letters after user filter: ${allLetters.length}`);
+    
+    // Sort by created_at (newest first)
+    allLetters.sort((a, b) => {
+      const dateA = a.created_at;
+      const dateB = b.created_at;
+      
+      if (!dateA && !dateB) return 0;
+      if (!dateA) return 1;
+      if (!dateB) return -1;
+      
+      const timestampA = dateA.toDate ? dateA.toDate() : new Date(dateA);
+      const timestampB = dateB.toDate ? dateB.toDate() : new Date(dateB);
+      
+      return timestampB - timestampA;
+    });
+    
+    // Apply status filter in memory
+    let filteredLetters = allLetters;
     if (status) {
-      lettersRef = lettersRef.where('status', '==', status);
+      filteredLetters = filteredLetters.filter(letter => letter.status === status);
     }
     
+    // Apply letter_type filter
     if (letter_type) {
-      lettersRef = lettersRef.where('type', '==', letter_type);
+      filteredLetters = filteredLetters.filter(letter => letter.letter_type === letter_type);
     }
     
+    // Apply priority filter
     if (priority) {
-      lettersRef = lettersRef.where('priority', '==', priority);
+      filteredLetters = filteredLetters.filter(letter => letter.priority === priority);
     }
-
+    
     // Apply date filters
     if (start_date) {
       const startDate = new Date(start_date);
-      lettersRef = lettersRef.where('created_at', '>=', startDate);
+      filteredLetters = filteredLetters.filter(letter => {
+        const letterDate = letter.created_at?.toDate ? letter.created_at.toDate() : new Date(letter.created_at);
+        return letterDate >= startDate;
+      });
     }
     
     if (end_date) {
       const endDate = new Date(end_date);
       endDate.setHours(23, 59, 59, 999);
-      lettersRef = lettersRef.where('created_at', '<=', endDate);
+      filteredLetters = filteredLetters.filter(letter => {
+        const letterDate = letter.created_at?.toDate ? letter.created_at.toDate() : new Date(letter.created_at);
+        return letterDate <= endDate;
+      });
     }
 
-    // Apply sorting
-    lettersRef = lettersRef.orderBy(sort_by, sort_order);
-
-    console.log('🔍 Executing received letters query...');
-    const snapshot = await lettersRef.get();
-    
-    // Filter received letters in memory to avoid Firestore 'in' query limitations
-    const receivedStatuses = ['approved', 'rejected', 'processed'];
-    const allLetters = [];
-    snapshot.forEach(doc => {
-      const letterData = doc.data();
-      if (receivedStatuses.includes(letterData.status)) {
-        allLetters.push({
-          id: doc.id,
-          ...letterData
-        });
-      }
-    });
-
-    // Apply pagination to filtered results
+    // Apply pagination
     const offset = (parseInt(page) - 1) * parseInt(limit);
-    const letters = allLetters.slice(offset, offset + parseInt(limit));
-    const total = allLetters.length;
+    const letters = filteredLetters.slice(offset, offset + parseInt(limit));
+    const total = filteredLetters.length;
 
-    console.log(`📊 Found ${letters.length} received letters (total: ${total})`);
+    console.log(`📊 Filtered letters: ${filteredLetters.length}`);
+    console.log(`📄 Returning page ${page} (${letters.length} items)`);
 
     res.json({
       success: true,
@@ -457,22 +591,29 @@ router.get('/pending', auth, async (req, res) => {
 
       // Get sender/requester details
       try {
-        const userDoc = await db.collection('users').doc(letterData.sender_id || letterData.recipient_id).get();
-        if (userDoc.exists) {
-          const userData = userDoc.data();
-          letterData.requester = {
-            id: userDoc.id,
-            full_name: userData.full_name,
-            email: userData.email,
-            employee_id: userData.employee_id,
-            department: userData.department,
-            position: userData.position
-          };
-          
-          // Add senderName and recipientName for easier access in frontend
-          letterData.senderName = userData.full_name;
-          letterData.recipientName = userData.full_name;
-          letterData.recipientEmployeeId = userData.employee_id;
+        const userId = letterData.sender_id || letterData.recipient_id;
+        
+        // Only fetch user details if we have a valid user ID
+        if (userId && typeof userId === 'string' && userId.trim() !== '') {
+          const userDoc = await db.collection('users').doc(userId).get();
+          if (userDoc.exists) {
+            const userData = userDoc.data();
+            letterData.requester = {
+              id: userDoc.id,
+              full_name: userData.full_name,
+              email: userData.email,
+              employee_id: userData.employee_id,
+              department: userData.department,
+              position: userData.position
+            };
+            
+            // Add senderName and recipientName for easier access in frontend
+            letterData.senderName = userData.full_name;
+            letterData.recipientName = userData.full_name;
+            letterData.recipientEmployeeId = userData.employee_id;
+          }
+        } else {
+          console.warn(`⚠️  Letter ${doc.id} has no valid sender_id or recipient_id`);
         }
       } catch (userError) {
         console.error('Error fetching user details:', userError);
@@ -1527,10 +1668,19 @@ router.get('/admin/analytics', auth, adminAuth, async (req, res) => {
 
       // Get user department for analytics
       try {
-        const userDoc = await db.collection('users').doc(letter.recipient_id || letter.sender_id).get();
-        if (userDoc.exists) {
-          const dept = userDoc.data().department || 'Unknown';
-          analytics.by_department[dept] = (analytics.by_department[dept] || 0) + 1;
+        const userId = letter.recipient_id || letter.sender_id;
+        
+        // Only fetch user details if we have a valid user ID
+        if (userId && typeof userId === 'string' && userId.trim() !== '') {
+          const userDoc = await db.collection('users').doc(userId).get();
+          if (userDoc.exists) {
+            const dept = userDoc.data().department || 'Unknown';
+            analytics.by_department[dept] = (analytics.by_department[dept] || 0) + 1;
+          } else {
+            analytics.by_department['Unknown'] = (analytics.by_department['Unknown'] || 0) + 1;
+          }
+        } else {
+          analytics.by_department['Unknown'] = (analytics.by_department['Unknown'] || 0) + 1;
         }
       } catch (error) {
         analytics.by_department['Unknown'] = (analytics.by_department['Unknown'] || 0) + 1;

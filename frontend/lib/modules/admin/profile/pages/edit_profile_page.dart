@@ -239,11 +239,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
           ),
           const SizedBox(height: 20),
           
-          // Full Name
+          // Full Name (Read-only)
           _buildTextField(
             controller: _fullNameController,
             label: 'Full Name',
             icon: Icons.person,
+            enabled: false,
             validator: (value) {
               if (value == null || value.isEmpty) {
                 return 'Full name is required';
@@ -254,7 +255,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
           
           const SizedBox(height: 16),
           
-          // Email
+          // Email (Editable)
           _buildTextField(
             controller: _emailController,
             label: 'Email',
@@ -273,16 +274,17 @@ class _EditProfilePageState extends State<EditProfilePage> {
           
           const SizedBox(height: 16),
           
-          // Employee ID
+          // Employee ID (Read-only)
           _buildTextField(
             controller: _employeeIdController,
             label: 'Employee ID',
             icon: Icons.badge,
+            enabled: false,
           ),
           
           const SizedBox(height: 16),
           
-          // Phone
+          // Phone (Editable)
           _buildTextField(
             controller: _phoneController,
             label: 'Phone Number',
@@ -292,20 +294,22 @@ class _EditProfilePageState extends State<EditProfilePage> {
           
           const SizedBox(height: 16),
           
-          // Position
+          // Position (Read-only)
           _buildTextField(
             controller: _positionController,
             label: 'Position',
             icon: Icons.work,
+            enabled: false,
           ),
           
           const SizedBox(height: 16),
           
-          // Department
+          // Department (Read-only)
           _buildTextField(
             controller: _departmentController,
             label: 'Department',
             icon: Icons.business,
+            enabled: false,
           ),
         ],
       ),
@@ -318,20 +322,31 @@ class _EditProfilePageState extends State<EditProfilePage> {
     required IconData icon,
     TextInputType? keyboardType,
     String? Function(String?)? validator,
+    bool enabled = true,
   }) {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
       validator: validator,
+      enabled: enabled,
+      style: TextStyle(
+        color: enabled ? AppColors.neutral800 : Colors.grey[600],
+      ),
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon),
+        prefixIcon: Icon(icon, color: enabled ? null : Colors.grey),
+        filled: !enabled,
+        fillColor: enabled ? null : Colors.grey[100],
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.primaryBlue),
+        ),
+        disabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey[300]!),
         ),
       ),
     );

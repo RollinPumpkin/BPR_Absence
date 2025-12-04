@@ -6,6 +6,8 @@ import 'package:frontend/data/services/letter_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+import 'package:frontend/core/services/realtime_service.dart';
+import 'dart:async';
 
 import 'letter_form_page.dart';
 
@@ -23,11 +25,35 @@ class _UserLettersPageState extends State<UserLettersPage> {
   String? _error;
   
   final LetterService _letterService = LetterService();
+  final RealtimeService _realtimeService = RealtimeService();
+  StreamSubscription? _lettersSubscription;
   
   @override
   void initState() {
     super.initState();
-    _loadLetters();
+    _initializeRealtime();
+  }
+
+  Future<void> _initializeRealtime() async {
+    await _realtimeService.initialize();
+    _realtimeService.startLettersListener();
+    
+    _lettersSubscription = _realtimeService.lettersStream.listen((lettersData) {
+      if (mounted) {
+        setState(() {
+          _letters = lettersData;
+          _isLoading = false;
+        });
+        print('🔄 User Letters: Realtime updated (${lettersData.length} letters)');
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _lettersSubscription?.cancel();
+    _realtimeService.stopAllListeners();
+    super.dispose();
   }
 
   @override
@@ -45,7 +71,7 @@ class _UserLettersPageState extends State<UserLettersPage> {
         ),
       ),
 
-      bottomNavigationBar: CustomBottomNavRouter(
+      bottomNavigationBar: const CustomBottomNavRouter(
         currentIndex: 3,
         items: UserNavItems.items,
       ),
@@ -73,16 +99,19 @@ class _UserLettersPageState extends State<UserLettersPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                "Letter",
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.black87,
+              Expanded(
+                child: Text(
+                  "Letter",
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.black87,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
+              const SizedBox(width: 8),
               GestureDetector(
                 onTap: () async {
                   final result = await Navigator.push(
@@ -103,7 +132,7 @@ class _UserLettersPageState extends State<UserLettersPage> {
                     });
                     
                     // Small delay to ensure Firestore has processed the new data
-                    await Future.delayed(Duration(milliseconds: 500));
+                    await Future.delayed(const Duration(milliseconds: 500));
                     await _loadLetters();
                     
                     print('🔍 Debug: Refresh completed, total letters loaded: ${_letters.length}');
@@ -112,7 +141,7 @@ class _UserLettersPageState extends State<UserLettersPage> {
                   }
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
                     color: AppColors.vibrantOrange,
                     borderRadius: BorderRadius.circular(20),
@@ -123,16 +152,17 @@ class _UserLettersPageState extends State<UserLettersPage> {
                       Icon(
                         Icons.add,
                         color: AppColors.pureWhite,
-                        size: 16,
+                        size: 14,
                       ),
-                      const SizedBox(width: 4),
-                      const Text(
+                      SizedBox(width: 4),
+                      Text(
                         "Add Letters",
                         style: TextStyle(
                           color: AppColors.pureWhite,
-                          fontSize: 12,
+                          fontSize: 11,
                           fontWeight: FontWeight.w600,
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
@@ -144,7 +174,7 @@ class _UserLettersPageState extends State<UserLettersPage> {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
                   color: Colors.grey.shade100,
                   borderRadius: BorderRadius.circular(20),
@@ -156,26 +186,32 @@ class _UserLettersPageState extends State<UserLettersPage> {
                     Icon(
                       Icons.filter_list,
                       color: Colors.grey.shade600,
-                      size: 16,
+                      size: 14,
                     ),
                     const SizedBox(width: 4),
                     Text(
                       "Filter",
                       style: TextStyle(
                         color: Colors.grey.shade600,
-                        fontSize: 12,
+                        fontSize: 11,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 12),
-              _buildFilterTab("Waiting approval"),
-              const SizedBox(width: 12),
-              _buildFilterTab("Approved"),
-              const SizedBox(width: 12),
-              _buildFilterTab("Rejected"),
+              const SizedBox(width: 6),
+              Expanded(
+                child: _buildFilterTab("Waiting approval"),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: _buildFilterTab("Approved"),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: _buildFilterTab("Rejected"),
+              ),
             ],
           ),
         ],
@@ -193,7 +229,7 @@ class _UserLettersPageState extends State<UserLettersPage> {
         _loadLetters(); // Reload letters when filter changes
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         decoration: BoxDecoration(
           color: isSelected ? Colors.grey.shade200 : AppColors.transparent,
           borderRadius: BorderRadius.circular(20),
@@ -203,11 +239,14 @@ class _UserLettersPageState extends State<UserLettersPage> {
         ),
         child: Text(
           filter,
+          textAlign: TextAlign.center,
           style: TextStyle(
             color: isSelected ? AppColors.black87 : Colors.grey.shade600,
-            fontSize: 12,
+            fontSize: 10,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
           ),
+          overflow: TextOverflow.ellipsis,
+          maxLines: 1,
         ),
       ),
     );
@@ -263,7 +302,7 @@ class _UserLettersPageState extends State<UserLettersPage> {
             ),
             const SizedBox(height: 16),
             Text(
-              'No letters found for "${selectedFilter}"',
+              'No letters found for "$selectedFilter"',
               style: TextStyle(
                 color: Colors.grey.shade500,
                 fontSize: 16,
@@ -378,7 +417,7 @@ class _UserLettersPageState extends State<UserLettersPage> {
       ),
       child: Text(
         type,
-        style: TextStyle(
+        style: const TextStyle(
           fontSize: 10,
           color: AppColors.primaryBlue,
           fontWeight: FontWeight.w600,
@@ -440,11 +479,12 @@ class _UserLettersPageState extends State<UserLettersPage> {
     print('🔍 Debug: Loading letters from API...');
     
     try {
-      // Simple HTTP request to get letters data
-    final response = await _letterService.getReceivedLetters(
-      page: 1,
-      limit: 100,
-    );
+      // Force refresh to bypass cache and get latest data
+      final response = await _letterService.getReceivedLetters(
+        page: 1,
+        limit: 100,
+        forceRefresh: true, // Always get fresh data
+      );
 
     if (response.success && response.data != null) {
       final letters = response.data!.items.map((letter) {

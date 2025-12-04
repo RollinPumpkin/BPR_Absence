@@ -4,32 +4,67 @@ class Assignment {
   final String id;
   final String title;
   final String description;
-  final DateTime dueDate;
+  final DateTime? startDate; // Start date of assignment period
+  final DateTime dueDate; // End date / due date
   final String priority; // 'low', 'medium', 'high'
   final String status; // 'pending', 'in-progress', 'completed', 'overdue'
-  final String? assignedTo;
+  final List<String> assignedTo; // List of employee names/IDs
   final String? assignedBy;
   final String? createdBy;
   final DateTime createdAt;
   final DateTime? updatedAt;
+  final List<String> tags; // Tags/categories list
+  final String category; // Main category
+  final List<String> attachments; // Links/attachments
+  
+  // Completion tracking
+  final String? completionTime; // HH:mm:ss format
+  final String? completionDate; // yyyy-MM-dd format
+  final DateTime? completedAt;
+  final String? completedBy;
 
   Assignment({
     required this.id,
     required this.title,
     required this.description,
+    this.startDate,
     required this.dueDate,
     required this.priority,
     required this.status,
-    this.assignedTo,
+    this.assignedTo = const [],
     this.assignedBy,
     this.createdBy,
     required this.createdAt,
     this.updatedAt,
+    this.tags = const [],
+    this.category = '',
+    this.attachments = const [],
+    this.completionTime,
+    this.completionDate,
+    this.completedAt,
+    this.completedBy,
   });
 
   factory Assignment.fromJson(Map<String, dynamic> json) {
     try {
       print('🔍 Parsing Assignment from JSON: ${json['title'] ?? 'Unknown Title'}');
+      
+      // Parse startDate with Firestore timestamp support
+      DateTime? startDate;
+      final startDateData = json['startDate'];
+      if (startDateData != null) {
+        if (startDateData is Map<String, dynamic> && startDateData.containsKey('_seconds')) {
+          final seconds = startDateData['_seconds'] as int;
+          final nanoseconds = startDateData['_nanoseconds'] as int? ?? 0;
+          startDate = DateTime.fromMillisecondsSinceEpoch(
+            seconds * 1000 + (nanoseconds ~/ 1000000),
+            isUtc: false,
+          );
+        } else if (startDateData is String) {
+          final parsed = DateTime.tryParse(startDateData);
+          startDate = parsed?.toLocal();
+        }
+      }
       
       // Parse dueDate with Firestore timestamp support
       DateTime dueDate = DateTime.now();
@@ -40,10 +75,13 @@ class Assignment {
           final seconds = dueDateData['_seconds'] as int;
           final nanoseconds = dueDateData['_nanoseconds'] as int? ?? 0;
           dueDate = DateTime.fromMillisecondsSinceEpoch(
-            seconds * 1000 + (nanoseconds ~/ 1000000)
+            seconds * 1000 + (nanoseconds ~/ 1000000),
+            isUtc: false, // Keep as local time
           );
         } else if (dueDateData is String) {
-          dueDate = DateTime.tryParse(dueDateData) ?? DateTime.now();
+          // Parse as UTC then convert to local
+          final parsed = DateTime.tryParse(dueDateData);
+          dueDate = parsed != null ? parsed.toLocal() : DateTime.now();
         }
       }
       
@@ -79,14 +117,59 @@ class Assignment {
         }
       }
       
-      // Handle assignedTo - could be a list or string
-      String? assignedTo;
-      final assignedToData = json['assignedTo'];
-      if (assignedToData != null) {
-        if (assignedToData is List && assignedToData.isNotEmpty) {
-          assignedTo = assignedToData.first?.toString();
-        } else if (assignedToData is String) {
-          assignedTo = assignedToData;
+      // Handle assignedTo - prioritize assignedToNames if available, fallback to assignedTo IDs
+      List<String> assignedTo = [];
+      
+      // First try to get names from assignedToNames field (new format)
+      final assignedToNamesData = json['assignedToNames'];
+      if (assignedToNamesData != null && assignedToNamesData is List && assignedToNamesData.isNotEmpty) {
+        assignedTo = assignedToNamesData.map((e) => e.toString()).toList();
+      } else {
+        // Fallback to assignedTo field (could be IDs or names)
+        final assignedToData = json['assignedTo'];
+        if (assignedToData != null) {
+          if (assignedToData is List) {
+            assignedTo = assignedToData.map((e) => e.toString()).toList();
+          } else if (assignedToData is String) {
+            assignedTo = [assignedToData];
+          }
+        }
+      }
+      
+      // Handle tags - could be a list or string
+      List<String> tags = [];
+      final tagsData = json['tags'];
+      if (tagsData != null) {
+        if (tagsData is List) {
+          tags = tagsData.map((e) => e.toString()).toList();
+        } else if (tagsData is String) {
+          tags = [tagsData];
+        }
+      }
+      
+      // Handle attachments - could be a list or string
+      List<String> attachments = [];
+      final attachmentsData = json['attachments'];
+      if (attachmentsData != null) {
+        if (attachmentsData is List) {
+          attachments = attachmentsData.map((e) => e.toString()).toList();
+        } else if (attachmentsData is String) {
+          attachments = [attachmentsData];
+        }
+      }
+      
+      // Parse completedAt timestamp
+      DateTime? completedAt;
+      final completedAtData = json['completedAt'];
+      if (completedAtData != null) {
+        if (completedAtData is Map<String, dynamic> && completedAtData.containsKey('_seconds')) {
+          final seconds = completedAtData['_seconds'] as int;
+          final nanoseconds = completedAtData['_nanoseconds'] as int? ?? 0;
+          completedAt = DateTime.fromMillisecondsSinceEpoch(
+            seconds * 1000 + (nanoseconds ~/ 1000000),
+          );
+        } else if (completedAtData is String) {
+          completedAt = DateTime.tryParse(completedAtData);
         }
       }
       
@@ -94,6 +177,7 @@ class Assignment {
         id: json['id']?.toString() ?? '',
         title: json['title']?.toString() ?? '',
         description: json['description']?.toString() ?? '',
+        startDate: startDate,
         dueDate: dueDate,
         priority: json['priority']?.toString() ?? 'medium',
         status: json['status']?.toString() ?? 'pending',
@@ -102,6 +186,13 @@ class Assignment {
         createdBy: json['createdBy']?.toString(),
         createdAt: createdAt,
         updatedAt: updatedAt,
+        tags: tags,
+        category: json['category']?.toString() ?? '',
+        attachments: attachments,
+        completionTime: json['completionTime']?.toString(),
+        completionDate: json['completionDate']?.toString(),
+        completedAt: completedAt,
+        completedBy: json['completedBy']?.toString(),
       );
     } catch (e, stackTrace) {
       print('❌ Error parsing Assignment from JSON: $e');
@@ -113,6 +204,7 @@ class Assignment {
         id: json['id']?.toString() ?? 'error_${DateTime.now().millisecondsSinceEpoch}',
         title: json['title']?.toString() ?? 'Error parsing assignment',
         description: 'Failed to parse assignment data',
+        startDate: null,
         dueDate: DateTime.now(),
         priority: 'medium',
         status: 'pending',
@@ -126,6 +218,7 @@ class Assignment {
       'id': id,
       'title': title,
       'description': description,
+      'startDate': startDate?.toIso8601String(),
       'dueDate': dueDate.toIso8601String(),
       'priority': priority,
       'status': status,
@@ -133,6 +226,13 @@ class Assignment {
       'assignedBy': assignedBy,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
+      'tags': tags,
+      'category': category,
+      'attachments': attachments,
+      'completionTime': completionTime,
+      'completionDate': completionDate,
+      'completedAt': completedAt?.toIso8601String(),
+      'completedBy': completedBy,
     };
   }
 
@@ -143,10 +243,13 @@ class Assignment {
     DateTime? dueDate,
     String? priority,
     String? status,
-    String? assignedTo,
+    List<String>? assignedTo,
     String? assignedBy,
     DateTime? createdAt,
     DateTime? updatedAt,
+    List<String>? tags,
+    String? category,
+    List<String>? attachments,
   }) {
     return Assignment(
       id: id ?? this.id,
@@ -159,6 +262,9 @@ class Assignment {
       assignedBy: assignedBy ?? this.assignedBy,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      tags: tags ?? this.tags,
+      category: category ?? this.category,
+      attachments: attachments ?? this.attachments,
     );
   }
 
@@ -166,6 +272,11 @@ class Assignment {
   bool get isOverdue => DateTime.now().isAfter(dueDate) && status != 'completed';
   
   bool get isUpcoming => dueDate.isAfter(DateTime.now());
+  
+  String get formattedStartDate {
+    if (startDate == null) return '';
+    return '${startDate!.day}/${startDate!.month}/${startDate!.year}';
+  }
   
   String get formattedDueDate {
     return '${dueDate.day}/${dueDate.month}/${dueDate.year}';

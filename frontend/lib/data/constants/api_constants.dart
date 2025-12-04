@@ -43,10 +43,10 @@ class ApiConstants {
   static const int notFound = 404;
   static const int internalServerError = 500;
   
-  // Timeout durations (in seconds)
-  static const int connectTimeout = 30;
-  static const int receiveTimeout = 30;
-  static const int sendTimeout = 30;
+  // Timeout durations (in seconds) - Increased for mobile connections
+  static const int connectTimeout = 120; // 2 minutes for slow mobile
+  static const int receiveTimeout = 120;
+  static const int sendTimeout = 120;
   
   // Storage Keys
   static const String tokenKey = 'auth_token';
@@ -139,6 +139,7 @@ class DashboardEndpoints {
 class AssignmentEndpoints {
   const AssignmentEndpoints();
   
+  String get base => '/assignments';
   String get list => '/assignments';
   String get upcoming => '/assignments/upcoming';
   String get test => '/assignments/test';

@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/data/providers/auth_provider.dart';
+import 'package:frontend/widgets/user_notification_bell.dart';
 import 'dart:async';
 import '../../attendance/attendance_form_page.dart';
 
@@ -108,27 +109,29 @@ class _UserHeaderState extends State<UserHeader> {
   }
 
   String _getDisplayTime(String? savedTime, bool isClockOut) {
-    // Jika clock out, hanya tampilkan jika sudah clock in
-    if (isClockOut && !_hasClockIn) {
-      return '--:--:--';
-    }
-    
-    // Jika ada waktu tersimpan, tampilkan waktu tersimpan (berhenti)
+    // If there's a saved time (user has clocked in/out), show the saved static time
     if (savedTime != null) {
       return savedTime;
     }
     
-    // Jika clock in belum ada dan ini bukan clock out, tampilkan dash
+    // For Clock In: Show real-time clock if not yet clocked in
     if (!isClockOut && !_hasClockIn) {
-      return '--:--:--';
+      return _currentTime; // Live clock
     }
     
-    // Jika clock out belum ada tetapi clock in sudah ada, tampilkan dash
-    if (isClockOut && !_hasClockOut) {
-      return '--:--:--';
+    // For Clock Out: Only show after clock in
+    if (isClockOut) {
+      if (!_hasClockIn) {
+        // Don't show clock out if haven't clocked in
+        return '--:--:--';
+      }
+      // Show real-time clock if clocked in but not clocked out yet
+      if (!_hasClockOut) {
+        return _currentTime; // Live clock
+      }
     }
     
-    // Default case - seharusnya tidak pernah sampai sini
+    // Default case
     return '--:--:--';
   }
 
@@ -260,137 +263,107 @@ class _UserHeaderState extends State<UserHeader> {
     await prefs.setString('clock_out_${userId}_$today', time);
   }
 
-  // Function to clear all local clock data for debugging/reset purposes
-  Future<void> _clearAllLocalClockData() async {
-    final prefs = await SharedPreferences.getInstance();
-    final userId = prefs.getString('user_id') ?? '';
-    final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-    
-    // Clear today's data
-    await prefs.remove('clock_in_${userId}_$today');
-    await prefs.remove('clock_out_${userId}_$today');
-    
-    // Clear any other possible date formats that might exist
-    final allKeys = prefs.getKeys();
-    for (String key in allKeys) {
-      if (key.contains('clock_in_$userId') || key.contains('clock_out_$userId')) {
-        await prefs.remove(key);
-        print('Removed local storage key: $key');
-      }
-    }
-    
-    // Reset state
-    setState(() {
-      _clockInTime = null;
-      _clockOutTime = null;
-      _hasClockIn = false;
-      _hasClockOut = false;
-    });
-    
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Local clock data cleared successfully'),
-          backgroundColor: AppColors.primaryGreen,
-          duration: Duration(seconds: 2),
-        ),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
     final dateFormatter = DateFormat('EEEE, dd MMMM yyyy', 'id_ID');
     
-    return Container(
-      width: double.infinity,
-      height: 350, // Increased height to accommodate all content
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Color(0xFF4A90E2),
-            Color(0xFF357ABD),
-          ],
-        ),
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(20),
-          bottomRight: Radius.circular(20),
-        ),
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Date and Time Row
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Responsive sizing based on screen width
+        final isSmallScreen = constraints.maxWidth < 360;
+        final cardPadding = isSmallScreen ? 8.0 : 14.0;
+        final outerPadding = isSmallScreen ? 6.0 : 12.0;
+        final fontSize = isSmallScreen ? 9.0 : 12.0;
+        final timeFontSize = isSmallScreen ? 14.0 : 20.0;
+        final iconSize = isSmallScreen ? 10.0 : 12.0;
+        final buttonSpacing = isSmallScreen ? 6.0 : 12.0;
+        
+        return Container(
+          width: double.infinity,
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Color(0xFF4A90E2),
+                Color(0xFF357ABD),
+              ],
+            ),
+            borderRadius: BorderRadius.only(
+              bottomLeft: Radius.circular(20),
+              bottomRight: Radius.circular(20),
+            ),
+          ),
+          child: SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: EdgeInsets.all(outerPadding),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    '${dateFormatter.format(now)}\n$_currentTime',
-                    style: const TextStyle(
-                      color: AppColors.pureWhite,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w400,
+              // Date Row (removed time from top)
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      dateFormatter.format(now),
+                      style: const TextStyle(
+                        color: AppColors.pureWhite,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w400,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
                     ),
                   ),
+                  const SizedBox(width: 8),
                   Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Container(
-                        width: 32,
-                        height: 32,
-                        decoration: const BoxDecoration(
-                          color: AppColors.pureWhite,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.notifications_outlined,
-                          color: AppColors.pureWhite,
-                          size: 18,
-                        ),
-                      ),
+                      const UserNotificationBell(),
                       const SizedBox(width: 8),
-                      Container(
-                        width: 32,
-                        height: 32,
-                        decoration: const BoxDecoration(
-                          color: AppColors.pureWhite,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.person,
-                          color: Color(0xFF4A90E2),
-                          size: 18,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      // Debug button to clear local storage
-                      GestureDetector(
-                        onTap: _clearAllLocalClockData,
-                        child: Container(
-                          width: 32,
-                          height: 32,
-                          decoration: const BoxDecoration(
-                            color: Colors.red,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.refresh,
-                            color: AppColors.pureWhite,
-                            size: 18,
-                          ),
-                        ),
+                      Consumer<AuthProvider>(
+                        builder: (context, authProvider, _) {
+                          final currentUser = authProvider.currentUser;
+                          final hasPhoto = currentUser?.profilePicture != null && 
+                                          currentUser!.profilePicture!.isNotEmpty;
+                          
+                          return GestureDetector(
+                            onTap: () {
+                              Navigator.pushNamed(context, '/user/profile');
+                            },
+                            child: Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: AppColors.pureWhite,
+                                shape: BoxShape.circle,
+                                image: hasPhoto
+                                    ? DecorationImage(
+                                        image: NetworkImage(currentUser.profilePicture!),
+                                        fit: BoxFit.cover,
+                                      )
+                                    : null,
+                              ),
+                              child: hasPhoto
+                                  ? null
+                                  : const Icon(
+                                      Icons.person,
+                                      color: Color(0xFF4A90E2),
+                                      size: 18,
+                                    ),
+                            ),
+                          );
+                        },
                       ),
                     ],
                   ),
                 ],
               ),
               
-              const SizedBox(height: 20),
+              SizedBox(height: isSmallScreen ? 12.0 : 16.0),
               
               // Greeting - Dynamic berdasarkan waktu dan user login
               Consumer<AuthProvider>(
@@ -403,21 +376,24 @@ class _UserHeaderState extends State<UserHeader> {
                   
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
                         '$greeting, $firstName',
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: AppColors.pureWhite,
-                          fontSize: 20,
+                          fontSize: isSmallScreen ? 16.0 : 18.0,
                           fontWeight: FontWeight.w600,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 4),
-                      const Text(
+                      SizedBox(height: isSmallScreen ? 2.0 : 4.0),
+                      Text(
                         'Have a Great Day!',
                         style: TextStyle(
                           color: AppColors.pureWhite,
-                          fontSize: 14,
+                          fontSize: isSmallScreen ? 12.0 : 14.0,
                           fontWeight: FontWeight.w400,
                         ),
                       ),
@@ -426,12 +402,12 @@ class _UserHeaderState extends State<UserHeader> {
                 },
               ),
               
-              const SizedBox(height: 25),
+              SizedBox(height: isSmallScreen ? 12.0 : 16.0),
               
               // Clock Card positioned within the blue background
               Container(
-                margin: const EdgeInsets.symmetric(horizontal: 0),
-                padding: const EdgeInsets.all(18),
+                width: double.infinity,
+                padding: EdgeInsets.all(cardPadding),
                 decoration: BoxDecoration(
                   color: AppColors.pureWhite,
                   borderRadius: BorderRadius.circular(16),
@@ -444,149 +420,176 @@ class _UserHeaderState extends State<UserHeader> {
                   ],
                 ),
                 child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     // Clock In/Out Row
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              const Text(
-                                'Clock In',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                  color: AppColors.black87,
+                    IntrinsicHeight(
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                const Text(
+                                  'Clock In',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                    color: AppColors.black87,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                _getDisplayTime(_clockInTime, false),
-                                style: TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  color: _hasClockIn ? AppColors.primaryGreen : AppColors.black,
+                                const SizedBox(height: 4),
+                                FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text(
+                                    _getDisplayTime(_clockInTime, false),
+                                    style: TextStyle(
+                                      fontSize: timeFontSize,
+                                      fontWeight: FontWeight.bold,
+                                      color: _hasClockIn ? AppColors.primaryGreen : AppColors.black,
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                        Container(
-                          width: 1,
-                          height: 60,
-                          color: AppColors.neutral300,
-                        ),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              const Text(
-                                'Clock out',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                  color: AppColors.black87,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                _getDisplayTime(_clockOutTime, true),
-                                style: TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  color: _hasClockOut ? AppColors.errorRed : AppColors.black,
-                                ),
-                              ),
-                            ],
+                          Container(
+                            width: 1,
+                            color: AppColors.neutral300,
+                            margin: const EdgeInsets.symmetric(horizontal: 8),
                           ),
-                        ),
-                      ],
+                          Expanded(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                const Text(
+                                  'Clock out',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                    color: AppColors.black87,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text(
+                                    _getDisplayTime(_clockOutTime, true),
+                                    style: TextStyle(
+                                      fontSize: timeFontSize,
+                                      fontWeight: FontWeight.bold,
+                                      color: _hasClockOut ? AppColors.errorRed : AppColors.black,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                     
-                    const SizedBox(height: 18),
+                    SizedBox(height: isSmallScreen ? 8.0 : 12.0),
                     
                     // Buttons Row
                     Row(
                       children: [
                         Expanded(
-                          child: Container(
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: AppColors.primaryGreen,
-                              borderRadius: BorderRadius.circular(8),
+                          child: ElevatedButton(
+                            onPressed: _hasClockIn ? null : () => _navigateToAttendanceForm('clock_in'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: _hasClockIn ? Colors.grey : AppColors.primaryGreen,
+                              elevation: 0,
+                              padding: EdgeInsets.symmetric(
+                                vertical: isSmallScreen ? 6.0 : 8.0, 
+                                horizontal: isSmallScreen ? 4.0 : 8.0,
+                              ),
+                              minimumSize: Size(0, isSmallScreen ? 28.0 : 36.0),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
                             ),
-                            child: ElevatedButton.icon(
-                              onPressed: _hasClockIn ? null : () => _navigateToAttendanceForm('clock_in'),
-                              icon: Container(
-                                padding: const EdgeInsets.all(3),
-                                decoration: const BoxDecoration(
-                                  color: AppColors.pureWhite,
-                                  shape: BoxShape.circle,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Container(
+                                  padding: EdgeInsets.all(isSmallScreen ? 2.0 : 3.0),
+                                  decoration: const BoxDecoration(
+                                    color: AppColors.pureWhite,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.login,
+                                    color: AppColors.primaryGreen,
+                                    size: iconSize,
+                                  ),
                                 ),
-                                child: const Icon(
-                                  Icons.login,
-                                  color: AppColors.primaryGreen,
-                                  size: 14,
+                                SizedBox(width: isSmallScreen ? 4.0 : 6.0),
+                                Flexible(
+                                  child: Text(
+                                    _hasClockIn ? 'Clocked In' : 'In',
+                                    style: TextStyle(
+                                      color: AppColors.pureWhite,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: fontSize,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
+                                  ),
                                 ),
-                              ),
-                              label: Text(
-                                _hasClockIn ? 'Clocked In' : 'In',
-                                style: const TextStyle(
-                                  color: AppColors.pureWhite,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 14,
-                                ),
-                              ),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: _hasClockIn ? Colors.grey : AppColors.primaryGreen,
-                                elevation: 0,
-                                padding: const EdgeInsets.symmetric(vertical: 8),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
+                              ],
                             ),
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        SizedBox(width: buttonSpacing),
                         Expanded(
-                          child: Container(
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: AppColors.errorRed,
-                              borderRadius: BorderRadius.circular(8),
+                          child: ElevatedButton(
+                            onPressed: (!_hasClockIn || _hasClockOut) ? null : () => _navigateToAttendanceForm('clock_out'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: _hasClockOut ? Colors.grey : AppColors.errorRed,
+                              elevation: 0,
+                              padding: EdgeInsets.symmetric(
+                                vertical: isSmallScreen ? 6.0 : 8.0, 
+                                horizontal: isSmallScreen ? 4.0 : 8.0,
+                              ),
+                              minimumSize: Size(0, isSmallScreen ? 28.0 : 36.0),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
                             ),
-                            child: ElevatedButton.icon(
-                              onPressed: (!_hasClockIn || _hasClockOut) ? null : () => _navigateToAttendanceForm('clock_out'),
-                              icon: Container(
-                                padding: const EdgeInsets.all(3),
-                                decoration: const BoxDecoration(
-                                  color: AppColors.pureWhite,
-                                  shape: BoxShape.circle,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Container(
+                                  padding: EdgeInsets.all(isSmallScreen ? 2.0 : 3.0),
+                                  decoration: const BoxDecoration(
+                                    color: AppColors.pureWhite,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.logout,
+                                    color: AppColors.errorRed,
+                                    size: iconSize,
+                                  ),
                                 ),
-                                child: const Icon(
-                                  Icons.logout,
-                                  color: AppColors.errorRed,
-                                  size: 14,
+                                SizedBox(width: isSmallScreen ? 4.0 : 6.0),
+                                Flexible(
+                                  child: Text(
+                                    _hasClockOut ? 'Clocked Out' : 'Out',
+                                    style: TextStyle(
+                                      color: AppColors.pureWhite,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: fontSize,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
+                                  ),
                                 ),
-                              ),
-                              label: Text(
-                                _hasClockOut ? 'Clocked Out' : 'Out',
-                                style: const TextStyle(
-                                  color: AppColors.pureWhite,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 14,
-                                ),
-                              ),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: _hasClockOut ? Colors.grey : AppColors.errorRed,
-                                elevation: 0,
-                                padding: const EdgeInsets.symmetric(vertical: 8),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
+                              ],
                             ),
                           ),
                         ),
@@ -595,10 +598,12 @@ class _UserHeaderState extends State<UserHeader> {
                   ],
                 ),
               ),
-            ],
+                ],
+              ),
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

@@ -161,7 +161,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
               const SizedBox(height: 40),
 
               /// Password Field
-              Align(
+              const Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
                   "Password",
@@ -200,7 +200,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                     const SizedBox(height: 20),
 
                     /// Confirm Password Field
-                    Align(
+                    const Align(
                       alignment: Alignment.centerLeft,
                       child: Text(
                         "Confirm Password",

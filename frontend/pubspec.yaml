@@ -52,10 +52,13 @@ dependencies:
   
   # Platform-aware packages
   image_picker: ^1.0.7
+  flutter_image_compress: ^2.1.0
   file_picker: ^8.0.0+1
   geolocator: ^10.1.0
   geocoding: ^3.0.0
   permission_handler: ^11.3.1
+  flutter_local_notifications: ^17.2.3
+  timezone: ^0.9.4
   
   # Charts and UI
   fl_chart: ^0.68.0
@@ -70,6 +73,8 @@ dependencies:
   excel: ^4.0.2
   file_saver: ^0.2.9
   open_file: ^3.3.2
+  archive: ^3.4.10
+  universal_html: ^2.2.4
   
   # Maps - Leaflet for web, Google Maps for mobile
   flutter_map: ^6.1.0  # Leaflet-based mapping
@@ -83,6 +88,14 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints:
+  flutter_launcher_icons: ^0.14.4
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/Icon/app_icon.png"
+  adaptive_icon_background: "#8B2332"
+  adaptive_icon_foreground: "assets/Icon/app_icon.png"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

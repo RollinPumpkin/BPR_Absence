@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'core/no_animations.dart';
 import 'core/services/firestore_letter_service.dart';
+import 'core/services/data_archive_service.dart';
 
 import 'data/providers/auth_provider.dart';
 import 'data/providers/attendance_provider.dart';
@@ -27,6 +28,7 @@ import 'modules/admin/attendance/attendance_page.dart';
 import 'modules/admin/assignment/assignment_page.dart';
 import 'modules/admin/letter/letter_page.dart';
 import 'modules/admin/profile/profile_page.dart';
+import 'modules/admin/archive/data_archive_page.dart';
 
 import 'modules/user/dashboard/dashboard_page.dart' as user_dash;
 import 'modules/user/attendance/attendance_page.dart' as user_att;
@@ -86,40 +88,105 @@ Future<void> requestCameraPermissionOnStartup() async {
 }
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Catch all errors in release mode
+  FlutterError.onError = (FlutterErrorDetails details) {
+    if (kDebugMode) {
+      FlutterError.dumpErrorToConsole(details);
+    } else {
+      // In release mode, just print to console
+      print('Flutter Error: ${details.exception}');
+      print('Stack: ${details.stack}');
+    }
+  };
+  
   try {
     await initializeDateFormatting('id_ID', null);
-  } catch (_) {}
+  } catch (e) {
+    print('Date formatting error: $e');
+  }
   
-  // Initialize Firebase
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  await FirestoreLetterService.initialize();
+  // Initialize Firebase with error handling
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    print('✅ Firebase initialized successfully');
+  } catch (e) {
+    print('❌ Firebase initialization error: $e');
+    // Continue anyway - app might work with API only
+  }
+  
+  try {
+    await FirestoreLetterService.initialize();
+    print('✅ Firestore Letter Service initialized');
+  } catch (e) {
+    print('❌ Firestore Letter Service error: $e');
+  }
   
   // Initialize API Service to load saved token
-  await ApiService.initialize();
+  try {
+    await ApiService.initialize();
+    print('✅ API Service initialized');
+  } catch (e) {
+    print('❌ API Service initialization error: $e');
+  }
   
   // Request camera permission on app startup (for mobile platforms)
-  await requestCameraPermissionOnStartup();
+  try {
+    await requestCameraPermissionOnStartup();
+  } catch (e) {
+    print('❌ Camera permission error: $e');
+  }
   
-  runApp(const MyApp());
+  // Initialize and start auto-archive service
+  try {
+    final archiveService = DataArchiveService();
+    archiveService.startAutoArchive();
+    print('✅ Auto-archive service started (runs daily at midnight)');
+  } catch (e) {
+    print('❌ Auto-archive service error: $e');
+  }
+  
+  runApp(MyApp()); // Remove const to allow StatefulWidget to work
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class MyApp extends StatefulWidget {
+  const MyApp({super.key}); // Remove const constructor
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  // Create providers once and reuse
+  final AuthProvider _authProvider = AuthProvider();
+  final AttendanceProvider _attendanceProvider = AttendanceProvider();
+  final UserProvider _userProvider = UserProvider();
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize auth provider once during app startup
+    // Do NOT call initialize() here - it will logout after successful login!
+    // The initialize() should only be called on actual app startup, not after navigation
+  }
+
+  @override
+  void dispose() {
+    _authProvider.dispose();
+    _attendanceProvider.dispose();
+    _userProvider.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(
-          create: (_) {
-            final authProvider = AuthProvider();
-            authProvider.initialize(); // Initialize auth provider
-            return authProvider;
-          }
-        ),
-        ChangeNotifierProvider(create: (_) => AttendanceProvider()),
-        ChangeNotifierProvider(create: (_) => UserProvider()),
+        ChangeNotifierProvider.value(value: _authProvider),
+        ChangeNotifierProvider.value(value: _attendanceProvider),
+        ChangeNotifierProvider.value(value: _userProvider),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
@@ -131,54 +198,55 @@ class MyApp extends StatelessWidget {
         theme: ThemeData(
           useMaterial3: true,
           fontFamily: 'Roboto',
+          splashFactory: NoSplash.splashFactory,
+          highlightColor: Colors.transparent,
+          splashColor: Colors.transparent,
+          hoverColor: Colors.transparent,
           pageTransitionsTheme: const PageTransitionsTheme(
             builders: {
               TargetPlatform.android: NoTransitionsBuilder(),
               TargetPlatform.iOS: NoTransitionsBuilder(),
-            TargetPlatform.macOS: NoTransitionsBuilder(),
-            TargetPlatform.linux: NoTransitionsBuilder(),
-            TargetPlatform.windows: NoTransitionsBuilder(),
-            TargetPlatform.fuchsia: NoTransitionsBuilder(),
-          },
+              TargetPlatform.macOS: NoTransitionsBuilder(),
+              TargetPlatform.linux: NoTransitionsBuilder(),
+              TargetPlatform.windows: NoTransitionsBuilder(),
+              TargetPlatform.fuchsia: NoTransitionsBuilder(),
+            },
+          ),
         ),
-        splashFactory: NoSplash.splashFactory,
-        highlightColor: Colors.transparent,
-        splashColor: Colors.transparent,
-        hoverColor: Colors.transparent,
-      ),
-      initialRoute: '/',
-      routes: {
-        '/': (_) => const SplashPage(),
-        '/login': (_) => const LoginPage(),
-        '/forgot-password': (_) => const ForgotPassPage(),
-        '/forgot-password/email': (_) => const EmailPage(),
-        '/forgot-password/email/Expired-link': (_) => const LinkExpiredPage(),
-        '/forgot-password/reset-password': (_) => const ResetPasswordPage(),
-        '/reset-password': (context) {
-          final uri = Uri.parse(ModalRoute.of(context)!.settings.name ?? '');
-          final token = uri.queryParameters['token'];
-          final email = uri.queryParameters['email'];
-          return ResetPasswordPage(token: token, email: email);
+        initialRoute: '/',
+        routes: {
+          '/': (_) => const SplashPage(),
+          '/login': (_) => const LoginPage(),
+          '/forgot-password': (_) => const ForgotPassPage(),
+          '/forgot-password/email': (_) => const EmailPage(),
+          '/forgot-password/email/Expired-link': (_) => const LinkExpiredPage(),
+          '/forgot-password/reset-password': (_) => const ResetPasswordPage(),
+          '/reset-password': (context) {
+            final uri = Uri.parse(ModalRoute.of(context)!.settings.name ?? '');
+            final token = uri.queryParameters['token'];
+            final email = uri.queryParameters['email'];
+            return ResetPasswordPage(token: token, email: email);
+          },
+
+          '/admin/dashboard': (_) => const AdminDashboardPage(),
+          '/admin/employees': (_) => const EmployeePage(),
+          '/admin/employees/test': (_) => const TestEmployeeFetchPage(),
+          '/admin/employees/unit-test': (_) => const UserFetchUnitTest(),
+          '/admin/employees/sync': (_) => const EmployeeSyncPage(),
+          '/admin/report': (_) => const ReportPage(),
+          '/admin/attendance': (_) => const AttendancePage(),
+          '/admin/assignment': (_) => const AssignmentPage(),
+          '/admin/letter': (_) => const LetterPage(),
+          '/admin/profile': (_) => const ProfilePage(),
+          '/admin/archive': (_) => const DataArchiveManagementPage(),
+
+          '/user/dashboard': (_) => const user_dash.UserDashboardPage(),
+          '/user/attendance': (_) => const user_att.UserAttendancePage(),
+          '/user/attendance/form': (_) => const AttendanceFormPage(type: 'Clock In'),
+          '/user/assignment': (_) => const user_assign.UserAssignmentPage(),
+          '/user/letter': (_) => const user_letters.UserLettersPage(),
+          '/user/profile': (_) => const user_profile.UserProfilePage(),
         },
-
-        '/admin/dashboard': (_) => const AdminDashboardPage(),
-        '/admin/employees': (_) => const EmployeePage(),
-        '/admin/employees/test': (_) => const TestEmployeeFetchPage(),
-        '/admin/employees/unit-test': (_) => const UserFetchUnitTest(),
-        '/admin/employees/sync': (_) => const EmployeeSyncPage(),
-        '/admin/report': (_) => const ReportPage(),
-        '/admin/attendance': (_) => const AttendancePage(),
-        '/admin/assignment': (_) => const AssignmentPage(),
-        '/admin/letter': (_) => const LetterPage(),
-        '/admin/profile': (_) => const ProfilePage(),
-
-        '/user/dashboard': (_) => const user_dash.UserDashboardPage(),
-        '/user/attendance': (_) => const user_att.UserAttendancePage(),
-        '/user/attendance/form': (_) => const AttendanceFormPage(type: 'Clock In'),
-        '/user/assignment': (_) => const user_assign.UserAssignmentPage(),
-        '/user/letter': (_) => const user_letters.UserLettersPage(),
-        '/user/profile': (_) => const user_profile.UserProfilePage(),
-      },
       ),
     );
   }

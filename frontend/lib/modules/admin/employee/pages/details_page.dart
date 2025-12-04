@@ -5,7 +5,6 @@ import 'package:frontend/modules/admin/employee/models/employee.dart';
 import 'package:frontend/modules/admin/employee/pages/edit_page.dart';
 import 'package:frontend/data/services/employee_service.dart';
 import 'package:frontend/data/providers/user_provider.dart';
-import 'package:intl/intl.dart';
 
 class DetailsPage extends StatelessWidget {
   final Employee employee;
@@ -206,6 +205,30 @@ class DetailsPage extends StatelessWidget {
                   _DetailItem(label: 'Division', value: _val(employee.division)),
                   const _DividerLine(),
                   _DetailItem(label: 'Last Education', value: _val(employee.lastEducation)),
+
+                  const SizedBox(height: 8),
+
+                  const _SectionDivider(title: 'Work Schedule'),
+                  _DetailItem(
+                    label: 'Work Start Time',
+                    value: employee.workStartTime ?? '08:00',
+                    icon: Icons.access_time,
+                    iconColor: AppColors.accentBlue,
+                  ),
+                  const _DividerLine(),
+                  _DetailItem(
+                    label: 'Work End Time',
+                    value: employee.workEndTime ?? '17:00',
+                    icon: Icons.access_time,
+                    iconColor: AppColors.accentBlue,
+                  ),
+                  const _DividerLine(),
+                  _DetailItem(
+                    label: 'Late Threshold',
+                    value: '${employee.lateThresholdMinutes ?? 15} minutes',
+                    icon: Icons.timer,
+                    iconColor: AppColors.primaryYellow,
+                  ),
 
                   const SizedBox(height: 8),
                   const _SectionDivider(title: 'Other'),

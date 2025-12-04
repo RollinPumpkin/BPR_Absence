@@ -10,6 +10,9 @@ import 'package:frontend/data/models/assignment.dart';
 import 'package:frontend/data/models/attendance.dart';
 import 'package:frontend/modules/admin/letter/pages/letter_acceptance_page.dart';
 import 'package:frontend/utils/diagnostic_service.dart';
+import 'package:frontend/core/services/realtime_service.dart';
+import 'package:frontend/widgets/notification_bell.dart';
+import 'dart:async';
 
 
 import 'widgets/header.dart';
@@ -31,6 +34,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   final LetterService _letterService = LetterService();
   final AssignmentService _assignmentService = AssignmentService();
   final AttendanceService _attendanceService = AttendanceService();
+  final RealtimeService _realtimeService = RealtimeService();
   
   List<Letter> _pendingLetters = [];
   bool _isLoadingLetters = true;
@@ -48,9 +52,17 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   bool _showAllAssignments = false;
   bool _showAllAttendance = false;
 
+  // Stream subscriptions for realtime data
+  StreamSubscription? _lettersSubscription;
+  StreamSubscription? _assignmentsSubscription;
+  StreamSubscription? _attendanceSubscription;
+
   @override
   void initState() {
     super.initState();
+    // Initialize realtime service and start listeners
+    _initializeRealtimeData();
+    
     // Load data after widget is built to prevent crashes
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -67,6 +79,46 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     });
   }
 
+  Future<void> _initializeRealtimeData() async {
+    await _realtimeService.initialize();
+    
+    // Start listeners for admin dashboard
+    _realtimeService.startLettersListener(status: 'pending');
+    _realtimeService.startAssignmentsListener();
+    _realtimeService.startAttendanceListener();
+    
+    // Subscribe to realtime streams
+    _lettersSubscription = _realtimeService.lettersStream.listen((letters) {
+      if (mounted) {
+        print('🔄 Admin Dashboard: Letters updated realtime (${letters.length} records)');
+        // Optionally reload or update UI based on realtime data
+      }
+    });
+
+    _assignmentsSubscription = _realtimeService.assignmentsStream.listen((assignments) {
+      if (mounted) {
+        print('🔄 Admin Dashboard: Assignments updated realtime (${assignments.length} records)');
+      }
+    });
+
+    _attendanceSubscription = _realtimeService.attendanceStream.listen((attendance) {
+      if (mounted) {
+        print('🔄 Admin Dashboard: Attendance updated realtime (${attendance.length} records)');
+      }
+    });
+
+    print('🔄 Admin Dashboard: Realtime listeners started');
+  }
+
+  @override
+  void dispose() {
+    _lettersSubscription?.cancel();
+    _assignmentsSubscription?.cancel();
+    _attendanceSubscription?.cancel();
+    _realtimeService.stopAllListeners();
+    super.dispose();
+  }
+
   Future<void> _loadPendingLetters() async {
     print('🔄 Dashboard: Starting to load pending letters...');
     if (mounted) {
@@ -78,6 +130,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
 
     try {
       print('🔍 Dashboard: Fetching pending letters...');
+
       final pendingResponse = await _letterService.getPendingLetters(limit: 50);
       
       print('🔍 Dashboard: Fetching received letters...');
@@ -372,7 +425,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       children: [
         // Letters list - make it scrollable when showing all
         if (_showAllLetters)
-          Container(
+          SizedBox(
             height: 300, // Fixed height for scrollable area
             child: ListView.builder(
               physics: const BouncingScrollPhysics(),
@@ -410,7 +463,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               stageText: 'Waiting Approval',
               onViewTap: () => _showLetterQuickActions(letter),
             );
-          }).toList(),
+          }),
         
         // Show more/less button if there are more than 2 letters
         if (_pendingLetters.length > 2)
@@ -504,9 +557,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            const Text(
               'Letter Actions',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
@@ -695,7 +748,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       children: [
         // Assignments list - make it scrollable when showing all
         if (_showAllAssignments)
-          Container(
+          SizedBox(
             height: 300, // Fixed height for scrollable area
             child: ListView.builder(
               physics: const BouncingScrollPhysics(),
@@ -723,7 +776,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               note: assignment.priority.toUpperCase(),
               description: assignment.description,
             );
-          }).toList(),
+          }),
         
         // Show more/less button if there are more than 2 assignments
         if (_assignments.length > 2)
@@ -804,7 +857,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           title: "Attendance Overview",
           chart: AttendanceChart(
             data: chartData,
-            labels: ['S', 'S', 'R', 'K', 'J', 'S', 'M'],
+            labels: const ['S', 'S', 'R', 'K', 'J', 'S', 'M'],
             barWidth: 16,
             aspectRatio: 1.9,
           ),
@@ -819,7 +872,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         // Individual attendance records (if showing all)
         if (_showAllAttendance && _attendanceRecords.isNotEmpty) ...[
           const SizedBox(height: 8),
-          Container(
+          SizedBox(
             height: 300, // Increased height for consistency with other sections
             child: ListView.builder(
               physics: const BouncingScrollPhysics(),

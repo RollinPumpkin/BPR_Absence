@@ -16,7 +16,7 @@ class EditLetterTypePopup extends StatelessWidget {
     final nameController = TextEditingController(text: initialName);
     final contentController = TextEditingController(text: initialContent);
 
-    InputDecoration _dec(String label) => InputDecoration(
+    InputDecoration dec(String label) => InputDecoration(
           labelText: label,
           filled: true,
           fillColor: AppColors.pureWhite,
@@ -77,13 +77,13 @@ class EditLetterTypePopup extends StatelessWidget {
               // Fields (isi tetap sama)
               TextField(
                 controller: nameController,
-                decoration: _dec('Letter Type Name'),
+                decoration: dec('Letter Type Name'),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: contentController,
                 maxLines: 3,
-                decoration: _dec('Contents'),
+                decoration: dec('Contents'),
               ),
 
               const SizedBox(height: 16),

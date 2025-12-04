@@ -106,6 +106,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                         ProfileInfoCard(
                           user: _currentUser!,
                           onEditPressed: _navigateToEditProfile,
+                          onPhotoUpdated: _loadUserData,
                         ),
                         
                         const SizedBox(height: 16),
@@ -153,17 +154,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
             title: 'Change Password',
             subtitle: 'Update your password',
             onTap: _showChangePasswordDialog,
-          ),
-          
-          const Divider(height: 32),
-          
-          _buildSettingsItem(
-            icon: Icons.language,
-            title: 'Language',
-            subtitle: 'Bahasa Indonesia',
-            onTap: () {
-              // Language settings
-            },
           ),
           
           const Divider(height: 32),

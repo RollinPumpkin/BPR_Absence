@@ -145,22 +145,36 @@ router.post('/register', validateRegister, async (req, res) => {
 
 // Login user
 router.post('/login', validateLogin, async (req, res) => {
+  const startTime = Date.now();
+  console.log('🔐 LOGIN REQUEST received from:', req.ip || req.connection.remoteAddress);
+  
   try {
-    const { email, password } = req.body; // email field can contain email, phone, or employee_id
+    let { email, password } = req.body; // email field can contain email, phone, or employee_id
     const { getAuth } = require('../config/database');
     const auth = getAuth();
+
+    // Convert email to lowercase for case-insensitive matching
+    email = email.trim().toLowerCase();
+    console.log('🔍 Looking up user:', email);
 
     // Find user in Firestore by email, phone, or employee_id
     const usersRef = db.collection('users');
     let userQuery;
     let userEmail = email; // Store the actual email for Firebase Auth
     
-    // Try to find user by email first
+    console.log('📊 Querying Firestore by email...');
+    const queryStart = Date.now();
+    
+    // Try to find user by email first (case-insensitive)
     userQuery = await usersRef.where('email', '==', email).get();
+    console.log(`📊 Email query took ${Date.now() - queryStart}ms, found: ${!userQuery.empty}`);
     
     // If not found by email, try by phone
     if (userQuery.empty) {
+      console.log('📊 Querying Firestore by phone...');
+      const phoneQueryStart = Date.now();
       userQuery = await usersRef.where('phone', '==', email).get();
+      console.log(`📊 Phone query took ${Date.now() - phoneQueryStart}ms, found: ${!userQuery.empty}`);
       if (!userQuery.empty) {
         userEmail = userQuery.docs[0].data().email; // Get actual email for Firebase Auth
       }
@@ -168,13 +182,17 @@ router.post('/login', validateLogin, async (req, res) => {
     
     // If not found by phone, try by employee_id
     if (userQuery.empty) {
+      console.log('📊 Querying Firestore by employee_id...');
+      const empIdQueryStart = Date.now();
       userQuery = await usersRef.where('employee_id', '==', email).get();
+      console.log(`📊 Employee ID query took ${Date.now() - empIdQueryStart}ms, found: ${!userQuery.empty}`);
       if (!userQuery.empty) {
         userEmail = userQuery.docs[0].data().email; // Get actual email for Firebase Auth
       }
     }
     
     if (userQuery.empty) {
+      console.log('❌ User not found:', email);
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials (user not found)'
@@ -183,9 +201,11 @@ router.post('/login', validateLogin, async (req, res) => {
     
     const userDoc = userQuery.docs[0];
     const user = { id: userDoc.id, ...userDoc.data() };
+    console.log('✅ User found:', user.email, 'Role:', user.role);
 
     // Check if user is active
     if (!user.is_active) {
+      console.log('❌ User account disabled:', user.email);
       return res.status(401).json({
         success: false,
         message: 'Account is disabled'
@@ -194,10 +214,14 @@ router.post('/login', validateLogin, async (req, res) => {
 
     // For development/testing: verify password directly with bcrypt
     // TODO: Replace with Firebase Auth in production
+    console.log('🔒 Verifying password...');
     const bcrypt = require('bcryptjs');
+    const passwordStart = Date.now();
     const isValidPassword = await bcrypt.compare(password, user.password);
+    console.log(`🔒 Password verification took ${Date.now() - passwordStart}ms, valid: ${isValidPassword}`);
     
     if (!isValidPassword) {
+      console.log('❌ Invalid password for:', user.email);
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials (password incorrect)'
@@ -205,6 +229,7 @@ router.post('/login', validateLogin, async (req, res) => {
     }
 
     console.log(`✅ Login successful for: ${userEmail}`);
+    console.log(`⏱️ Total login time: ${Date.now() - startTime}ms`);
 
     // Generate JWT token for your app
     const token = jwt.sign(
@@ -229,7 +254,7 @@ router.post('/login', validateLogin, async (req, res) => {
       }
     };
 
-    console.log(`📤 Sending response:`, JSON.stringify(response, null, 2));
+    console.log(`📤 Sending response for: ${user.email}`);
     
     // Add explicit headers for Flutter
     res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
@@ -238,7 +263,8 @@ router.post('/login', validateLogin, async (req, res) => {
     
     res.status(200).json(response);
   } catch (error) {
-    console.error('Login error:', error);
+    console.error('❌ Login error:', error);
+    console.error('⏱️ Failed after:', Date.now() - startTime, 'ms');
     res.status(500).json({
       success: false,
       message: 'Login failed',
