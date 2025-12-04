@@ -7,10 +7,8 @@ import 'lib/data/services/employee_service.dart';
 import 'lib/data/services/api_service.dart';
 
 /// Script untuk test fetch data dari database ke frontend
-/// 
 /// Cara menjalankan:
 /// flutter run test_data_fetch.dart
-/// 
 /// ATAU dari terminal:
 /// dart run test_data_fetch.dart
 

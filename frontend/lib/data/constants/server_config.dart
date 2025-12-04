@@ -32,23 +32,7 @@ class ServerConfig {
   // DYNAMIC SERVER URL (Smart Routing)
   // ============================================
   static String get firebaseServerUrl {
-    // 1. NGROK MODE: Untuk development via internet (data seluler)
-    if (useNgrok) {
-      final protocol = ngrokUseHttps ? 'https' : 'http';
-      print('🌐 Using NGROK: $protocol://$ngrokUrl');
-      return '$protocol://$ngrokUrl';
-    }
-    
-    // 2. PRODUCTION MODE: Untuk app yang sudah di-deploy
-    // Cek apakah sudah dalam mode release build
-    if (kReleaseMode || useHttpsInProduction) {
-      final protocol = useHttpsInProduction ? 'https' : 'http';
-      print('🚀 Using PRODUCTION: $protocol://$productionServerHost');
-      return '$protocol://$productionServerHost';
-    }
-    
-    // 3. DEVELOPMENT MODE: Localhost atau Local WiFi IP
-    // Desktop/Web: gunakan localhost
+    // FORCE LOCALHOST FOR DEVELOPMENT (Production API unavailable)
     if (kIsWeb || Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
       print('💻 Using LOCALHOST: http://$firebaseServerHost:$firebaseServerPort');
       return 'http://$firebaseServerHost:$firebaseServerPort';
