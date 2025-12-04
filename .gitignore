@@ -47,4 +47,5 @@ target/
 
 # Temporary files
 *.tmp
-*.temp
+*.tempbackend/*firebase-adminsdk*.json 
+backend/*.zip 
