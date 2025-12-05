@@ -334,11 +334,11 @@ class UserProvider with ChangeNotifier {
   // Fetch and update statistics from API
   Future<void> fetchStatistics() async {
     try {
-      print('📊 UserProvider: Fetching statistics from /api/debug/stats...');
+      print('📊 UserProvider: Fetching statistics from /api/users/stats...');
       
       // Use the same stats endpoint as dashboard for consistency
       final response = await _apiService.get<Map<String, dynamic>>(
-        '/debug/stats',
+        '/users/stats',
         fromJson: (json) => json as Map<String, dynamic>,
       );
       

@@ -22,6 +22,7 @@ import 'widgets/letter/letter_card.dart';
 import 'widgets/assignment/assignment_card.dart';
 import 'widgets/attendance/attendance_card.dart';
 import 'widgets/attendance/attendance_chart.dart';
+import 'package:frontend/modules/admin/shifts/widgets/shift_management_menu.dart';
 
 class AdminDashboardPage extends StatefulWidget {
   const AdminDashboardPage({super.key});
@@ -1018,6 +1019,13 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                     ),
                   ],
                 ),
+              ),
+              const SizedBox(height: 20),
+
+              // Shift Management Section
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: ShiftManagementMenu(),
               ),
               const SizedBox(height: 20),
 

@@ -1696,6 +1696,41 @@ class _AttendanceFormPageState extends State<AttendanceFormPage> {
               ),
             ),
 
+            // Coordinates display
+            if (latitude != null && longitude != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryBlue.withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.primaryBlue.withValues(alpha: 0.2)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.location_on,
+                        size: 18,
+                        color: AppColors.primaryBlue,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Lat: ${latitude!.toStringAsFixed(6)}, Long: ${longitude!.toStringAsFixed(6)}',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.primaryBlue,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
             const SizedBox(height: 20),
 
             // Map View
@@ -1843,7 +1878,18 @@ class DummyAttendanceService {
       };
 
       if (type == 'Clock In') {
-        // Clock In
+        // Clock In - Determine status based on time
+        final checkInTime = TimeOfDay.fromDateTime(now);
+        const workStartTime = TimeOfDay(hour: 8, minute: 0);
+        const lateThresholdMinutes = 15;
+        
+        // Calculate if late (after 08:15)
+        final workStartMinutes = workStartTime.hour * 60 + workStartTime.minute;
+        final checkInMinutes = checkInTime.hour * 60 + checkInTime.minute;
+        final lateThresholdTime = workStartMinutes + lateThresholdMinutes;
+        
+        final status = checkInMinutes > lateThresholdTime ? 'late' : 'present';
+        
         attendanceData.addAll({
           'check_in_time': currentTime,
           'check_in_location': {
@@ -1851,7 +1897,7 @@ class DummyAttendanceService {
             'latitude': latitude,
             'longitude': longitude,
           },
-          'status': 'present', // Set status for clock in
+          'status': status, // Set status based on check-in time
           'type': 'clock_in',
         });
         

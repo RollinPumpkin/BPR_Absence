@@ -33,6 +33,11 @@ class Employee {
   final String? workStartTime; // HH:mm format e.g., '08:00'
   final String? workEndTime; // HH:mm format e.g., '17:00'
   final int? lateThresholdMinutes; // e.g., 15 minutes
+  
+  // Shift Configuration (for roles with multiple shifts)
+  final String? shiftType; // 'Single Shift' | 'Double Shift (Morning/Evening)' | 'Custom Hours'
+  final String? shift2StartTime; // HH:mm format for second shift
+  final String? shift2EndTime; // HH:mm format for second shift
 
   const Employee({
     this.id,
@@ -58,6 +63,9 @@ class Employee {
     this.workStartTime,
     this.workEndTime,
     this.lateThresholdMinutes,
+    this.shiftType,
+    this.shift2StartTime,
+    this.shift2EndTime,
   });
 
   Employee copyWith({
@@ -83,6 +91,9 @@ class Employee {
     String? workStartTime,
     String? workEndTime,
     int? lateThresholdMinutes,
+    String? shiftType,
+    String? shift2StartTime,
+    String? shift2EndTime,
   }) {
     return Employee(
       fullName: fullName ?? this.fullName,
@@ -107,6 +118,9 @@ class Employee {
       workStartTime: workStartTime ?? this.workStartTime,
       workEndTime: workEndTime ?? this.workEndTime,
       lateThresholdMinutes: lateThresholdMinutes ?? this.lateThresholdMinutes,
+      shiftType: shiftType ?? this.shiftType,
+      shift2StartTime: shift2StartTime ?? this.shift2StartTime,
+      shift2EndTime: shift2EndTime ?? this.shift2EndTime,
     );
   }
 }

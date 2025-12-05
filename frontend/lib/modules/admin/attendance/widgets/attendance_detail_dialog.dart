@@ -288,9 +288,10 @@ class AttendanceDetailDialog extends StatelessWidget {
       final checkInMinutes = checkInTime.hour * 60 + checkInTime.minute;
       final checkOutMinutes = checkOutTime.hour * 60 + checkOutTime.minute;
       final workMinutes = checkOutMinutes - checkInMinutes;
-      final hours = (workMinutes / 60).floor();
+      final hours = workMinutes ~/ 60;
+      final minutes = workMinutes % 60;
       
-      return '$hours Hours';
+      return '${hours}_jam ${minutes} menit';
     } catch (e) {
       return '-';
     }

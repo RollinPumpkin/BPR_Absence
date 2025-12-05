@@ -225,7 +225,17 @@ router.get('/', auth, async (req, res) => {
     } = req.query;
 
     const userId = req.user.userId;
-    const isAdmin = req.user.role === 'admin' || req.user.role === 'account_officer' || req.user.role === 'super_admin';
+    const userRole = req.user.role;
+    const employeeId = req.user.employeeId || req.user.employee_id;
+    
+    console.log('🔍 Attendance list request - User:', userId, 'Role:', userRole, 'Employee ID:', employeeId);
+    
+    // Check if user is admin by role or employee_id prefix
+    const isAdminByRole = userRole === 'admin' || userRole === 'account_officer' || userRole === 'super_admin' || userRole === 'Admin' || userRole === 'Super Admin' || userRole === 'Account Officer';
+    const isAdminByEmployeeId = employeeId && (employeeId.startsWith('ADM') || employeeId.startsWith('SUP') || employeeId.startsWith('AOM'));
+    const isAdmin = isAdminByRole || isAdminByEmployeeId;
+    
+    console.log('🔑 Admin check - By Role:', isAdminByRole, 'By Employee ID:', isAdminByEmployeeId, 'Final:', isAdmin);
 
     let attendanceRef = db.collection('attendance');
 
@@ -369,19 +379,86 @@ router.post('/checkin', auth, validateAttendance, async (req, res) => {
       }
     }
 
-    // Get work schedule from settings (with fallback)
+    // Get work schedule from user's profile (individual schedule)
     let workStartTime = '08:00:00';
+    let workEndTime = '17:00:00';
     let lateThresholdMinutes = 15;
+    let userRole = null;
+    let shiftStartTime = null;
+    let shiftEndTime = null;
+    let assignedShiftType = null;
     
     try {
-      const settingsSnapshot = await db.collection('settings').doc('app_config').get();
-      if (settingsSnapshot.exists) {
-        const settings = settingsSnapshot.data();
-        workStartTime = settings.work_start_time || workStartTime;
-        lateThresholdMinutes = settings.late_threshold_minutes || lateThresholdMinutes;
+      const userDoc = await db.collection('users').doc(req.user.userId).get();
+      if (userDoc.exists) {
+        const userData = userDoc.data();
+        userRole = userData.role;
+        
+        // Check if user has shift assignment for today (for Security role)
+        if (userRole === 'security' || userRole === 'office_boy') {
+          const shiftAssignment = await db.collection('shift_assignments')
+            .where('date', '==', today)
+            .where('employee_id', '==', req.user.userId)
+            .limit(1)
+            .get();
+          
+          if (!shiftAssignment.empty) {
+            const shift = shiftAssignment.docs[0].data();
+            assignedShiftType = shift.shift_type;
+            shiftStartTime = shift.shift_start_time;
+            shiftEndTime = shift.shift_end_time;
+            
+            // Use shift times as work schedule
+            workStartTime = shiftStartTime.includes(':')
+              ? (shiftStartTime.split(':').length === 2
+                  ? `${shiftStartTime}:00`
+                  : shiftStartTime)
+              : workStartTime;
+            workEndTime = shiftEndTime.includes(':')
+              ? (shiftEndTime.split(':').length === 2
+                  ? `${shiftEndTime}:00`
+                  : shiftEndTime)
+              : workEndTime;
+            
+            console.log(`🔄 Shift assignment found: ${assignedShiftType} (${workStartTime} - ${workEndTime})`);
+          } else if (userRole === 'security') {
+            // Security role requires shift assignment
+            return res.status(400).json({
+              success: false,
+              message: 'No shift assigned for today. Please contact admin.',
+              error: 'SHIFT_NOT_ASSIGNED'
+            });
+          }
+        }
+        
+        // Use individual user's work schedule if no shift assignment
+        if (!assignedShiftType) {
+          if (userData.work_start_time) {
+            workStartTime = userData.work_start_time.includes(':') 
+              ? (userData.work_start_time.split(':').length === 2 
+                  ? `${userData.work_start_time}:00` 
+                  : userData.work_start_time)
+              : '08:00:00';
+          }
+          if (userData.work_end_time) {
+            workEndTime = userData.work_end_time.includes(':')
+              ? (userData.work_end_time.split(':').length === 2
+                  ? `${userData.work_end_time}:00`
+                  : userData.work_end_time)
+              : '17:00:00';
+          }
+        }
+        
+        if (userData.late_threshold_minutes !== undefined) {
+          lateThresholdMinutes = userData.late_threshold_minutes;
+        }
+        
+        console.log(`📅 Work schedule - Start: ${workStartTime}, End: ${workEndTime}, Threshold: ${lateThresholdMinutes} min`);
+      } else {
+        console.warn('⚠️ User document not found, using default schedule');
       }
-    } catch (settingsError) {
-      console.warn('Could not fetch settings, using defaults:', settingsError.message);
+    } catch (scheduleError) {
+      console.warn('⚠️ Could not fetch user work schedule, using defaults:', scheduleError.message);
     }
 
     // Determine status based on time with late threshold
@@ -411,7 +488,11 @@ router.post('/checkin', auth, validateAttendance, async (req, res) => {
       qr_location: qrCodeData.location,
       notes: notes || '',
       work_start_time: workStartTime,
+      work_end_time: workEndTime,
       late_threshold_minutes: lateThresholdMinutes,
+      shift_type: assignedShiftType,
+      shift_start_time: shiftStartTime,
+      shift_end_time: shiftEndTime,
       created_at: getServerTimestamp(),
       updated_at: getServerTimestamp()
     };
@@ -433,6 +514,7 @@ router.post('/checkin', auth, validateAttendance, async (req, res) => {
         qr_location: qrCodeData.location,
         notes: notes || '',
         work_start_time: workStartTime,
+        work_end_time: workEndTime,
         late_threshold_minutes: lateThresholdMinutes,
         updated_at: getServerTimestamp()
       });
@@ -922,6 +1004,9 @@ router.get('/summary', auth, async (req, res) => {
         return; // Skip records outside date range
       }
       
+      // Log each record for debugging
+      console.log(`📝 Processing record: Date=${recordDate}, Status=${data.status}, CheckIn=${data.check_in_time}`);
+      
       // Convert Firestore data to plain object immediately
       const record = {
         id: doc.id,
@@ -952,20 +1037,28 @@ router.get('/summary', auth, async (req, res) => {
       switch (data.status) {
         case 'present':
           stats.present_days++;
+          console.log(`  ✅ Counted as PRESENT`);
           break;
         case 'late':
           stats.late_days++;
+          console.log(`  ⏰ Counted as LATE`);
           break;
         case 'absent':
           stats.absent_days++;
+          console.log(`  ❌ Counted as ABSENT`);
           break;
         case 'sick':
         case 'sick_leave':
           stats.sick_days++;
+          console.log(`  🤒 Counted as SICK`);
           break;
         case 'leave':
         case 'annual_leave':
           stats.leave_days++;
+          console.log(`  🏖️ Counted as LEAVE`);
+          break;
+        default:
+          console.log(`  ⚠️ Unknown status: "${data.status}"`);
           break;
       }
 
@@ -1973,6 +2066,9 @@ router.get('/admin/report', auth, async (req, res) => {
     const attendanceRecords = [];
     const departmentStats = {};
     const dailyStats = {};
+    const departmentDailyStats = {}; // New: Daily stats per department for charts
+    const roleStats = {}; // New: Stats per role
+    const roleDailyStats = {}; // New: Daily stats per role for charts
 
     snapshot.forEach(doc => {
       const attendance = { id: doc.id, ...doc.data() };
@@ -2007,8 +2103,69 @@ router.get('/admin/report', auth, async (req, res) => {
         if (attendance.status === 'late') departmentStats[dept].late++;
         if (attendance.status === 'absent') departmentStats[dept].absent++;
 
-        // Daily statistics
+        // Role statistics
+        const role = user.role || 'employee';
+        const roleLabel = role === 'admin' ? 'Admin' : 
+                         role === 'super_admin' ? 'Super Admin' : 
+                         role === 'account_officer' ? 'Account Officer' : 'Employee';
+        
+        if (!roleStats[roleLabel]) {
+          roleStats[roleLabel] = {
+            total_records: 0,
+            present: 0,
+            late: 0,
+            absent: 0,
+            employees: new Set()
+          };
+        }
+        
+        roleStats[roleLabel].total_records++;
+        roleStats[roleLabel].employees.add(attendance.user_id);
+        
+        if (attendance.status === 'present') roleStats[roleLabel].present++;
+        if (attendance.status === 'late') roleStats[roleLabel].late++;
+        if (attendance.status === 'absent') roleStats[roleLabel].absent++;
+
+        // Daily statistics per department (for charts)
+        if (!departmentDailyStats[dept]) {
+          departmentDailyStats[dept] = {};
+        }
         const date = attendance.date;
+        if (!departmentDailyStats[dept][date]) {
+          departmentDailyStats[dept][date] = {
+            total: 0,
+            present: 0,
+            late: 0,
+            absent: 0,
+            employees: new Set()
+          };
+        }
+        departmentDailyStats[dept][date].total++;
+        departmentDailyStats[dept][date].employees.add(attendance.user_id);
+        if (attendance.status === 'present') departmentDailyStats[dept][date].present++;
+        if (attendance.status === 'late') departmentDailyStats[dept][date].late++;
+        if (attendance.status === 'absent') departmentDailyStats[dept][date].absent++;
+
+        // Daily statistics per role (for charts)
+        if (!roleDailyStats[roleLabel]) {
+          roleDailyStats[roleLabel] = {};
+        }
+        if (!roleDailyStats[roleLabel][date]) {
+          roleDailyStats[roleLabel][date] = {
+            total: 0,
+            present: 0,
+            late: 0,
+            absent: 0,
+            employees: new Set()
+          };
+        }
+        roleDailyStats[roleLabel][date].total++;
+        roleDailyStats[roleLabel][date].employees.add(attendance.user_id);
+        if (attendance.status === 'present') roleDailyStats[roleLabel][date].present++;
+        if (attendance.status === 'late') roleDailyStats[roleLabel][date].late++;
+        if (attendance.status === 'absent') roleDailyStats[roleLabel][date].absent++;
+
+        // Overall daily statistics
         if (!dailyStats[date]) {
           dailyStats[date] = {
             total: 0,
@@ -2030,13 +2187,47 @@ router.get('/admin/report', auth, async (req, res) => {
     // Convert Sets to counts for department stats
     Object.keys(departmentStats).forEach(dept => {
       departmentStats[dept].unique_employees = departmentStats[dept].employees.size;
+      departmentStats[dept].attendance_rate = departmentStats[dept].total_records > 0 ?
+        (((departmentStats[dept].present + departmentStats[dept].late) / departmentStats[dept].total_records) * 100).toFixed(2) : 0;
       delete departmentStats[dept].employees;
+    });
+
+    // Convert Sets to counts for role stats
+    Object.keys(roleStats).forEach(role => {
+      roleStats[role].unique_employees = roleStats[role].employees.size;
+      roleStats[role].attendance_rate = roleStats[role].total_records > 0 ?
+        (((roleStats[role].present + roleStats[role].late) / roleStats[role].total_records) * 100).toFixed(2) : 0;
+      delete roleStats[role].employees;
     });
 
     // Convert Sets to counts for daily stats
     Object.keys(dailyStats).forEach(date => {
       dailyStats[date].unique_employees = dailyStats[date].employees.size;
+      dailyStats[date].attendance_rate = dailyStats[date].total > 0 ?
+        (((dailyStats[date].present + dailyStats[date].late) / dailyStats[date].total) * 100).toFixed(2) : 0;
       delete dailyStats[date].employees;
+    });
+
+    // Convert Sets to counts for department daily stats and calculate attendance rates
+    Object.keys(departmentDailyStats).forEach(dept => {
+      Object.keys(departmentDailyStats[dept]).forEach(date => {
+        const dayData = departmentDailyStats[dept][date];
+        dayData.unique_employees = dayData.employees.size;
+        dayData.attendance_rate = dayData.total > 0 ?
+          (((dayData.present + dayData.late) / dayData.total) * 100).toFixed(2) : 0;
+        delete dayData.employees;
+      });
+    });
+
+    // Convert Sets to counts for role daily stats and calculate attendance rates
+    Object.keys(roleDailyStats).forEach(role => {
+      Object.keys(roleDailyStats[role]).forEach(date => {
+        const dayData = roleDailyStats[role][date];
+        dayData.unique_employees = dayData.employees.size;
+        dayData.attendance_rate = dayData.total > 0 ?
+          (((dayData.present + dayData.late) / dayData.total) * 100).toFixed(2) : 0;
+        delete dayData.employees;
+      });
     });
 
     const report = {
@@ -2055,6 +2246,9 @@ router.get('/admin/report', auth, async (req, res) => {
           ((attendanceRecords.filter(r => r.status === 'present' || r.status === 'late').length / attendanceRecords.length) * 100).toFixed(2) : 0
       },
       department_breakdown: departmentStats,
+      department_daily_breakdown: departmentDailyStats,
+      role_breakdown: roleStats,
+      role_daily_breakdown: roleDailyStats,
       daily_breakdown: dailyStats
     };
 

@@ -248,6 +248,71 @@ class AttendanceService {
     );
   }
 
+  // Get admin report with analytics
+  Future<ApiResponse<Map<String, dynamic>>> getAdminReport({
+    required String startDate,
+    required String endDate,
+    String? department,
+    String? reportType,
+  }) async {
+    final queryParams = <String, dynamic>{
+      'start_date': startDate,
+      'end_date': endDate,
+    };
+
+    if (department != null) queryParams['department'] = department;
+    if (reportType != null) queryParams['report_type'] = reportType;
+
+    print('🔍 Calling API: ${ApiConstants.attendance.adminReport}');
+    print('🔍 Query params: $queryParams');
+
+    return await _apiService.get<Map<String, dynamic>>(
+      ApiConstants.attendance.adminReport,
+      queryParameters: queryParams,
+      fromJson: (json) {
+        print('🔍 Raw API response: $json');
+        print('🔍 Response type: ${json.runtimeType}');
+        print('🔍 JSON keys: ${json is Map ? json.keys : 'not a map'}');
+        
+        // Check if json already contains the report data
+        if (json is Map<String, dynamic>) {
+          // If json has 'report' key directly
+          if (json.containsKey('report')) {
+            print('🔍 Found report key directly');
+            final report = json['report'];
+            if (report is Map<String, dynamic>) {
+              print('🔍 Report keys: ${report.keys}');
+              return report;
+            }
+          }
+          
+          // If response has 'data' key with 'report' inside
+          if (json.containsKey('data') && json['data'] is Map) {
+            final data = json['data'] as Map<String, dynamic>;
+            if (data.containsKey('report')) {
+              print('🔍 Found report in data.report');
+              final report = data['report'];
+              if (report is Map<String, dynamic>) {
+                print('🔍 Report keys: ${report.keys}');
+                return report;
+              }
+            }
+            print('🔍 Found data but no report key, returning data');
+            return data;
+          }
+          
+          // If json directly contains report fields
+          if (json.containsKey('department_breakdown')) {
+            print('🔍 Found report fields directly in json');
+            return json;
+          }
+        }
+        print('🔍 Returning json as-is');
+        return json as Map<String, dynamic>;
+      },
+    );
+  }
+
   // Get late arrivals report
   Future<ApiResponse<List<Attendance>>> getLateArrivals({
     String? startDate,

@@ -15,9 +15,7 @@ class _DatabaseStatsWidgetState extends State<DatabaseStatsWidget> {
   
   Map<String, int> _stats = {
     'total': 0,
-    'active': 0,
     'new': 0,
-    'resign': 0,
   };
   
   bool _isLoading = true;
@@ -42,9 +40,7 @@ class _DatabaseStatsWidgetState extends State<DatabaseStatsWidget> {
         setState(() {
           _stats = {
             'total': response.data!['total'] ?? 0,
-            'active': response.data!['active'] ?? 0,
             'new': response.data!['new'] ?? 0,
-            'resign': response.data!['resign'] ?? 0,
           };
           _isLoading = false;
         });
@@ -77,7 +73,7 @@ class _DatabaseStatsWidgetState extends State<DatabaseStatsWidget> {
 
         if (!narrow) {
           return Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               StatCard(
                 title: "Total",
@@ -86,21 +82,9 @@ class _DatabaseStatsWidgetState extends State<DatabaseStatsWidget> {
               ),
               const SizedBox(width: 10),
               StatCard(
-                title: "Active",
-                value: "${_stats['active']}",
-                color: AppColors.primaryYellow,
-              ),
-              const SizedBox(width: 10),
-              StatCard(
                 title: "New",
                 value: "${_stats['new']}",
                 color: AppColors.primaryGreen,
-              ),
-              const SizedBox(width: 10),
-              StatCard(
-                title: "Resign",
-                value: "${_stats['resign']}",
-                color: AppColors.primaryRed,
               ),
             ],
           );
@@ -124,25 +108,9 @@ class _DatabaseStatsWidgetState extends State<DatabaseStatsWidget> {
             SizedBox(
               width: itemWidth,
               child: StatCard(
-                title: "Active",
-                value: "${_stats['active']}",
-                color: AppColors.primaryYellow,
-              ),
-            ),
-            SizedBox(
-              width: itemWidth,
-              child: StatCard(
                 title: "New",
                 value: "${_stats['new']}",
                 color: AppColors.primaryGreen,
-              ),
-            ),
-            SizedBox(
-              width: itemWidth,
-              child: StatCard(
-                title: "Resign",
-                value: "${_stats['resign']}",
-                color: AppColors.primaryRed,
               ),
             ),
           ],

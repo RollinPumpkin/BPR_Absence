@@ -29,10 +29,15 @@ class _EditPageState extends State<EditPage> {
   final TextEditingController workStartTimeController = TextEditingController();
   final TextEditingController workEndTimeController = TextEditingController();
   final TextEditingController lateThresholdController = TextEditingController();
+  
+  // Shift Controllers (for roles with multiple shifts)
+  final TextEditingController shift2StartTimeController = TextEditingController();
+  final TextEditingController shift2EndTimeController = TextEditingController();
 
   // Dropdown values
   String? selectedGender;
   String? selectedContractType;
+  String? selectedShiftType;
 
   String? selectedEducation;
   String? selectedWarningLetter;
@@ -43,6 +48,12 @@ class _EditPageState extends State<EditPage> {
     'Account Officer',
     'Security',
     'Office Boy',
+  ];
+
+  final List<String> shiftTypeOptions = [
+    'Single Shift',
+    'Double Shift (Morning/Evening)',
+    'Custom Hours',
   ];
 
   DateTime? selectedDate;
@@ -86,6 +97,63 @@ class _EditPageState extends State<EditPage> {
       workStartTimeController.text = emp.workStartTime ?? '08:00';
       workEndTimeController.text = emp.workEndTime ?? '17:00';
       lateThresholdController.text = (emp.lateThresholdMinutes ?? 15).toString();
+      
+      // Prefill shift data
+      selectedShiftType = emp.shiftType ?? _getDefaultShiftType(emp.role);
+      shift2StartTimeController.text = emp.shift2StartTime ?? '';
+      shift2EndTimeController.text = emp.shift2EndTime ?? '';
+      
+      // Set default work hours based on role if not set
+      if (emp.workStartTime == null || emp.workEndTime == null) {
+        _setDefaultWorkHoursByRole(emp.role);
+      }
+    }
+  }
+
+  // Get default shift type based on role
+  String _getDefaultShiftType(String? role) {
+    if (role == null) return 'Single Shift';
+    
+    switch (role.toLowerCase()) {
+      case 'security':
+        return 'Double Shift (Morning/Evening)';
+      case 'office_boy':
+      case 'office boy':
+        return 'Custom Hours';
+      case 'employee':
+      case 'account_officer':
+      case 'account officer':
+      default:
+        return 'Single Shift';
+    }
+  }
+
+  // Set default work hours based on role
+  void _setDefaultWorkHoursByRole(String? role) {
+    if (role == null) return;
+    
+    switch (role.toLowerCase()) {
+      case 'security':
+        // Security uses shift assignment, but set default
+        workStartTimeController.text = '06:00';
+        workEndTimeController.text = '14:00';
+        shift2StartTimeController.text = '18:00';
+        shift2EndTimeController.text = '02:00';
+        break;
+      case 'office_boy':
+      case 'office boy':
+        // Office Boy: 12 hours (6 AM - 6 PM)
+        workStartTimeController.text = '06:00';
+        workEndTimeController.text = '18:00';
+        break;
+      case 'employee':
+      case 'account_officer':
+      case 'account officer':
+      default:
+        // Regular office hours
+        workStartTimeController.text = '08:00';
+        workEndTimeController.text = '17:00';
+        break;
     }
   }
 
@@ -158,6 +226,10 @@ class _EditPageState extends State<EditPage> {
         'work_start_time': workStartTimeController.text.trim(),
         'work_end_time': workEndTimeController.text.trim(),
         'late_threshold_minutes': int.tryParse(lateThresholdController.text.trim()) ?? 15,
+        // Shift fields
+        'shift_type': selectedShiftType,
+        'shift2_start_time': shift2StartTimeController.text.trim().isEmpty ? null : shift2StartTimeController.text.trim(),
+        'shift2_end_time': shift2EndTimeController.text.trim().isEmpty ? null : shift2EndTimeController.text.trim(),
       };
 
       // Add date_of_birth if selected
@@ -298,6 +370,12 @@ class _EditPageState extends State<EditPage> {
     divisionController.dispose();
     _dobController.dispose();
     departmentController.dispose();
+    
+    workStartTimeController.dispose();
+    workEndTimeController.dispose();
+    lateThresholdController.dispose();
+    shift2StartTimeController.dispose();
+    shift2EndTimeController.dispose();
 
     workStartTimeController.dispose();
     workEndTimeController.dispose();
@@ -444,7 +522,16 @@ class _EditPageState extends State<EditPage> {
                       label: 'Role',
                       value: selectedRole,
                       items: roleOptions,
-                      onChanged: (v) => setState(() => selectedRole = v),
+                      onChanged: (v) {
+                        setState(() {
+                          selectedRole = v;
+                          // Auto-set shift type and work hours based on role
+                          if (v != null) {
+                            selectedShiftType = _getDefaultShiftType(v);
+                            _setDefaultWorkHoursByRole(v);
+                          }
+                        });
+                      },
                     ),
                   ),
                   _field(
@@ -533,70 +620,236 @@ class _EditPageState extends State<EditPage> {
 
                   const SizedBox(height: 8),
 
-                  const _SectionDivider(title: 'Work Schedule'),
+                  const _SectionDivider(title: 'Shift Configuration'),
 
                   _field(
-                    child: TextFormField(
-                      controller: workStartTimeController,
-                      readOnly: true,
-                      decoration: _inputDec('Work Start Time', 'HH:mm',
-                          prefixIcon: const Icon(Icons.access_time, size: 18)),
-                      onTap: () async {
-                        final time = await showTimePicker(
-                          context: context,
-                          initialTime: TimeOfDay(
-                            hour: int.tryParse(workStartTimeController.text.split(':').first) ?? 8,
-                            minute: int.tryParse(workStartTimeController.text.split(':').last) ?? 0,
-                          ),
-                        );
-                        if (time != null) {
-                          setState(() {
-                            workStartTimeController.text =
-                                '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
-                          });
-                        }
-                      },
+                    child: _dropdown(
+                      label: 'Shift Type',
+                      value: selectedShiftType,
+                      items: shiftTypeOptions,
+                      onChanged: (v) => setState(() => selectedShiftType = v),
                     ),
                   ),
-                  _field(
-                    child: TextFormField(
-                      controller: workEndTimeController,
-                      readOnly: true,
-                      decoration: _inputDec('Work End Time', 'HH:mm',
-                          prefixIcon: const Icon(Icons.access_time, size: 18)),
-                      onTap: () async {
-                        final time = await showTimePicker(
-                          context: context,
-                          initialTime: TimeOfDay(
-                            hour: int.tryParse(workEndTimeController.text.split(':').first) ?? 17,
-                            minute: int.tryParse(workEndTimeController.text.split(':').last) ?? 0,
-                          ),
-                        );
-                        if (time != null) {
-                          setState(() {
-                            workEndTimeController.text =
-                                '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
-                          });
-                        }
-                      },
-                    ),
-                  ),
-                  _field(
-                    child: TextField(
-                      controller: lateThresholdController,
-                      keyboardType: TextInputType.number,
-                      decoration: _inputDec(
-                        'Late Threshold (Minutes)',
-                        'e.g., 15',
-                        prefixIcon: const Icon(Icons.timer, size: 18),
+
+                  // Show work schedule ONLY for Single Shift and Custom Hours (not Double Shift)
+                  if (selectedShiftType == 'Single Shift' || selectedShiftType == 'Custom Hours') ...[
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: 8, top: 8),
+                      child: Text(
+                        'Work Schedule',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.neutral800,
+                          fontSize: 14,
+                        ),
                       ),
                     ),
-                  ),
+                    _field(
+                      child: TextFormField(
+                        controller: workStartTimeController,
+                        readOnly: true,
+                        decoration: _inputDec('Work Start Time', 'HH:mm',
+                            prefixIcon: const Icon(Icons.access_time, size: 18)),
+                        onTap: () async {
+                          final time = await showTimePicker(
+                            context: context,
+                            initialTime: TimeOfDay(
+                              hour: int.tryParse(workStartTimeController.text.split(':').first) ?? 8,
+                              minute: int.tryParse(workStartTimeController.text.split(':').last) ?? 0,
+                            ),
+                          );
+                          if (time != null) {
+                            setState(() {
+                              workStartTimeController.text =
+                                  '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+                            });
+                          }
+                        },
+                      ),
+                    ),
+                    _field(
+                      child: TextFormField(
+                        controller: workEndTimeController,
+                        readOnly: true,
+                        decoration: _inputDec('Work End Time', 'HH:mm',
+                            prefixIcon: const Icon(Icons.access_time, size: 18)),
+                        onTap: () async {
+                          final time = await showTimePicker(
+                            context: context,
+                            initialTime: TimeOfDay(
+                              hour: int.tryParse(workEndTimeController.text.split(':').first) ?? 17,
+                              minute: int.tryParse(workEndTimeController.text.split(':').last) ?? 0,
+                            ),
+                          );
+                          if (time != null) {
+                            setState(() {
+                              workEndTimeController.text =
+                                  '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+                            });
+                          }
+                        },
+                      ),
+                    ),
+                    _field(
+                      child: TextField(
+                        controller: lateThresholdController,
+                        keyboardType: TextInputType.number,
+                        decoration: _inputDec(
+                          'Late Threshold (Minutes)',
+                          'e.g., 15',
+                          prefixIcon: const Icon(Icons.timer, size: 18),
+                        ),
+                      ),
+                    ),
+                  ],
+
+                  // Show second shift fields only if double shift is selected
+                  if (selectedShiftType == 'Double Shift (Morning/Evening)') ...[
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: 8),
+                      child: Text(
+                        'Shift 2 (Evening/Night)',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.neutral800,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                    _field(
+                      child: TextFormField(
+                        controller: shift2StartTimeController,
+                        readOnly: true,
+                        decoration: _inputDec('Shift 2 Start Time', 'HH:mm',
+                            prefixIcon: const Icon(Icons.access_time, size: 18)),
+                        onTap: () async {
+                          final time = await showTimePicker(
+                            context: context,
+                            initialTime: TimeOfDay(
+                              hour: int.tryParse(shift2StartTimeController.text.split(':').first) ?? 18,
+                              minute: int.tryParse(shift2StartTimeController.text.split(':').last) ?? 0,
+                            ),
+                          );
+                          if (time != null) {
+                            setState(() {
+                              shift2StartTimeController.text =
+                                  '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+                            });
+                          }
+                        },
+                      ),
+                    ),
+                    _field(
+                      child: TextFormField(
+                        controller: shift2EndTimeController,
+                        readOnly: true,
+                        decoration: _inputDec('Shift 2 End Time', 'HH:mm',
+                            prefixIcon: const Icon(Icons.access_time, size: 18)),
+                        onTap: () async {
+                          final time = await showTimePicker(
+                            context: context,
+                            initialTime: TimeOfDay(
+                              hour: int.tryParse(shift2EndTimeController.text.split(':').first) ?? 6,
+                              minute: int.tryParse(shift2EndTimeController.text.split(':').last) ?? 0,
+                            ),
+                          );
+                          if (time != null) {
+                            setState(() {
+                              shift2EndTimeController.text =
+                                  '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+                            });
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+
+                  // Helper text for different roles
+                  if (selectedRole == 'Security') 
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12, top: 8),
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.blue.shade200),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.info_outline, size: 16, color: Colors.blue.shade700),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Security menggunakan sistem shift roster (Pagi/Malam). Shift diatur per hari melalui Shift Roster Management.',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.blue.shade700,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                  if (selectedRole == 'Office Boy') 
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12, top: 8),
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.amber.shade200),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.info_outline, size: 16, color: Colors.amber.shade700),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Office Boy: Jam kerja 12 jam (06:00 - 18:00)',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.amber.shade700,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                  if (selectedRole == 'Employee' || selectedRole == 'Account Officer') 
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12, top: 8),
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.green.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.green.shade200),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.info_outline, size: 16, color: Colors.green.shade700),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Jam kerja regular kantor (08:00 - 17:00)',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.green.shade700,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
 
                   const SizedBox(height: 8),
-
-
-
 
                   const _SectionDivider(title: 'Other'),
 

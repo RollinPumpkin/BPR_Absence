@@ -1,10 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:frontend/core/constants/colors.dart';
-import 'package:provider/provid          print('🔥 CRITICAL DEBUG: Route destination = "$routeDestination"');
-          print('🔥 CRITICAL DEBUG: Expected for admin: "/admin/dashboard"');
-          print('🔥 CRITICAL DEBUG: Route matches admin? ${routeDestination == "/admin/dashboard"}');
-          print('🚀 NAVIGATION: About to navigate to $routeDestination');.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../data/providers/auth_provider.dart';

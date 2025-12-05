@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/core/constants/colors.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class AttendanceDetailDialog extends StatelessWidget {
   final String status;
@@ -11,6 +12,9 @@ class AttendanceDetailDialog extends StatelessWidget {
   final String address;
   final String lat;
   final String long;
+  final String? userName;
+  final String? employeeId;
+  final String? photoUrl;
 
   const AttendanceDetailDialog({
     super.key,
@@ -23,7 +27,92 @@ class AttendanceDetailDialog extends StatelessWidget {
     required this.address,
     required this.lat,
     required this.long,
+    this.userName,
+    this.employeeId,
+    this.photoUrl,
   });
+
+  Color _getStatusColor() {
+    switch (status.toLowerCase()) {
+      case 'present':
+      case 'completed':
+        return AppColors.primaryGreen;
+      case 'late':
+        return AppColors.vibrantOrange;
+      case 'absent':
+        return AppColors.errorRed;
+      case 'leave':
+      case 'sick':
+        return Colors.blue;
+      case 'working':
+      case 'incomplete':
+        return Colors.amber;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  IconData _getStatusIcon() {
+    switch (status.toLowerCase()) {
+      case 'present':
+      case 'completed':
+        return Icons.check_circle;
+      case 'late':
+        return Icons.access_time;
+      case 'absent':
+        return Icons.cancel;
+      case 'leave':
+      case 'sick':
+        return Icons.local_hospital;
+      case 'working':
+        return Icons.work;
+      case 'incomplete':
+        return Icons.warning;
+      default:
+        return Icons.help;
+    }
+  }
+
+  String _getStatusLabel() {
+    switch (status.toLowerCase()) {
+      case 'present':
+        return 'Present';
+      case 'late':
+        return 'Late';
+      case 'absent':
+        return 'Absent';
+      case 'leave':
+        return 'Leave';
+      case 'sick':
+        return 'Sick';
+      case 'completed':
+        return 'Completed';
+      case 'working':
+        return 'Working';
+      case 'incomplete':
+        return 'Incomplete';
+      default:
+        return status;
+    }
+  }
+
+  Future<void> _viewPhoto() async {
+    if (photoUrl != null && photoUrl!.isNotEmpty) {
+      final uri = Uri.parse(photoUrl!);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
+    }
+  }
+
+  Future<void> _downloadPhoto() async {
+    if (photoUrl != null && photoUrl!.isNotEmpty) {
+      final uri = Uri.parse(photoUrl!);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.platformDefault);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -100,22 +189,22 @@ class AttendanceDetailDialog extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 16),
-                        const Expanded(
+                        Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Nama Lengkap',
-                                style: TextStyle(
+                                userName ?? 'Employee User',
+                                style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
                                   color: AppColors.black87,
                                 ),
                               ),
-                              SizedBox(height: 4),
+                              const SizedBox(height: 4),
                               Text(
-                                'Jabatan',
-                                style: TextStyle(
+                                employeeId ?? 'EMP001',
+                                style: const TextStyle(
                                   fontSize: 14,
                                   color: Colors.grey,
                                 ),
@@ -126,24 +215,24 @@ class AttendanceDetailDialog extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: AppColors.primaryGreen,
+                            color: _getStatusColor().withOpacity(0.1),
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.primaryGreen),
+                            border: Border.all(color: _getStatusColor()),
                           ),
-                          child: const Row(
+                          child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(
-                                Icons.check_circle,
+                                _getStatusIcon(),
                                 size: 14,
-                                color: AppColors.primaryGreen
+                                color: _getStatusColor(),
                               ),
-                              SizedBox(width: 4),
+                              const SizedBox(width: 4),
                               Text(
-                                'Status Approve',
+                                _getStatusLabel(),
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: AppColors.primaryGreen,
+                                  color: _getStatusColor(),
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -211,42 +300,51 @@ class AttendanceDetailDialog extends StatelessWidget {
                   const SizedBox(height: 16),
                   
                   // Proof of Attendance
-                  _buildInfoCard(
-                    title: 'Proof of Attendance',
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade50,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.grey.shade200),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              'Wa003198373738.img',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey.shade700,
+                  if (photoUrl != null && photoUrl!.isNotEmpty)
+                    _buildInfoCard(
+                      title: 'Proof of Attendance',
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey.shade200),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                photoUrl!.split('/').last,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey.shade700,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          Icon(
-                            Icons.visibility,
-                            size: 20,
-                            color: Colors.grey.shade600,
-                          ),
-                          const SizedBox(width: 8),
-                          Icon(
-                            Icons.download,
-                            size: 20,
-                            color: Colors.grey.shade600,
-                          ),
-                        ],
+                            const SizedBox(width: 8),
+                            InkWell(
+                              onTap: _viewPhoto,
+                              child: Icon(
+                                Icons.visibility,
+                                size: 20,
+                                color: AppColors.primaryGreen,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            InkWell(
+                              onTap: _downloadPhoto,
+                              child: Icon(
+                                Icons.download,
+                                size: 20,
+                                color: AppColors.primaryGreen,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
                 ],
               ),
             ),

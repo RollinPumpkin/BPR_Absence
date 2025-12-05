@@ -34,9 +34,15 @@ router.get('/', auth, async (req, res) => {
       employeeId: req.user.employeeId
     });
 
-    const isAdmin = req.user.role === 'admin' || req.user.role === 'super_admin';
+    const userRole = req.user.role;
+    const employeeId = req.user.employeeId || req.user.employee_id;
+    
+    // Check if user is admin by role or employee_id prefix
+    const isAdminByRole = userRole === 'admin' || userRole === 'super_admin' || userRole === 'Admin' || userRole === 'Super Admin';
+    const isAdminByEmployeeId = employeeId && (employeeId.startsWith('ADM') || employeeId.startsWith('SUP') || employeeId.startsWith('AOM'));
+    const isAdmin = isAdminByRole || isAdminByEmployeeId;
 
-    console.log('🔒 Is Admin:', isAdmin);
+    console.log('🔒 Admin check - By Role:', isAdminByRole, 'By Employee ID:', isAdminByEmployeeId, 'Final:', isAdmin);
     console.log('👤 User ID to filter:', req.user.userId);
 
     // Get all letters WITHOUT orderBy to avoid issues with missing/inconsistent field names

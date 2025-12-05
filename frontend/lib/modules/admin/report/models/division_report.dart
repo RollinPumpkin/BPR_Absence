@@ -7,6 +7,10 @@ class DivisionReport {
   final double yInterval;
   final int? highlightStart;
   final int? highlightEnd;
+  final String? subtitle; // Optional subtitle for additional info
+  final int? totalRecords; // Total attendance records
+  final int? presentCount; // Present count
+  final int? uniqueEmployees; // Unique employees count
 
   DivisionReport({
     required this.divisionName,
@@ -17,5 +21,9 @@ class DivisionReport {
     required this.yInterval,
     this.highlightStart,
     this.highlightEnd,
+    this.subtitle,
+    this.totalRecords,
+    this.presentCount,
+    this.uniqueEmployees,
   });
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'assignment_card.dart';
 import 'package:frontend/core/constants/colors.dart';
+import 'package:frontend/data/models/assignment.dart';
 import 'timeline_rail.dart';
 
 class DailyAssignmentTimeline extends StatelessWidget {
@@ -40,13 +41,20 @@ class DailyAssignmentTimeline extends StatelessWidget {
               child: Column(
                 children: List.generate(assignments.length, (i) {
                   final a = assignments[i];
+                  // Convert Map<String, String> to Assignment
+                  final assignment = Assignment(
+                    id: a['id'] ?? '',
+                    title: a['title'] ?? '-',
+                    description: a['description'] ?? '-',
+                    dueDate: DateTime.tryParse(a['date'] ?? '') ?? DateTime.now(),
+                    priority: 'medium',
+                    status: a['status'] ?? 'pending',
+                    createdAt: DateTime.now(),
+                  );
                   return Padding(
                     padding: EdgeInsets.only(bottom: i == assignments.length - 1 ? 0 : 12),
                     child: AssignmentCard(
-                      title: a['title'] ?? '-',
-                      description: a['description'] ?? '-',
-                      status: a['status'] ?? '-',
-                      date: a['date'] ?? '-',
+                      assignment: assignment,
                     ),
                   );
                 }),

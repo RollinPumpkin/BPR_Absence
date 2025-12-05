@@ -81,6 +81,7 @@ class AttendanceEndpoints {
   String get summary => '/attendance/summary';
   String get statistics => '/attendance/statistics';
   String get report => '/attendance/report';
+  String get adminReport => '/attendance/admin/report';
   String get lateArrivals => '/attendance/late-arrivals';
   String get earlyDepartures => '/attendance/early-departures';
   String get absentUsers => '/attendance/absent-users';

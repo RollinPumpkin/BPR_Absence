@@ -120,16 +120,25 @@ router.get('/upcoming', auth, async (req, res) => {
 router.get('/', auth, async (req, res) => {
   try {
     const userId = req.user.userId;
+    const userRole = req.user.role;
+    const employeeId = req.user.employeeId || req.user.employee_id;
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
     const status = req.query.status; // 'pending', 'completed', 'overdue'
     
-    console.log('📋 All assignments request for user:', userId);
+    console.log('📋 All assignments request - User:', userId, 'Role:', userRole, 'Employee ID:', employeeId);
+    
+    // Check if user is admin by role or employee_id prefix
+    const isAdminByRole = userRole === 'admin' || userRole === 'super_admin' || userRole === 'Admin' || userRole === 'Super Admin';
+    const isAdminByEmployeeId = employeeId && (employeeId.startsWith('ADM') || employeeId.startsWith('SUP') || employeeId.startsWith('AOM'));
+    const isAdmin = isAdminByRole || isAdminByEmployeeId;
+    
+    console.log('🔑 Admin check - By Role:', isAdminByRole, 'By Employee ID:', isAdminByEmployeeId, 'Final:', isAdmin);
     
     let query = db.collection('assignments');
     
     // If not admin, filter by assignedTo
-    if (req.user.role !== 'super_admin' && req.user.role !== 'admin') {
+    if (!isAdmin) {
       query = query.where('assignedTo', 'array-contains', userId);
     }
     

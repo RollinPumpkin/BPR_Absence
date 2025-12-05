@@ -34,6 +34,11 @@ class User {
   final String? workStartTime;       // HH:mm format e.g., "08:00"
   final String? workEndTime;         // HH:mm format e.g., "17:00"
   final int? lateThresholdMinutes;   // e.g., 15 minutes
+  
+  // Shift Configuration (for roles with multiple shifts)
+  final String? shiftType;           // 'Single Shift' | 'Double Shift (Morning/Evening)' | 'Custom Hours'
+  final String? shift2StartTime;     // HH:mm format for second shift
+  final String? shift2EndTime;       // HH:mm format for second shift
 
   User({
     required this.id,
@@ -67,6 +72,9 @@ class User {
     this.workStartTime,
     this.workEndTime,
     this.lateThresholdMinutes,
+    this.shiftType,
+    this.shift2StartTime,
+    this.shift2EndTime,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -145,6 +153,9 @@ class User {
           : (json['late_threshold_minutes'] is String 
             ? int.tryParse(json['late_threshold_minutes'])
             : null),
+        shiftType: json['shift_type']?.toString(),
+        shift2StartTime: json['shift2_start_time']?.toString(),
+        shift2EndTime: json['shift2_end_time']?.toString(),
       );
     } catch (e) {
       print('❌ Error in User.fromJson: $e');
@@ -223,6 +234,9 @@ class User {
       'work_start_time': workStartTime,
       'work_end_time': workEndTime,
       'late_threshold_minutes': lateThresholdMinutes,
+      'shift_type': shiftType,
+      'shift2_start_time': shift2StartTime,
+      'shift2_end_time': shift2EndTime,
     };
   }
 

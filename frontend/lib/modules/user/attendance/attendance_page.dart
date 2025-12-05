@@ -4,8 +4,10 @@ import 'package:frontend/core/widgets/custom_bottom_nav_router.dart';
 import 'package:frontend/modules/user/shared/user_nav_items.dart';
 import 'package:frontend/data/services/attendance_service.dart';
 import 'package:frontend/data/models/attendance.dart';
+import 'package:frontend/data/providers/auth_provider.dart';
 import 'package:intl/intl.dart';
 import 'package:frontend/core/services/realtime_service.dart';
+import 'package:provider/provider.dart';
 import 'dart:async';
 
 import 'widgets/attendance_stats.dart';
@@ -139,63 +141,47 @@ class _UserAttendancePageState extends State<UserAttendancePage> {
     final attendanceDate = DateTime.parse(attendance.date);
     final isToday = DateFormat('yyyy-MM-dd').format(now) == attendance.date;
     
-    // If no check in, check the database status first
-    if (attendance.checkInTime == null) {
-      // Check if there's a leave/sick status from database
-      if (attendance.status == 'leave' || attendance.status == 'sick') {
-        return 'Leave';
+    // Always prioritize status from database
+    // Database has the correct status calculated by backend
+    if (attendance.status.isNotEmpty) {
+      // If no check out and it's today, override to show "Working"
+      if (attendance.checkOutTime == null && isToday && 
+          (attendance.status == 'present' || attendance.status == 'late')) {
+        return 'Working';
       }
-      // If no status in database, it's absent
+      
+      // If no check out and not today, show as incomplete
+      if (attendance.checkOutTime == null && !isToday && 
+          (attendance.status == 'present' || attendance.status == 'late')) {
+        return 'Incomplete';
+      }
+      
+      // Map database status to display status
+      switch (attendance.status.toLowerCase()) {
+        case 'present':
+          return 'Completed';
+        case 'late':
+          return 'Late';
+        case 'absent':
+          return 'Absent';
+        case 'leave':
+        case 'sick':
+          return 'Leave';
+        default:
+          return attendance.status;
+      }
+    }
+    
+    // Fallback: If no status in database and no check in
+    if (attendance.checkInTime == null) {
       return 'Absent';
     }
     
-    // Parse check in time
-    final checkInTime = TimeOfDay(
-      hour: int.parse(attendance.checkInTime!.split(':')[0]),
-      minute: int.parse(attendance.checkInTime!.split(':')[1]),
-    );
-    
-    // Define work start time (8:00 AM)
-    const workStartTime = TimeOfDay(hour: 8, minute: 0);
-    
-    // Check if late (after 8:00 AM)
-    final isLate = checkInTime.hour > workStartTime.hour || 
-                   (checkInTime.hour == workStartTime.hour && checkInTime.minute > workStartTime.minute);
-    
-    // If no check out and it's today, show "Working"
+    // Fallback: If has check in but no status
     if (attendance.checkOutTime == null) {
-      if (isToday) {
-        return 'Working';
-      } else {
-        // If it's not today and no checkout, it's incomplete
-        return 'Incomplete';
-      }
+      return isToday ? 'Working' : 'Incomplete';
     }
     
-    // Parse check out time
-    final checkOutTime = TimeOfDay(
-      hour: int.parse(attendance.checkOutTime!.split(':')[0]),
-      minute: int.parse(attendance.checkOutTime!.split(':')[1]),
-    );
-    
-    // Define normal work end time (17:00 PM)
-    const workEndTime = TimeOfDay(hour: 17, minute: 0);
-    
-    // Check if early departure (before 17:00 PM)
-    final isEarly = checkOutTime.hour < workEndTime.hour || 
-                    (checkOutTime.hour == workEndTime.hour && checkOutTime.minute < workEndTime.minute);
-    
-    // Priority: Late stays late even if completed (as per requirement)
-    if (isLate) {
-      return 'Late';
-    }
-    
-    // Early departure (leave early)
-    if (isEarly) {
-      return 'Leave';
-    }
-    
-    // Normal completion
     return 'Completed';
   }
 
@@ -357,11 +343,14 @@ class _UserAttendancePageState extends State<UserAttendancePage> {
                                         status: status,
                                         statusColor: statusColor,
                                         onTap: () {
+                                          final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                                          final currentUser = authProvider.currentUser;
+                                          
                                           showDialog(
                                             context: context,
                                             builder: (context) => AttendanceDetailDialog(
                                               date: formattedDate,
-                                              status: status,
+                                              status: attendance.status, // Use database status directly
                                               checkIn: attendance.checkInTime ?? "-",
                                               checkOut: attendance.checkOutTime ?? "-",
                                               workHours: _calculateWorkHours(attendance),
@@ -369,6 +358,9 @@ class _UserAttendancePageState extends State<UserAttendancePage> {
                                               address: attendance.checkInLocation ?? "Address not available",
                                               lat: attendance.latitude?.toString() ?? "0",
                                               long: attendance.longitude?.toString() ?? "0",
+                                              userName: attendance.userName ?? currentUser?.fullName,
+                                              employeeId: attendance.employeeId ?? currentUser?.employeeId,
+                                              photoUrl: null, // TODO: Add photo URL when available in attendance model
                                             ),
                                           );
                                         },

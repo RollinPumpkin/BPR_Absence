@@ -183,6 +183,7 @@ app.use('/api/dashboard', require('./routes/dashboard'));
 app.use('/api/letters', require('./routes/letters'));
 app.use('/api/profile', require('./routes/profile'));
 app.use('/api/assignments', require('./routes/assignments'));
+app.use('/api/shifts', require('./routes/shifts')); // Shift roster management
 app.use('/api/seeder', require('./routes/seeder'));
 
 // ======================================================

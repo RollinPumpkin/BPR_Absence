@@ -13,8 +13,8 @@ class EmployeeStatsService {
     try {
       print('📊 Getting employee statistics...');
       
-      // Use debug endpoint for now (will be changed to /users/stats once auth is fixed)
-      final response = await _apiService.get('/debug/stats');
+      // Use users stats endpoint
+      final response = await _apiService.get('/users/stats');
       
       if (response.success && response.data != null) {
         print('✅ Employee stats received from database: ${response.data}');
@@ -44,10 +44,8 @@ class EmployeeStatsService {
   /// Default/fallback statistics
   Map<String, dynamic> _getDefaultStats() {
     return {
-      'total': 22,
-      'active': 5,
-      'new': 22,
-      'resign': 17,
+      'total': 0,
+      'new': 0,
     };
   }
 

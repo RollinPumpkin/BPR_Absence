@@ -87,7 +87,7 @@ class DashboardHeader extends StatelessWidget {
                           backgroundImage: hasPhoto 
                               ? NetworkImage(currentUser.profilePicture!)
                               : null,
-                          onBackgroundImageError: (_, __) {},
+                          onBackgroundImageError: hasPhoto ? (_, __) {} : null,
                           child: !hasPhoto
                               ? const Icon(Icons.person, color: Colors.grey)
                               : null,

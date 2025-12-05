@@ -113,18 +113,33 @@ class DivisionChartCard extends StatelessWidget {
   }
 
   Widget _header() {
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: Text(
-            'Total Attendance Report • ${report.divisionName}',
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                report.divisionName,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+            const Icon(Icons.more_horiz, color: Color(0xFF8E96A4)),
+          ],
+        ),
+        if (report.subtitle != null) ...[
+          const SizedBox(height: 4),
+          Text(
+            report.subtitle!,
             style: const TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 14,
+              fontSize: 12,
+              color: Color(0xFF8E96A4),
             ),
           ),
-        ),
-        const Icon(Icons.more_horiz, color: Color(0xFF8E96A4)),
+        ],
       ],
     );
   }

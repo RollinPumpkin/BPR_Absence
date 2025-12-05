@@ -198,6 +198,10 @@ class EmployeeCard extends StatelessWidget {
       workStartTime: user.workStartTime,
       workEndTime: user.workEndTime,
       lateThresholdMinutes: user.lateThresholdMinutes,
+      // Shift fields
+      shiftType: user.shiftType,
+      shift2StartTime: user.shift2StartTime,
+      shift2EndTime: user.shift2EndTime,
       // Note: Some fields still might not be available in User model
       // nik: user.nationalId, // Map if needed
       // bank: user.bankName,

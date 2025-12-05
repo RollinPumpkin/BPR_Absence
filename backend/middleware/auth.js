@@ -98,20 +98,49 @@ const auth = (req, res, next) => {
 // Verify Firebase ID token
 async function verifyFirebaseToken(token) {
   const auth = getAuth();
+  const { getFirestore } = require('../config/database');
+  const db = getFirestore();
   
   try {
     const decodedToken = await auth.verifyIdToken(token);
     
+    // Fetch user data from Firestore to get role and other info
+    const usersRef = db.collection('users');
+    const userQuery = await usersRef.where('firebase_uid', '==', decodedToken.uid).get();
+    
+    let userRole = null;
+    let employeeId = null;
+    let userId = decodedToken.uid;
+    
+    if (!userQuery.empty) {
+      const userDoc = userQuery.docs[0];
+      const userData = userDoc.data();
+      userRole = userData.role;
+      employeeId = userData.employee_id;
+      userId = userDoc.id; // Use Firestore document ID
+    } else {
+      // If not found by firebase_uid, try by email
+      const emailQuery = await usersRef.where('email', '==', decodedToken.email).get();
+      if (!emailQuery.empty) {
+        const userDoc = emailQuery.docs[0];
+        const userData = userDoc.data();
+        userRole = userData.role;
+        employeeId = userData.employee_id;
+        userId = userDoc.id;
+      }
+    }
+    
     // Transform Firebase token to match expected format
     return {
-      id: decodedToken.uid,
-      userId: decodedToken.uid,  // Add userId field for compatibility
+      id: userId,
+      userId: userId,
       firebase_uid: decodedToken.uid,
       email: decodedToken.email,
       name: decodedToken.name || decodedToken.email,
+      role: userRole, // Now includes role from Firestore
+      employeeId: employeeId, // Now includes employee_id from Firestore
       iat: decodedToken.iat,
       exp: decodedToken.exp,
-      // Add any other fields needed for compatibility
     };
   } catch (error) {
     throw new Error(`Firebase token verification failed: ${error.message}`);

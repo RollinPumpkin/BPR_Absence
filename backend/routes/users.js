@@ -380,6 +380,97 @@ router.get('/', auth, requireAdminRole, async (req, res) => {
   }
 });
 
+// Get employee statistics for dashboard - MUST BE BEFORE /:userId route
+router.get('/stats', auth, async (req, res) => {
+  try {
+    console.log('📊 Getting employee statistics...');
+    console.log('🔍 req.user contents:', JSON.stringify(req.user, null, 2));
+    
+    // Check if user has admin privileges
+    const { role: userRole, employee_id: userEmployeeId, employeeId } = req.user;
+    console.log('🔑 userRole:', userRole);
+    console.log('🔑 userEmployeeId:', userEmployeeId);
+    console.log('🔑 employeeId:', employeeId);
+    
+    const hasAdminRole = userRole === 'admin' || userRole === 'super_admin';
+    const hasAdminEmployeeId = userEmployeeId?.startsWith('SUP') || userEmployeeId?.startsWith('ADM') || employeeId?.startsWith('SUP') || employeeId?.startsWith('ADM');
+    const isAdmin = hasAdminRole || hasAdminEmployeeId;
+    
+    console.log('🔍 hasAdminRole:', hasAdminRole);
+    console.log('🔍 hasAdminEmployeeId:', hasAdminEmployeeId);
+    console.log('🔍 isAdmin:', isAdmin);
+    
+    if (!isAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Admin privileges required.'
+      });
+    }
+
+    const usersRef = db.collection('users');
+    const snapshot = await usersRef.get();
+    
+    let stats = {
+      total: 0,
+      new: 0
+    };
+    
+    const currentDate = new Date();
+    const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+    
+    console.log('📊 Counting employees...');
+    console.log('📅 First day of current month:', firstDayOfMonth.toISOString());
+    
+    snapshot.forEach(doc => {
+      const userData = doc.data();
+      console.log(`👤 Processing user ${userData.full_name || userData.email}`);
+      
+      // Count total
+      stats.total++;
+      
+      // Count new employees (created this month)
+      if (userData.created_at) {
+        let createdDate;
+        
+        // Handle Firestore timestamp
+        if (typeof userData.created_at.toDate === 'function') {
+          createdDate = userData.created_at.toDate();
+        } else if (userData.created_at instanceof Date) {
+          createdDate = userData.created_at;
+        } else if (typeof userData.created_at === 'string') {
+          createdDate = new Date(userData.created_at);
+        }
+        
+        if (createdDate && createdDate >= firstDayOfMonth) {
+          stats.new++;
+          console.log(`  🆕 New user this month: ${userData.full_name || userData.email} - created: ${createdDate.toISOString()}`);
+        }
+      }
+    });
+    
+    console.log('✅ Employee statistics calculated:', stats);
+    
+    res.json({
+      success: true,
+      message: 'Employee statistics retrieved successfully',
+      data: stats
+    });
+    
+  } catch (error) {
+    console.error('❌ Get employee statistics error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get employee statistics',
+      data: {
+        total: 0,
+        active: 0,
+        new: 0,
+        resign: 0
+      }
+    });
+  }
+});
+
 // Get user by ID (Admin only)
 router.get('/:userId', auth, async (req, res) => {
   try {
@@ -884,118 +975,6 @@ router.get('/test-token', (req, res) => {
   }
 });
 
-// Get employee statistics for dashboard
-router.get('/stats', auth, async (req, res) => {
-  try {
-    console.log('📊 Getting employee statistics...');
-    console.log('🔍 req.user contents:', JSON.stringify(req.user, null, 2));
-    
-    // Check if user has admin privileges
-    const { role: userRole, employee_id: userEmployeeId, employeeId } = req.user;
-    console.log('🔑 userRole:', userRole);
-    console.log('🔑 userEmployeeId:', userEmployeeId);
-    console.log('🔑 employeeId:', employeeId);
-    
-    const hasAdminRole = userRole === 'admin' || userRole === 'super_admin';
-    const hasAdminEmployeeId = userEmployeeId?.startsWith('SUP') || userEmployeeId?.startsWith('ADM') || employeeId?.startsWith('SUP') || employeeId?.startsWith('ADM');
-    const isAdmin = hasAdminRole || hasAdminEmployeeId;
-    
-    console.log('🔍 hasAdminRole:', hasAdminRole);
-    console.log('🔍 hasAdminEmployeeId:', hasAdminEmployeeId);
-    console.log('🔍 isAdmin:', isAdmin);
-    
-    if (!isAdmin) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied. Admin privileges required.'
-      });
-    }
-
-    const usersRef = db.collection('users');
-    const snapshot = await usersRef.get();
-    
-    let stats = {
-      total: 0,
-      active: 0,
-      new: 0,
-      resign: 0
-    };
-    
-    const currentDate = new Date();
-    const threeMonthsAgo = new Date();
-    threeMonthsAgo.setMonth(currentDate.getMonth() - 3);
-    
-    console.log('📅 Current date:', currentDate.toISOString());
-    console.log('📅 Three months ago:', threeMonthsAgo.toISOString());
-    
-    snapshot.forEach(doc => {
-      const userData = doc.data();
-      console.log(`👤 Processing user ${userData.full_name || userData.email}:`, {
-        status: userData.status,
-        is_active: userData.is_active,
-        created_at: userData.created_at
-      });
-      
-      // Count total
-      stats.total++;
-      
-      // Count active (status = 'active' and is_active = true)
-      const isActive = userData.status === 'active' && userData.is_active === true;
-      if (isActive) {
-        stats.active++;
-        console.log(`  ✅ Active user: ${userData.full_name || userData.email}`);
-      }
-      
-      // Count resigned (non-active: status != 'active' OR is_active = false)
-      const isResigned = userData.status !== 'active' || userData.is_active === false;
-      if (isResigned) {
-        stats.resign++;
-        console.log(`  ❌ Resigned user: ${userData.full_name || userData.email} (status: ${userData.status}, is_active: ${userData.is_active})`);
-      }
-      
-      // Count new employees (created in last 1-3 months)
-      if (userData.created_at) {
-        let createdDate;
-        
-        // Handle Firestore timestamp
-        if (typeof userData.created_at.toDate === 'function') {
-          createdDate = userData.created_at.toDate();
-        } else if (userData.created_at instanceof Date) {
-          createdDate = userData.created_at;
-        } else if (typeof userData.created_at === 'string') {
-          createdDate = new Date(userData.created_at);
-        }
-        
-        if (createdDate && createdDate >= threeMonthsAgo && createdDate <= currentDate) {
-          stats.new++;
-          console.log(`  🆕 New user (last 3 months): ${userData.full_name || userData.email} - created: ${createdDate.toISOString()}`);
-        }
-      }
-    });
-    
-    console.log('✅ Employee statistics calculated:', stats);
-    
-    res.json({
-      success: true,
-      message: 'Employee statistics retrieved successfully',
-      data: stats
-    });
-    
-  } catch (error) {
-    console.error('❌ Get employee statistics error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to get employee statistics',
-      data: {
-        total: 0,
-        active: 0,
-        new: 0,
-        resign: 0
-      }
-    });
-  }
-});
-
 // ==================== NEW ENHANCED USERS/EMPLOYEE FEATURES FOR ADMIN DASHBOARD ====================
 
 // Create new employee (Admin only)
@@ -1149,7 +1128,13 @@ router.put('/admin/employees/:userId', auth, requireAdminRole, async (req, res) 
       date_of_birth,
       contract_type,
       last_education,
-      division
+      division,
+      work_start_time,
+      work_end_time,
+      late_threshold_minutes,
+      shift_type,
+      shift2_start_time,
+      shift2_end_time
     } = req.body;
 
     const updateData = {
@@ -1190,6 +1175,16 @@ router.put('/admin/employees/:userId', auth, requireAdminRole, async (req, res) 
     if (contract_type !== undefined) updateData.contract_type = contract_type;
     if (last_education !== undefined) updateData.last_education = last_education;
     if (division !== undefined) updateData.division = division;
+    
+    // Work schedule fields
+    if (work_start_time !== undefined) updateData.work_start_time = work_start_time;
+    if (work_end_time !== undefined) updateData.work_end_time = work_end_time;
+    if (late_threshold_minutes !== undefined) updateData.late_threshold_minutes = late_threshold_minutes;
+    
+    // Shift fields (for roles with multiple shifts like Security)
+    if (shift_type !== undefined) updateData.shift_type = shift_type;
+    if (shift2_start_time !== undefined) updateData.shift2_start_time = shift2_start_time;
+    if (shift2_end_time !== undefined) updateData.shift2_end_time = shift2_end_time;
 
     await userRef.update(updateData);
 
